@@ -86,8 +86,9 @@ function renderProfiles() {
   const box = $('profiles');
   box.innerHTML = S.profiles.map(p => `
     <div class="profile ${p.id === S.selectedProfile ? 'on' : ''} ${p.loader === 'vanilla' ? 'vanilla' : ''}" data-id="${esc(p.id)}" role="button" tabindex="0">
-      <b>${esc(p.name)}</b>
-      <small>${esc(mcLabel(p))} · ${loaderLabel(p)}${p.optimize ? ' · FPS' : ''}</small>
+      <i class="pblock" aria-hidden="true"></i>
+      <span class="ptext"><b>${esc(p.name)}</b>
+      <small>${esc(mcLabel(p))} · ${loaderLabel(p)}${p.optimize ? ' · FPS' : ''}</small></span>
       <button class="edit" type="button" data-edit="${esc(p.id)}" aria-label="Edytuj profil ${esc(p.name)}">${ICON_EDIT}</button>
     </div>`).join('') +
     `<button class="profile add" type="button" id="addProfile" aria-label="Nowy profil">${ICON_PLUS}</button>`;
@@ -541,6 +542,28 @@ document.addEventListener('drop', async e => {
 });
 $('dropzone').onclick = () => toast('Złap plik .jar lub .zip w Eksploratorze i upuść go na okno launchera');
 
+// ───────── „Co nowego” po aktualizacji ─────────
+
+const WHATS_NEW = [
+  'Freelook i Zoom na dowolnym klawiszu – także na bocznym przycisku myszy (menu w grze → Opcje)',
+  'Nowy element HUD: TPS serwera – widzisz, kiedy serwer laguje',
+  'Waypointy: zapisz miejsce klawiszem B, a na ekranie zobaczysz znacznik z nazwą i odległością',
+  'Odświeżony launcher: portal pod skinem, pikselowe bloki profili i świecące akcenty'
+];
+
+function showWhatsNew(version) {
+  let last = null;
+  try { last = localStorage.getItem('vc.lastVersion'); localStorage.setItem('vc.lastVersion', version); } catch { return; }
+  if (!last || last === version) return; // pierwsza instalacja albo ta sama wersja
+  $('wnVer').textContent = 'v' + version;
+  $('wnList').innerHTML = WHATS_NEW.map(t => `<li>${esc(t)}</li>`).join('');
+  $('whatsNew').hidden = false;
+  $('wnClose').focus();
+}
+$('wnClose').onclick = () => { $('whatsNew').hidden = true; };
+$('whatsNew').addEventListener('click', e => { if (e.target.id === 'whatsNew') $('whatsNew').hidden = true; });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('whatsNew').hidden) $('whatsNew').hidden = true; });
+
 // ───────── Opcje ─────────
 
 function renderSettings() {
@@ -616,7 +639,11 @@ $('updateBtn').onclick = async () => {
 
 (async () => {
   S = await window.api.getSettings();
-  window.api.version().then(v => { $('versionChip').textContent = 'v' + v; $('aboutVer').textContent = v; }).catch(() => {});
+  window.api.version().then(v => {
+  $('versionChip').textContent = 'v' + v;
+  $('aboutVer').textContent = v;
+  showWhatsNew(v);
+}).catch(() => {});
   renderAccount();
   renderProfiles();
   renderSettings();

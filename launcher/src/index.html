@@ -92,6 +92,7 @@
       <div class="card skin-card">
         <div class="skin-head"><span class="card-label">TWÓJ SKIN</span><span class="skin-name" id="skinName">–</span></div>
         <div class="skin-stage" id="skinStage">
+          <div class="pedestal" aria-hidden="true"><i></i><i></i><i></i><b></b><b></b><b></b><b></b></div>
           <canvas id="skinCanvas" width="292" height="236" aria-label="Twój skin w 3D – przeciągnij, aby obrócić"></canvas>
           <div class="skin-empty" id="skinEmpty">
             <p>Zaloguj się, żeby zobaczyć swój skin w 3D.</p>
@@ -221,6 +222,15 @@
     </div>
   </form>
 </dialog>
+
+<div class="whatsnew" id="whatsNew" role="dialog" aria-modal="true" aria-labelledby="wnTitle" hidden>
+  <div class="wn-box">
+    <h3 id="wnTitle">Co nowego w <span id="wnVer">Void Client</span></h3>
+    <p>Launcher zaktualizował się sam – oto, co doszło:</p>
+    <ul id="wnList"></ul>
+    <button type="button" class="primary" id="wnClose">Super, gramy!</button>
+  </div>
+</div>
 
 <div class="drop-overlay" id="dropOverlay" aria-hidden="true">
   <div class="drop-box">
