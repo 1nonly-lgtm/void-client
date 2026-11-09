@@ -601,9 +601,15 @@ window.api.onUpdate(d => {
 $('updateBtn').onclick = async () => {
   if (running) { toast('Zamknij grę, żeby zainstalować aktualizację'); return; }
   $('updateBtn').disabled = true;
-  $('updateText').textContent = 'Instalowanie…';
-  const ok = await window.api.installUpdate().catch(() => false);
-  if (!ok) { $('updateBtn').disabled = false; toast('Aktualizacja zainstaluje się przy zamknięciu launchera'); }
+  $('updateText').textContent = 'Za chwilę otworzy się instalator – kliknij „Tak”, jeśli Windows zapyta';
+  const res = await window.api.installUpdate().catch(() => false);
+  if (res === 'manual') {
+    $('updateBtn').disabled = false;
+    $('updateText').textContent = 'Pobierz VoidClient-Setup.exe ze strony, która się otworzyła';
+  } else if (!res) {
+    $('updateBtn').disabled = false;
+    toast('Nie udało się uruchomić instalatora – spróbuj ponownie');
+  }
 };
 
 // ───────── Start ─────────
