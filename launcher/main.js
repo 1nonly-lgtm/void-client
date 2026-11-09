@@ -75,17 +75,39 @@ function hideToTray() {
 
 // ───────── Discord ─────────
 
-function discordUpdate(state) {
+let discordTimer = null;
+
+/** Buduje status z tego, co wiadomo: profil, wersja, serwer i FPS (te dwa wysyła mod Void Client). */
+function discordUpdate() {
+  clearTimeout(discordTimer);
+  discordTimer = setTimeout(discordApply, 300); // kilka zmian naraz = jedna aktualizacja
+}
+
+function discordApply() {
   const s = settings.get();
   const discord = lazy('discord');
   if (!s.discord) { discord.stop(); return; }
   discord.start(DISCORD_APP_ID);
-  const profile = s.profiles.find(p => p.id === s.selectedProfile) || s.profiles[0];
+  if (!running) {
+    const profile = s.profiles.find(p => p.id === s.selectedProfile) || s.profiles[0];
+    discord.set({
+      details: 'W menu launchera',
+      state: `${profile.name} · ${profile.mc === 'latest' ? 'najnowsza' : profile.mc}`
+    });
+    return;
+  }
+  const st = running.status || {};
+  let where;
+  if (st.srv === 'sp') where = 'Świat jednoosobowy';
+  else if (st.srv && st.srv !== 'mp') where = s.discordServer ? 'Serwer: ' + st.srv : 'Gra na serwerze';
+  else if (st.srv === 'mp') where = 'Gra na serwerze';
+  else where = 'W menu gry';
+  const parts = [where];
+  if (s.discordFps && st.fps > 0) parts.push(st.fps + ' FPS');
   discord.set({
-    profile: running ? running.profile.name : profile.name,
-    mc: running ? running.mc : (profile.mc === 'latest' ? 'najnowsza' : profile.mc),
-    state,
-    since: running ? running.since : undefined
+    details: `Minecraft ${running.mc} · ${running.profile.name}`,
+    state: parts.join(' · '),
+    since: running.since
   });
 }
 
@@ -94,9 +116,7 @@ function discordUpdate(state) {
 ipcMain.handle('settings:get', () => settings.publicView());
 ipcMain.handle('settings:set', (_, patch) => {
   const out = settings.update(patch);
-  if (patch && ('discord' in patch || 'selectedProfile' in patch)) {
-    discordUpdate(running ? 'W grze' : 'W menu launchera');
-  }
+  if (patch && ['discord', 'selectedProfile', 'discordServer', 'discordFps', 'profiles'].some(k => k in patch)) discordUpdate();
   return out;
 });
 
@@ -159,6 +179,11 @@ ipcMain.handle('modrinth:install', async (_, { projectId, type, profileId, title
 });
 
 ipcMain.handle('modrinth:installed', (_, profileId) => lazy('modrinth').listInstalled(lazy('game').instanceDir(profileId)));
+ipcMain.handle('local:add', (_, { profileId, paths }) => {
+  const p = profileById(profileId);
+  const list = (Array.isArray(paths) ? paths : []).filter(x => typeof x === 'string' && x).slice(0, 50);
+  return lazy('local').add(list, p, lazy('game').instanceDir(p.id), lazy('modrinth'));
+});
 ipcMain.handle('modrinth:remove', (_, { projectId, profileId }) => lazy('modrinth').remove(projectId, lazy('game').instanceDir(profileId)));
 
 ipcMain.handle('game:launch', async (_, profileId) => {
@@ -166,18 +191,23 @@ ipcMain.handle('game:launch', async (_, profileId) => {
   const s = settings.get();
   const profile = profileById(profileId);
   const emit = d => send('game:progress', d);
-  let server = null;
-
   const { proc, mc } = await lazy('game').launch(profile, s, emit, line => {
-    const m = /Connecting to ([^,\s]+),?\s*(\d+)?/.exec(line);
+    if (!running) return;
+    // Mod Void Client co 5 s wypisuje: [VoidStatus] srv=<adres|sp|mp|> fps=<liczba>
+    let m = /\[VoidStatus\] srv=(\S*) fps=(\d+)/.exec(line);
     if (m) {
-      server = m[1];
-      if (s.discordShowServer) discordUpdate('Na serwerze: ' + server);
+      const prev = running.status || {};
+      running.status = { srv: m[1], fps: Number(m[2]) };
+      running.modStatus = true;
+      if (prev.srv !== m[1] || settings.get().discordFps) discordUpdate();
+      return;
     }
-    if (/Stopping!|Disconnecting from server|Left the game/i.test(line) && server) {
-      server = null;
-      discordUpdate('W grze');
-    }
+    if (running.modStatus) return;
+    // Bez moda (np. vanilla) – serwer z logu gry
+    m = /Connecting to ([^,\s]+),?\s*(\d+)?/.exec(line);
+    if (m) { running.status = { srv: m[1] }; discordUpdate(); return; }
+    if (/Starting integrated minecraft server/i.test(line)) { running.status = { srv: 'sp' }; discordUpdate(); return; }
+    if (/Stopping server|Disconnected from|lost connection/i.test(line)) { running.status = {}; discordUpdate(); }
   });
 
   // Wyższy priorytet procesu gry w Windows = mniej przycięć, gdy w tle coś działa.
@@ -186,9 +216,9 @@ ipcMain.handle('game:launch', async (_, profileId) => {
     os.setPriority(proc.pid, os.constants.priority.PRIORITY_ABOVE_NORMAL);
   } catch { /* brak uprawnień – gra działa normalnie */ }
 
-  running = { proc, profile, mc, since: new Date() };
-  send('game:state', { state: 'running' });
-  discordUpdate('W grze');
+  running = { proc, profile, mc, since: Date.now(), status: {} };
+  send('game:state', { state: 'running', since: running.since });
+  discordUpdate();
 
   if (s.afterLaunch === 'hide') hideToTray();
   else if (s.afterLaunch === 'close') setTimeout(() => app.quit(), 1500);
@@ -196,7 +226,7 @@ ipcMain.handle('game:launch', async (_, profileId) => {
   proc.on('close', code => {
     running = null;
     send('game:state', { state: 'closed', code });
-    discordUpdate('W menu launchera');
+    discordUpdate();
     if (settings.get().afterLaunch === 'hide') showWindow();
   });
   return { ok: true };
@@ -243,7 +273,7 @@ app.on('second-instance', showWindow);
 app.whenReady().then(() => {
   createWindow();
   // Discord startuje po pokazaniu okna, żeby nie spowalniać uruchamiania.
-  setTimeout(() => discordUpdate('W menu launchera'), 1500);
+  setTimeout(discordUpdate, 1500);
   // Sprawdzanie aktualizacji w tle, gdy okno już działa.
   setTimeout(setupUpdates, 4000);
 });

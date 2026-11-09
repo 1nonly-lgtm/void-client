@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 const call = async (channel, payload) => {
   try {
@@ -24,6 +24,9 @@ contextBridge.exposeInMainWorld('api', {
   install: opts => call('modrinth:install', opts),
   installed: profileId => call('modrinth:installed', profileId),
   remove: opts => call('modrinth:remove', opts),
+  // przeciągnięte pliki: ścieżka na dysku (Electron 32+ nie ma już File.path)
+  pathFor: file => { try { return webUtils.getPathForFile(file); } catch { return ''; } },
+  addLocal: (profileId, paths) => call('local:add', { profileId, paths }),
   openFolder: profileId => call('profile:folder', profileId),
   openUrl: url => call('open:url', url),
   onProgress: cb => ipcRenderer.on('game:progress', (_, d) => cb(d)),
