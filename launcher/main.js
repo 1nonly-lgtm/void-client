@@ -8,6 +8,9 @@ app.commandLine.appendSwitch('disable-features', 'HardwareMediaKeyHandling,Media
 app.setAppUserModelId('dev.oneonly.voidclient');
 
 const settings = require('./lib/settings');
+
+// Aplikacja „Void Client” na Discordzie – nazwa i logo w statusie graczy.
+const DISCORD_APP_ID = '1569289556715634694';
 let win = null;
 let tray = null;
 let running = null; // { proc, profile, mc, since }
@@ -75,8 +78,8 @@ function hideToTray() {
 function discordUpdate(state) {
   const s = settings.get();
   const discord = lazy('discord');
-  if (!s.discord || !s.discordAppId) { discord.stop(); return; }
-  discord.start(s.discordAppId.trim());
+  if (!s.discord) { discord.stop(); return; }
+  discord.start(DISCORD_APP_ID);
   const profile = s.profiles.find(p => p.id === s.selectedProfile) || s.profiles[0];
   discord.set({
     profile: running ? running.profile.name : profile.name,
@@ -91,7 +94,7 @@ function discordUpdate(state) {
 ipcMain.handle('settings:get', () => settings.publicView());
 ipcMain.handle('settings:set', (_, patch) => {
   const out = settings.update(patch);
-  if (patch && ('discord' in patch || 'discordAppId' in patch || 'selectedProfile' in patch)) {
+  if (patch && ('discord' in patch || 'selectedProfile' in patch)) {
     discordUpdate(running ? 'W grze' : 'W menu launchera');
   }
   return out;

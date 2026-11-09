@@ -12,8 +12,9 @@ pluginManagement {
 rootProject.name = 'voidclient-yarn'
 
 // Każdy folder w versions/ to osobna wersja gry (np. versions/1.21.4).
-// Można zbudować jedną: gradle :mc-1_21_4:build
-file('versions').listFiles().findAll { it.isDirectory() }.sort { it.name }.each { dir ->
+// Wszystkie: gradle build    Jedna: gradle build -Pmc=1.21.4
+def only = providers.gradleProperty('mc').getOrNull()
+file('versions').listFiles().findAll { it.isDirectory() && (only == null || it.name == only) }.sort { it.name }.each { dir ->
     def name = 'mc-' + dir.name.replace('.', '_')
     include name
     project(":$name").projectDir = dir

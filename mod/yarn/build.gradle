@@ -1,12 +1,12 @@
 import groovy.json.JsonSlurper
 
 plugins {
-    id 'fabric-loom' version '1.11-SNAPSHOT' apply false
+    id 'fabric-loom' version '1.15-SNAPSHOT' apply false
 }
 
 // Wersje mappingów, Loadera i Fabric API pobierają się same – nie trzeba ich wpisywać ręcznie.
 def fetchJson(String url) {
-    def conn = new URL(url).openConnection()
+    def conn = URI.create(url).toURL().openConnection()
     conn.setRequestProperty('User-Agent', 'oneonly/void-client-build')
     conn.connectTimeout = 20000
     conn.readTimeout = 60000
@@ -50,7 +50,7 @@ subprojects {
     }
 
     processResources {
-        def props = [version: mc, mc_range: project.property('mc_range'), java: javaVer, entry: 'dev.oneonly.voidclient.yarn.VoidClientMod']
+        def props = [version: mc, mc_range: project.property('mc_range'), java: javaVer, entry: 'dev.oneonly.voidclient.yarn.VoidClientMod', author: '1nonly \$']
         inputs.properties props
         filesMatching('fabric.mod.json') { expand props }
     }

@@ -19,7 +19,6 @@ const DEFAULTS = {
   jvmFlags: true,
   animations: true,
   discord: true,
-  discordAppId: '',
   discordShowServer: false,
   account: null // { name, uuid, refresh }
 };

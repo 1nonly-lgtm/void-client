@@ -1,7 +1,7 @@
 package dev.oneonly.voidclient.mojang;
 
 import dev.oneonly.voidclient.core.gui.GuiController;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
@@ -22,7 +22,7 @@ public class VoidScreen extends Screen {
     public boolean isPauseScreen() { return false; }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
+    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
         gui.render(gfx.set(graphics, font), mouseX, mouseY, width, height);
     }
 

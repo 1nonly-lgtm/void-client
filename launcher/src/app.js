@@ -482,9 +482,8 @@ function renderSettings() {
     sw.classList.toggle('on', on);
     sw.setAttribute('aria-pressed', String(on));
   });
-  $('discordAppId').value = S.discordAppId || '';
   document.body.classList.toggle('anim', !!S.animations);
-  const dOn = S.discord && !!S.discordAppId;
+  const dOn = !!S.discord;
   $('discordChip').classList.toggle('on', dOn);
   $('discordText').textContent = dOn ? 'Discord: aktywny' : 'Discord: wyłączony';
 }
@@ -509,10 +508,6 @@ document.querySelectorAll('.switch').forEach(sw => sw.addEventListener('click', 
   renderSettings();
 }));
 
-$('discordAppId').addEventListener('change', () => {
-  save({ discordAppId: $('discordAppId').value.replace(/\D/g, '') });
-  renderSettings();
-});
 
 $('folderBtn').onclick = () => window.api.openFolder(profile().id);
 
