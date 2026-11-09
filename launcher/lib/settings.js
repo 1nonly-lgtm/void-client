@@ -18,6 +18,7 @@ const DEFAULTS = {
   windowMode: 'full', // full | window
   jvmFlags: true,
   animations: true,
+  sounds: true, // dźwięki kliknięć w launcherze
   discord: true,
   discordServer: true, // adres serwera w statusie
   discordFps: true, // FPS w statusie (wysyła mod Void Client)
