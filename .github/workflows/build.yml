@@ -72,6 +72,7 @@ jobs:
         run: npm version 1.0.${{ github.run_number }} --no-git-tag-version
       - name: Budowanie instalatora
         working-directory: launcher
+        shell: bash
         run: npx electron-builder --win nsis --x64 --publish never -c.publish.provider=github -c.publish.owner=${{ github.repository_owner }} -c.publish.repo=${{ github.event.repository.name }}
 
       - uses: actions/upload-artifact@v4
