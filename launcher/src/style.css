@@ -480,17 +480,10 @@ body:not(.anim) .bg::after { display: none; }
 @keyframes navPulse { 0% { box-shadow: 0 0 0 0 rgba(192, 132, 252, .5); } 70%, 100% { box-shadow: 0 0 0 10px rgba(192, 132, 252, 0); } }
 
 /* przyciski: świecenie i lekkie uniesienie */
-.primary, .ghost, .mod button { transition: transform .12s, box-shadow .2s, background .2s, border-color .2s; }
-.primary:hover, .mod button:not(:disabled):hover { transform: translateY(-1px); box-shadow: 0 0 0 1px rgba(240, 171, 252, .35), 0 8px 22px -8px rgba(192, 132, 252, .9); }
+.primary, .ghost { transition: transform .12s, box-shadow .2s, background .2s, border-color .2s; }
+.primary:hover { transform: translateY(-1px); box-shadow: 0 0 0 1px rgba(240, 171, 252, .35), 0 8px 22px -8px rgba(192, 132, 252, .9); }
 .ghost:hover { box-shadow: 0 0 18px -6px rgba(192, 132, 252, .8); border-color: rgba(192, 132, 252, .65); }
-.primary:active, .ghost:active, .mod button:active { transform: translateY(1px) scale(.98); }
-
-/* karty modów: fioletowa krawędź i błysk po najechaniu */
-.mod { position: relative; overflow: hidden; }
-.mod::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; background: linear-gradient(120deg, transparent 20%, rgba(240, 171, 252, .8), transparent 80%); background-size: 250% 100%; background-position: 100% 0; -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; opacity: 0; transition: opacity .2s; pointer-events: none; }
-.mod:hover::before { opacity: 1; animation: edgeRun 1.4s linear infinite; }
-.mod:hover { box-shadow: 0 16px 34px -18px rgba(168, 85, 247, .8); }
-@keyframes edgeRun { to { background-position: -150% 0; } }
+.primary:active, .ghost:active { transform: translateY(1px) scale(.98); }
 
 /* przycisk GRAJ: mocniejsza poświata pod spodem */
 .play { isolation: isolate; }
