@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 public final class VoidCore {
     public static final Logger LOG = LoggerFactory.getLogger("VoidClient");
     private static Game game;
+    private static int statusTicks;
 
     private VoidCore() {}
 
@@ -26,10 +27,25 @@ public final class VoidCore {
         CpsTracker.poll(game.leftMouse(), game.rightMouse());
         Modules.ZOOM.update(game, zoomPressed);
         Freelook.update(game, freelookHeld);
+        status();
         if (!game.hasPlayer()) return;
         for (Module m : Modules.all()) {
             if (m.isEnabled()) m.onTick(game);
         }
+    }
+
+    /**
+     * Co 5 s wypisuje do logu linię dla launchera (status na Discordzie: serwer i FPS).
+     * Launcher czyta wyjście gry i szuka „[VoidStatus]”.
+     */
+    private static void status() {
+        if (++statusTicks < 100) return;
+        statusTicks = 0;
+        String srv;
+        try { srv = game.server(); } catch (Throwable t) { srv = ""; }
+        if (srv == null) srv = "";
+        String line = "srv=" + srv.replace(' ', '_') + " fps=" + game.fps();
+        LOG.info("[VoidStatus] {}", line);
     }
 
     /** Rysowanie HUD (co klatkę). */

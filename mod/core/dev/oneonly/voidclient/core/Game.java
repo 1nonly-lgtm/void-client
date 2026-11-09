@@ -89,4 +89,7 @@ public interface Game {
     int perspective();
 
     void setPerspective(int index);
+
+    /** "sp" w świecie jednoosobowym, adres serwera w multi, "" w menu. */
+    String server();
 }
