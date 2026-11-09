@@ -19,6 +19,8 @@ function toast(msg, kind = '') {
   const t = $('toast');
   t.textContent = msg;
   t.dataset.kind = kind;
+  if (kind === 'ok') window.voidSfx?.success();
+  if (kind === 'err') window.voidSfx?.error();
   t.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
@@ -204,9 +206,9 @@ function setPhase(phase) {
 $('playBtn').onclick = async () => {
   if (running) return;
   $('errBox').classList.add('hidden');
-  if (!S.account) { toast('Najpierw zaloguj się kontem Microsoft (prawy górny róg)'); $('accountBtn').focus(); return; }
+  if (!S.account) { toast('Najpierw zaloguj się kontem Microsoft (prawy górny róg)', 'err'); $('accountBtn').focus(); return; }
   running = true;
-  try { const r = $('playBtn').getBoundingClientRect(); window.voidFx?.boom(r.left + r.width / 2, r.top + r.height / 2, 1); } catch {}
+  try { const r = $('playBtn').getBoundingClientRect(); window.voidFx?.boom(r.left + r.width / 2, r.top + r.height / 2, 1); window.voidSfx?.play(); } catch {}
   setPhase('loading');
   $('barFill').style.width = '0%';
   $('loadText').textContent = 'Przygotowanie…';
@@ -550,10 +552,10 @@ $('dropzone').onclick = () => toast('Złap plik .jar lub .zip w Eksploratorze i 
 // ───────── „Co nowego” po aktualizacji ─────────
 
 const WHATS_NEW = [
-  'Świecący pasek ładowania, z którego sypią się iskry, i pulsujący znaczek „Gra uruchomiona”',
-  'Nowe Opcje: fioletowy suwak RAM, świecące przełączniki i przyciski',
-  'Mody ładują się z animacją, a po instalacji przycisk błyska i wybucha iskrami',
-  'Kolorowe powiadomienia (zielone = sukces, czerwone = błąd) i obracający się pierścień wokół logo'
+  'Dźwięki w launcherze: miękkie kliknięcia, przełączniki, dzwoneczek po instalacji i dźwięk otwarcia portalu przy GRAJ',
+  'Dźwięki wyłączysz w Opcjach („Dźwięki w launcherze”)',
+  'Świecący pasek ładowania z iskrami, nowe Opcje i kolorowe powiadomienia',
+  'Mody ładują się z animacją, a po instalacji przycisk błyska i wybucha iskrami'
 ];
 
 function showWhatsNew(version) {
@@ -584,6 +586,7 @@ function renderSettings() {
     sw.setAttribute('aria-pressed', String(on));
   });
   document.body.classList.toggle('anim', !!S.animations);
+  document.body.classList.toggle('sfx', S.sounds !== false);
   const dOn = !!S.discord;
   $('discordChip').classList.toggle('on', dOn);
   $('discordText').textContent = dOn ? 'Discord: aktywny' : 'Discord: wyłączony';
