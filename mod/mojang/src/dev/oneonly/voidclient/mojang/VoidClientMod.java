@@ -17,6 +17,7 @@ import net.minecraft.client.gui.screens.GenericMessageScreen;
 import net.minecraft.client.gui.screens.LevelLoadingScreen;
 import net.minecraft.client.gui.screens.ProgressScreen;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
@@ -52,6 +53,21 @@ public class VoidClientMod implements ClientModInitializer {
 
         // Łączenie z serwerem i wczytywanie świata – tło Void Client, przyciski rysujemy na nowo na wierzchu
         ScreenEvents.AFTER_INIT.register((client, screen, sw, sh) -> {
+            if (screen instanceof TitleScreen) {
+                // menu główne: unoszące się iskry, spadające gwiazdy i poświata przycisku pod kursorem
+                ScreenEvents.afterExtract(screen).register((s, graphics, mx, my, delta) -> {
+                    try {
+                        MojangGfx gx = LOAD_GFX.set(graphics, client.font);
+                        LoadingArt.titleFx(gx, s.width, s.height);
+                        for (AbstractWidget b : Screens.getWidgets(s)) {
+                            if (b.visible && b.active && b.isHovered()) LoadingArt.buttonGlow(gx, b.getX(), b.getY(), b.getWidth(), b.getHeight());
+                        }
+                    } catch (Throwable ignored) {
+                        // bez animacji
+                    }
+                });
+                return;
+            }
             if (!isLoading(screen)) return;
             ScreenEvents.afterExtract(screen).register((s, graphics, mx, my, delta) -> {
                 try {
