@@ -5,6 +5,7 @@ import dev.oneonly.voidclient.yarn.YarnGfx;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screen.TitleScreen;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -19,6 +20,7 @@ public abstract class MenuBgMixin {
             MinecraftClient c = MinecraftClient.getInstance();
             if (c.world != null) return; // w świecie zostaje zwykłe rozmyte tło gry
             Screen s = (Screen) (Object) this;
+            if (s instanceof TitleScreen) return; // menu główne ma obracającą się panoramę pustki
             LoadingArt.menu(new YarnGfx().set(ctx, c.textRenderer), s.width, s.height);
         } catch (Throwable ignored) {
             // zostaje zwykłe tło
