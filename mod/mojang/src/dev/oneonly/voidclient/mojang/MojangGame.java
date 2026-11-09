@@ -148,4 +148,13 @@ public final class MojangGame implements Game {
     @Override public int perspective() { return mc().options.getCameraType().ordinal(); }
 
     @Override public void setPerspective(int index) { mc().options.setCameraType(CameraType.values()[index]); }
+
+    @Override
+    public String server() {
+        Minecraft mc = mc();
+        if (mc.level == null) return "";
+        if (mc.hasSingleplayerServer()) return "sp";
+        net.minecraft.client.multiplayer.ServerData info = mc.getCurrentServer();
+        return info == null ? "mp" : info.ip;
+    }
 }
