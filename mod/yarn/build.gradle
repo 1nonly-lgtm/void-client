@@ -1,0 +1,67 @@
+import groovy.json.JsonSlurper
+
+plugins {
+    id 'fabric-loom' version '1.11-SNAPSHOT' apply false
+}
+
+// Wersje mappingów, Loadera i Fabric API pobierają się same – nie trzeba ich wpisywać ręcznie.
+def fetchJson(String url) {
+    def conn = new URL(url).openConnection()
+    conn.setRequestProperty('User-Agent', 'oneonly/void-client-build')
+    conn.connectTimeout = 20000
+    conn.readTimeout = 60000
+    return new JsonSlurper().parse(conn.inputStream)
+}
+
+def enc(String s) { URLEncoder.encode(s, 'UTF-8') }
+
+def loaderVersion = fetchJson('https://meta.fabricmc.net/v2/versions/loader').find { it.stable }.version
+
+subprojects {
+    apply plugin: 'fabric-loom'
+
+    def mc = project.property('minecraft_version') as String
+    def fam = project.property('family') as String
+    def render = project.property('render') as String
+    def javaVer = (project.property('java_version') as String) as int
+
+    def yarnVersion = fetchJson("https://meta.fabricmc.net/v2/versions/yarn/${mc}")[0].version
+    def apiVersions = fetchJson("https://api.modrinth.com/v2/project/fabric-api/version?game_versions=${enc('["' + mc + '"]')}&loaders=${enc('["fabric"]')}")
+    if (apiVersions.isEmpty()) throw new GradleException("Brak Fabric API dla ${mc}")
+    def apiVersion = apiVersions[0].version_number
+    logger.lifecycle("Void Client ${mc}: yarn ${yarnVersion}, loader ${loaderVersion}, fabric-api ${apiVersion}")
+
+    version = mc
+    group = 'dev.oneonly'
+    base { archivesName = 'voidclient' }
+
+    sourceSets {
+        main {
+            java { srcDirs = ["${rootDir}/../core", "${rootDir}/common", "${rootDir}/fam-${fam}", "${rootDir}/render-${render}"] }
+            resources { srcDirs = ["${rootDir}/template", "${rootDir}/../resources"] }
+        }
+    }
+
+    dependencies {
+        minecraft "com.mojang:minecraft:${mc}"
+        mappings "net.fabricmc:yarn:${yarnVersion}:v2"
+        modImplementation "net.fabricmc:fabric-loader:${loaderVersion}"
+        modImplementation "net.fabricmc.fabric-api:fabric-api:${apiVersion}"
+    }
+
+    processResources {
+        def props = [version: mc, mc_range: project.property('mc_range'), java: javaVer, entry: 'dev.oneonly.voidclient.yarn.VoidClientMod']
+        inputs.properties props
+        filesMatching('fabric.mod.json') { expand props }
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        it.options.release = javaVer
+        it.options.encoding = 'UTF-8'
+    }
+
+    java {
+        sourceCompatibility = JavaVersion.toVersion(javaVer)
+        targetCompatibility = JavaVersion.toVersion(javaVer)
+    }
+}

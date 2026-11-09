@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "voidclient",
+  "version": "1.0.0+${version}",
+  "name": "Void Client",
+  "description": "Klient PvP/HUD z menu pod prawym Shiftem. by: 1nonly \$",
+  "authors": ["1nonly \$"],
+  "license": "All-Rights-Reserved",
+  "icon": "assets/voidclient/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["${entry}"]
+  },
+  "mixins": ["voidclient.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.15.0",
+    "minecraft": "${mc_range}",
+    "java": ">=${java}",
+    "fabric-api": "*"
+  }
+}

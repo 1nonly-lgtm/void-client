@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https://cdn.modrinth.com data:; style-src 'self'; script-src 'self'; connect-src 'none'">
+<title>Void Client</title>
+<link rel="stylesheet" href="style.css">
+<script src="app.js" defer></script>
+</head>
+<body class="anim">
+
+<div class="bg" aria-hidden="true">
+  <div class="orbit o1"></div>
+  <div class="orbit o2"></div>
+  <div class="particles">
+    <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+  </div>
+  <div class="cube c1"></div><div class="cube c2"></div><div class="cube c3"></div>
+  <div class="terrain far"></div>
+  <div class="terrain near"></div>
+</div>
+
+<header class="titlebar">
+  <img class="tb-logo" src="assets/logo.webp" alt="">
+  <span class="tb-name">VOID <b>CLIENT</b></span>
+  <span class="chip" id="versionChip">v1.0</span>
+  <span class="spacer"></span>
+  <span class="chip discord" id="discordChip"><span class="dot"></span><span id="discordText">Discord</span></span>
+  <button class="account" id="accountBtn" type="button">
+    <span class="avatar" aria-hidden="true"><i></i><i></i></span>
+    <span class="acc-text"><b id="accName">Zaloguj się</b><small id="accSub">Konto Microsoft</small></span>
+  </button>
+  <button class="win-btn" id="minBtn" type="button" aria-label="Minimalizuj"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 6h8"/></svg></button>
+  <button class="win-btn close" id="closeBtn" type="button" aria-label="Zamknij"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 3l6 6M9 3l-6 6"/></svg></button>
+</header>
+
+<nav class="side" aria-label="Menu">
+  <button class="nav active" data-tab="play" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16l13-8z"/></svg>Graj</button>
+  <button class="nav" data-tab="mods" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 3 7v10l9 5 9-5V7l-9-5zM3 7l9 5 9-5M12 12v10"/></svg>Mody</button>
+  <button class="nav" data-tab="settings" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M14 4v4M8 10v4M16 16v4"/></svg>Opcje</button>
+</nav>
+
+<main>
+  <!-- GRAJ -->
+  <section class="tab active" id="tab-play">
+    <div class="play-main">
+      <div class="hero">
+        <img class="hero-logo" src="assets/logo.webp" alt="Void Client">
+        <div>
+          <div class="eyebrow">GOTOWY DO GRY</div>
+          <h1>Wejdź<br><span>w pustkę.</span></h1>
+          <p class="lead">Po starcie gry launcher chowa się do zasobnika i nie zabiera FPS. W grze menu otworzysz <b>prawym Shiftem</b>.</p>
+        </div>
+      </div>
+
+      <div class="profiles" id="profiles"></div>
+
+      <div class="play-area">
+        <div class="idle" id="idleBox">
+          <button class="play" id="playBtn" type="button"><span class="shine" aria-hidden="true"></span><span>GRAJ</span></button>
+          <div class="play-info"><b id="playName">–</b><small id="playMeta">–</small></div>
+        </div>
+        <div class="loading hidden" id="loadBox">
+          <div class="load-row"><span id="loadText">Przygotowanie…</span><span id="loadPct"></span></div>
+          <div class="bar"><div id="barFill"></div></div>
+        </div>
+        <div class="running hidden" id="runBox">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+          <div><b>Gra uruchomiona</b><small>Launcher czeka w tle – nic nie ścina.</small></div>
+        </div>
+        <div class="error hidden" id="errBox" role="alert"></div>
+      </div>
+    </div>
+
+    <aside class="play-side">
+      <div class="card skin-card">
+        <div class="skin-head"><span class="card-label">TWÓJ SKIN</span><span class="skin-name" id="skinName">–</span></div>
+        <div class="skin-stage" id="skinStage">
+          <canvas id="skinCanvas" width="292" height="236" aria-label="Twój skin w 3D – przeciągnij, aby obrócić"></canvas>
+          <div class="skin-empty" id="skinEmpty">
+            <p>Zaloguj się, żeby zobaczyć swój skin w 3D.</p>
+            <button type="button" class="ghost" id="skinLogin">Zaloguj się</button>
+          </div>
+        </div>
+        <div class="skin-anims" id="skinAnims">
+          <button type="button" data-anim="IdleAnimation" class="on">Spokój</button>
+          <button type="button" data-anim="WalkingAnimation">Chód</button>
+          <button type="button" data-anim="RunningAnimation">Bieg</button>
+          <button type="button" data-anim="WaveAnimation">Machanie</button>
+        </div>
+        <div class="skin-actions" id="skinActions">
+          <label class="sr" for="skinModel">Model skina</label>
+          <select id="skinModel">
+            <option value="classic">Model: klasyczny</option>
+            <option value="slim">Model: smukły</option>
+          </select>
+          <button type="button" class="ghost" id="skinChange">Zmień skin</button>
+        </div>
+      </div>
+      <div class="card rpc">
+        <div class="card-label">TAK WIDZĄ CIĘ ZNAJOMI NA DISCORDZIE</div>
+        <div class="rpc-body">
+          <img src="assets/logo.webp" alt="">
+          <div><b>Void Client</b><span id="rpcLine1">–</span><span id="rpcLine2">W menu launchera</span><span class="accent" id="rpcTime">00:00 upłynęło</span></div>
+        </div>
+      </div>
+</aside>
+  </section>
+
+  <!-- MODY -->
+  <section class="tab" id="tab-mods">
+    <div class="tab-head">
+      <div><div class="eyebrow">MODRINTH</div><h2>Przeglądaj</h2></div>
+      <div class="seg" id="typeSeg">
+        <button type="button" data-type="mod" class="on">Mody</button>
+        <button type="button" data-type="shader">Shadery</button>
+        <button type="button" data-type="resourcepack">Resource packi</button>
+        <button type="button" data-type="installed">Zainstalowane</button>
+      </div>
+    </div>
+    <div class="search-row">
+      <label class="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <span class="sr">Szukaj na Modrinth</span>
+        <input id="searchInput" type="search" placeholder="Szukaj na Modrinth, np. sodium, minimapa, shadery…" autocomplete="off">
+      </label>
+      <label class="select-wrap"><span class="sr">Profil</span><select id="modsProfile"></select></label>
+    </div>
+    <div class="hint" id="modsHint"></div>
+    <div class="results" id="results"></div>
+    <button class="more hidden" id="moreBtn" type="button">Pokaż więcej</button>
+  </section>
+
+  <!-- OPCJE -->
+  <section class="tab" id="tab-settings">
+    <div class="tab-head"><div><div class="eyebrow">OPCJE</div><h2>Ustawienia</h2></div></div>
+    <div class="settings">
+      <div class="col">
+        <div class="card">
+          <div class="row-title">Pamięć RAM dla gry <b class="accent" id="ramVal">4 GB</b></div>
+          <input type="range" id="ram" min="1" max="16" step="1" aria-label="RAM w GB">
+          <small>Dla większości modpacków wystarcza 4–6 GB. Za dużo RAM-u potrafi wydłużyć przycięcia.</small>
+        </div>
+        <div class="card">
+          <div class="row-title">Po uruchomieniu gry</div>
+          <div class="pills" data-key="afterLaunch">
+            <button type="button" data-val="hide">Schowaj do zasobnika</button>
+            <button type="button" data-val="close">Zamknij launcher</button>
+            <button type="button" data-val="stay">Zostaw otwarty</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="row-title">Okno gry</div>
+          <div class="pills" data-key="windowMode">
+            <button type="button" data-val="full">Pełny ekran</button>
+            <button type="button" data-val="window">Okno 1280×720</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="row-title">Discord – Application ID</div>
+          <input class="text" id="discordAppId" type="text" placeholder="np. 123456789012345678" inputmode="numeric">
+          <small>Utwórz aplikację „Void Client” na discord.com/developers, wgraj logo jako obrazek o nazwie <b>logo</b> i wklej tu jej ID.</small>
+        </div>
+      </div>
+      <div class="col">
+        <div class="toggle-row"><div><b>Flagi JVM pod FPS</b><small>Ustawienia Javy zmniejszające przycięcia</small></div><button type="button" class="switch" data-key="jvmFlags" aria-label="Flagi JVM pod FPS"></button></div>
+        <div class="toggle-row"><div><b>Status na Discordzie</b><small>Pokazuje znajomym, że grasz w Void Client</small></div><button type="button" class="switch" data-key="discord" aria-label="Status na Discordzie"></button></div>
+        <div class="toggle-row"><div><b>Pokazuj adres serwera</b><small>Dodaje serwer do statusu na Discordzie</small></div><button type="button" class="switch" data-key="discordShowServer" aria-label="Pokazuj adres serwera"></button></div>
+        <div class="toggle-row"><div><b>Animacje w launcherze</b><small>Wyłącz na słabszym komputerze</small></div><button type="button" class="switch" data-key="animations" aria-label="Animacje w launcherze"></button></div>
+        <div class="card actions">
+          <button type="button" class="ghost" id="folderBtn">Otwórz folder profilu</button>
+          <button type="button" class="ghost" id="logoutBtn">Wyloguj konto</button>
+        </div>
+        <small class="about">Void Client 1.0 · by: 1nonly $ · Ustawienia zapisują się same.</small>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="credit">by: <b>1nonly $</b></div>
+
+<div class="update hidden" id="updateBar" role="status">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 19h16"/></svg>
+  <span id="updateText">Pobieranie aktualizacji…</span>
+  <button type="button" class="primary hidden" id="updateBtn">Uruchom ponownie</button>
+</div>
+
+<dialog id="profileDialog">
+  <form method="dialog" id="profileForm">
+    <h3 id="pdTitle">Nowy profil</h3>
+    <label>Nazwa<input class="text" id="pdName" type="text" maxlength="32" required></label>
+    <label>Wersja gry<select id="pdVersion"></select></label>
+    <label>Loader
+      <select id="pdLoader">
+        <option value="fabric">Fabric (mody)</option>
+        <option value="vanilla">Vanilla (bez modów)</option>
+      </select>
+    </label>
+    <label class="check"><input type="checkbox" id="pdOptimize"> Pakiet FPS (Sodium, Lithium, FerriteCore…)</label>
+    <label class="check"><input type="checkbox" id="pdVoid"> Mod Void Client (menu pod prawym Shiftem, 1.20.1+)</label>
+    <div class="dlg-actions">
+      <button type="button" class="ghost danger" id="pdDelete">Usuń</button>
+      <span class="spacer"></span>
+      <button type="button" class="ghost" id="pdCancel">Anuluj</button>
+      <button type="submit" class="primary" id="pdSave">Zapisz</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

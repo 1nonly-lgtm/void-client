@@ -1,0 +1,13 @@
+{
+  "category.voidclient": "Void Client",
+  "key.voidclient.gui": "Open Void Client menu",
+  "key.voidclient.zoom": "Zoom",
+  "key.category.voidclient.main": "Void Client",
+  "key.voidclient.autotext1": "AutoText 1",
+  "key.voidclient.autotext2": "AutoText 2",
+  "key.voidclient.autotext3": "AutoText 3",
+  "key.voidclient.autotext4": "AutoText 4",
+  "key.voidclient.autotext5": "AutoText 5",
+  "key.voidclient.autotext6": "AutoText 6",
+  "key.voidclient.freelook": "Freelook"
+}

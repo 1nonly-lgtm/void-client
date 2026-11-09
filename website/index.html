@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Void Client</title>
+<meta name="description" content="Void Client – szybki launcher Minecraft z menu pod prawym Shiftem, skinem 3D i modami z Modrinth. by: 1nonly $">
+<link rel="icon" href="favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: kosmiczna „pustka” – hero z logo na orbicie, potem pasy treści na jednej ciemnej scenie z pikselowym horyzontem. */
+:root {
+  --void: #07040f;
+  --void-2: #120a22;
+  --panel: #170d2c;
+  --line: rgba(192, 132, 252, .18);
+  --line-strong: rgba(192, 132, 252, .5);
+  --ink: #f3e8ff;
+  --muted: #b9a6d6;
+  --amethyst: #c084fc;
+  --deep: #7c3aed;
+  --glow: rgba(168, 85, 247, .55);
+  --display: "Silkscreen", "Courier New", monospace;
+  --body: "Manrope", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--void);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+a { color: var(--amethyst); }
+a:hover { color: var(--ink); }
+:focus-visible { outline: 2px solid var(--amethyst); outline-offset: 3px; border-radius: 6px; }
+svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.wrap { width: 100%; max-width: 1140px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+/* ── Tło ── */
+.sky { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+  background: radial-gradient(900px 600px at 78% -10%, #3b1470 0%, #1a0838 42%, var(--void) 100%); }
+.sky i { position: absolute; bottom: -12px; width: 5px; height: 5px; background: var(--amethyst); box-shadow: 0 0 10px var(--amethyst); opacity: 0; animation: rise 15s linear infinite; }
+.sky i:nth-child(3n) { background: #e9d5ff; box-shadow: 0 0 10px #e9d5ff; width: 4px; height: 4px; }
+.sky i:nth-child(4n) { background: #d946ef; box-shadow: 0 0 12px #d946ef; width: 7px; height: 7px; }
+.sky i:nth-child(1) { left: 5%; animation-delay: -2s; } .sky i:nth-child(2) { left: 14%; animation-delay: -9s; animation-duration: 18s; }
+.sky i:nth-child(3) { left: 23%; animation-delay: -5s; } .sky i:nth-child(4) { left: 33%; animation-delay: -12s; animation-duration: 12s; }
+.sky i:nth-child(5) { left: 42%; animation-delay: -1s; } .sky i:nth-child(6) { left: 51%; animation-delay: -7s; animation-duration: 17s; }
+.sky i:nth-child(7) { left: 60%; animation-delay: -3s; } .sky i:nth-child(8) { left: 68%; animation-delay: -10s; animation-duration: 13s; }
+.sky i:nth-child(9) { left: 76%; animation-delay: -6s; } .sky i:nth-child(10) { left: 84%; animation-delay: -13s; animation-duration: 16s; }
+.sky i:nth-child(11) { left: 91%; animation-delay: -4s; } .sky i:nth-child(12) { left: 97%; animation-delay: -8s; animation-duration: 11s; }
+@keyframes rise { 0% { transform: translateY(0); opacity: 0; } 12% { opacity: .9; } 100% { transform: translateY(-110vh); opacity: 0; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes float { 0%, 100% { transform: translateY(0) rotate(45deg); } 50% { transform: translateY(-18px) rotate(58deg); } }
+@keyframes breath { 0%, 100% { filter: drop-shadow(0 0 28px rgba(168, 85, 247, .5)); } 50% { filter: drop-shadow(0 0 60px rgba(192, 132, 252, .9)); } }
+@keyframes glowPulse { 0%, 100% { box-shadow: 0 0 0 0 var(--glow), 0 18px 40px -14px var(--glow); } 50% { box-shadow: 0 0 0 12px rgba(168, 85, 247, 0), 0 18px 60px -8px rgba(192, 132, 252, .85); } }
+@keyframes shine { 0% { transform: translateX(-180%) skewX(-20deg); } 55%, 100% { transform: translateX(800%) skewX(-20deg); } }
+
+main, header, footer { position: relative; z-index: 1; }
+
+/* ── Nagłówek ── */
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: rgba(7, 4, 15, .72); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--void); }
+.top .wrap { display: flex; align-items: center; gap: 20px; padding-block: 12px; }
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); font-family: var(--display); font-size: 18px; letter-spacing: 1px; }
+.brand img { width: 36px; height: 36px; border-radius: 50%; box-shadow: 0 0 16px var(--glow); }
+.brand b { color: var(--amethyst); font-weight: 400; }
+.nav { display: flex; gap: 22px; margin-left: auto; }
+.nav a { color: var(--muted); text-decoration: none; font-weight: 600; font-size: 14px; }
+.nav a:hover { color: var(--ink); }
+.top .btn { height: 40px; padding: 0 16px; font-size: 14px; }
+
+/* ── Przyciski ── */
+.btn { position: relative; overflow: hidden; display: inline-flex; align-items: center; gap: 10px; height: 60px; padding: 0 30px; border-radius: 14px; text-decoration: none; font-weight: 800; color: #fff;
+  background: linear-gradient(180deg, #b76cff, var(--deep)); border-bottom: 5px solid #4c1d95; transition: filter .15s, transform .1s; }
+.btn:hover { color: #fff; filter: brightness(1.1); }
+.btn:active { transform: translateY(2px); }
+.btn svg { width: 20px; height: 20px; stroke-width: 2.4; }
+.btn.big { height: 72px; padding: 0 40px; font-family: var(--display); font-size: 24px; letter-spacing: 2px; animation: glowPulse 2.6s ease-in-out infinite; }
+.btn.big::after { content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 56px; background: rgba(255, 255, 255, .3); animation: shine 3.4s ease-in-out infinite; }
+.btn.ghost { background: transparent; border: 1px solid var(--line-strong); border-bottom-width: 1px; color: var(--ink); font-weight: 700; }
+.btn.ghost:hover { background: rgba(192, 132, 252, .1); }
+
+/* ── Hero ── */
+.hero .wrap { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: 40px; align-items: center; padding-block: 72px 56px; }
+.eyebrow { font-family: var(--mono); font-size: 13px; letter-spacing: 2px; text-transform: uppercase; color: var(--amethyst); }
+h1 { margin: 14px 0 0; font-family: var(--display); font-weight: 700; font-size: clamp(44px, 7vw, 84px); line-height: .98; letter-spacing: 1px; text-wrap: balance; text-shadow: 5px 5px 0 #3b1470; }
+h1 span { color: var(--amethyst); }
+.lead { margin: 22px 0 0; max-width: 520px; font-size: 18px; color: #d6c6ee; }
+.cta { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 32px; }
+.meta { margin-top: 16px; font-family: var(--mono); font-size: 13px; color: var(--muted); }
+.meta b { color: var(--ink); font-weight: 500; }
+
+.orbit { position: relative; aspect-ratio: 1; max-width: 100%; width: 460px; justify-self: center; }
+.orbit .ring { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(168, 85, 247, .16); border-top-color: rgba(192, 132, 252, .8); animation: spin 14s linear infinite; }
+.orbit .ring.r2 { inset: 9%; border-width: 1px; border-top-color: rgba(168, 85, 247, .14); border-right-color: rgba(192, 132, 252, .6); animation-duration: 22s; animation-direction: reverse; }
+.orbit img { position: absolute; inset: 15%; width: 70%; height: 70%; border-radius: 50%; animation: breath 3.2s ease-in-out infinite; }
+.cube { position: absolute; width: 40px; height: 40px; animation: float 8s ease-in-out infinite; }
+.cube.c1 { right: 2%; top: 14%; background: linear-gradient(135deg, #e9d5ff, #9333ea); }
+.cube.c2 { left: 0; bottom: 18%; width: 28px; height: 28px; background: linear-gradient(135deg, #2a1846, #120922); box-shadow: inset 0 0 0 3px #4c2b80, 0 0 22px rgba(124, 58, 237, .5); animation-delay: -3s; }
+.cube.c3 { right: 14%; bottom: 4%; width: 20px; height: 20px; background: linear-gradient(135deg, #c084fc, #581c87); animation-delay: -5s; animation-duration: 10s; }
+
+.horizon { height: 90px; background-repeat: repeat-x; background-size: 1280px 90px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1280' height='90' viewBox='0 0 1280 90'%3E%3Cpath d='M0 90V46h64V36h64v10h64V26h64v10h64v14h64V30h64V20h64v20h64v6h64V32h64v10h64V22h64v14h64v10h64V30h64v10h64V26h64v18h64v-6h64v10h64v40z' fill='%23120a22'/%3E%3Cpath d='M0 46h64V36h64v10h64V26h64v10h64v14h64V30h64V20h64v20h64v6h64V32h64v10h64V22h64v14h64v10h64V30h64v10h64V26h64v18h64v-6h64v10h64' fill='none' stroke='%237c3aed' stroke-width='4'/%3E%3C/svg%3E"); }
+
+/* ── Sekcje ── */
+.band { background: var(--void-2); }
+.section { padding-block: 72px; }
+.section-head { display: flex; flex-direction: column; gap: 10px; max-width: 640px; }
+h2 { margin: 0; font-family: var(--display); font-weight: 700; font-size: clamp(30px, 4.4vw, 44px); line-height: 1.05; text-wrap: balance; }
+h2 span { color: var(--amethyst); }
+.section-head p { margin: 0; color: var(--muted); font-size: 17px; }
+
+/* Menu w grze */
+.ingame { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: 40px; align-items: center; margin-top: 40px; }
+.screen { position: relative; border: 2px solid var(--line-strong); background:
+  linear-gradient(180deg, rgba(20, 6, 40, .55), rgba(5, 2, 16, .85)),
+  linear-gradient(180deg, #24104a 0 48%, #120626 48% 100%); padding: 18px; min-height: 340px; font-family: var(--display); }
+.hud { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.hud span { align-self: flex-start; padding: 3px 7px; background: rgba(0, 0, 0, .55); }
+.hud em { font-style: normal; color: var(--amethyst); }
+.gui { position: absolute; left: 50%; top: 52%; width: min(360px, 86%); transform: translate(-50%, -50%); background: rgba(18, 10, 34, .96); border: 2px solid rgba(192, 132, 252, .55); }
+.gui-head { display: flex; justify-content: space-between; padding: 10px 12px; border-bottom: 2px solid rgba(192, 132, 252, .35); font-size: 13px; }
+.gui-head small { color: var(--muted); font-size: 10px; }
+.gui-body { display: grid; grid-template-columns: 82px minmax(0, 1fr); gap: 8px; padding: 10px; }
+.gui-tabs { display: flex; flex-direction: column; gap: 5px; font-size: 11px; }
+.gui-tabs span { padding: 6px 8px; background: #1c1231; color: var(--muted); }
+.gui-tabs span.on { background: rgba(168, 85, 247, .3); color: var(--ink); border-left: 3px solid var(--amethyst); }
+.gui-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; font-size: 10px; }
+.gui-cards span { display: flex; justify-content: space-between; align-items: center; padding: 8px; background: #1c1231; }
+.gui-cards span.on { background: rgba(168, 85, 247, .25); outline: 1px solid var(--amethyst); }
+.gui-cards span::after { content: ""; width: 18px; height: 9px; background: #3a2d55; }
+.gui-cards span.on::after { background: var(--amethyst); }
+.credit-pixel { position: absolute; left: 12px; bottom: 10px; font-size: 12px; text-shadow: 2px 2px 0 #000; }
+.credit-pixel b { color: var(--amethyst); font-weight: 400; }
+.keycap { display: inline-block; padding: 1px 8px; border: 1px solid var(--line-strong); border-bottom-width: 3px; border-radius: 6px; font-family: var(--mono); font-size: 13px; color: var(--ink); background: var(--panel); }
+.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.list li { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 12px; }
+.list svg { width: 22px; height: 22px; color: var(--amethyst); margin-top: 2px; }
+.list b { display: block; }
+.list span { color: var(--muted); font-size: 15px; }
+
+/* Funkcje launchera */
+.features { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 40px; }
+.feature { display: flex; flex-direction: column; gap: 10px; padding: 22px; border: 1px solid var(--line); background: var(--panel); border-radius: 16px; transition: border-color .2s, transform .2s; }
+.feature:hover { border-color: var(--line-strong); transform: translateY(-3px); }
+.feature svg { width: 28px; height: 28px; color: var(--amethyst); }
+.feature h3 { margin: 0; font-size: 18px; font-weight: 800; }
+.feature p { margin: 0; color: var(--muted); font-size: 15px; }
+
+/* Wersje */
+.versions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+.ver { font-family: var(--mono); font-size: 14px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 10px; background: rgba(192, 132, 252, .06); }
+.ver b { color: var(--amethyst); font-weight: 500; }
+
+/* Pobieranie */
+.download { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px; align-items: start; margin-top: 40px; padding: 36px; border-radius: 22px; border: 1px solid var(--line-strong);
+  background: radial-gradient(500px 300px at 15% 0%, rgba(168, 85, 247, .3), transparent 70%), var(--panel); }
+.download .side { display: flex; flex-direction: column; gap: 14px; align-items: flex-start; }
+.download .note { font-size: 14px; color: var(--muted); }
+.steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 18px; counter-reset: step; }
+.steps li { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 14px; counter-increment: step; }
+.steps li::before { content: counter(step); display: grid; place-items: center; width: 40px; height: 40px; font-family: var(--display); background: var(--deep); border-bottom: 4px solid #4c1d95; border-radius: 8px; }
+.steps b { display: block; }
+.steps span { color: var(--muted); font-size: 15px; }
+
+/* FAQ */
+.faq { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 24px; margin-top: 32px; }
+details { border-bottom: 1px solid var(--line); padding-block: 14px; }
+summary { cursor: pointer; font-weight: 700; list-style: none; display: flex; justify-content: space-between; gap: 12px; }
+summary::-webkit-details-marker { display: none; }
+summary::after { content: "+"; font-family: var(--display); color: var(--amethyst); }
+details[open] summary::after { content: "−"; }
+details p { margin: 10px 0 0; color: var(--muted); font-size: 15px; }
+
+/* Stopka */
+.foot { border-top: 1px solid var(--line); }
+.foot .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; padding-block: 28px; font-size: 13px; color: var(--muted); }
+.foot .by { font-family: var(--display); font-size: 15px; color: var(--ink); }
+.foot .by b { color: var(--amethyst); font-weight: 400; }
+
+@media (max-width: 860px) {
+  .hero .wrap, .ingame, .download { grid-template-columns: minmax(0, 1fr); }
+  .orbit { width: 300px; order: -1; }
+  .features { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .faq { grid-template-columns: minmax(0, 1fr); }
+  .nav { display: none; }
+  .top .btn { margin-left: auto; }
+}
+@media (max-width: 560px) {
+  .features { grid-template-columns: minmax(0, 1fr); }
+  .download { padding: 22px; }
+  .btn.big { width: 100%; justify-content: center; padding: 0 20px; font-size: 20px; }
+  .top .btn span { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  html { scroll-behavior: auto; }
+}
+</style>
+</head>
+<body>
+<div class="sky" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#start"><img src="logo.webp" alt="" width="36" height="36">VOID <b>CLIENT</b></a>
+    <nav class="nav" aria-label="Sekcje">
+      <a href="#menu">Menu w grze</a>
+      <a href="#funkcje">Funkcje</a>
+      <a href="#wersje">Wersje</a>
+      <a href="#faq">Pytania</a>
+    </nav>
+    <a class="btn dl" href="#pobierz"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 19h16"/></svg><span>Pobierz</span></a>
+  </div>
+</header>
+
+<main id="start">
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <div class="eyebrow">Launcher Minecraft · Windows</div>
+        <h1>Wejdź<br><span>w pustkę.</span></h1>
+        <p class="lead">Szybki launcher z własnym menu pod prawym Shiftem, Twoim skinem w 3D i modami z Modrinth na jedno kliknięcie. Po starcie gry chowa się do zasobnika, żeby nie zabierać ani klatki.</p>
+        <div class="cta">
+          <a class="btn big dl" href="#pobierz"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 19h16"/></svg>POBIERZ</a>
+          <a class="btn ghost" href="#funkcje">Zobacz funkcje</a>
+        </div>
+        <div class="meta" id="releaseMeta">Windows 10 / 11 · 64-bit · <b>za darmo</b></div>
+      </div>
+      <div class="orbit" aria-hidden="true">
+        <div class="ring"></div>
+        <div class="ring r2"></div>
+        <img src="logo-big.webp" alt="">
+        <span class="cube c1"></span><span class="cube c2"></span><span class="cube c3"></span>
+      </div>
+    </div>
+    <div class="horizon" aria-hidden="true"></div>
+  </section>
+
+  <section class="band" id="menu">
+    <div class="wrap section">
+      <div class="section-head">
+        <div class="eyebrow">W grze</div>
+        <h2>Wszystko pod <span>prawym Shiftem</span></h2>
+        <p>Wciśnij <span class="keycap">Right Shift</span> w grze i włączaj moduły jednym kliknięciem. Ustawienia zapisują się same.</p>
+      </div>
+      <div class="ingame">
+        <div class="screen" role="img" aria-label="Podgląd menu Void Client w grze">
+          <div class="hud">
+            <span><em>FPS </em>240</span>
+            <span><em>CPS </em>9 | 0</span>
+            <span><em>Ping </em>32 ms</span>
+          </div>
+          <div class="gui">
+            <div class="gui-head"><span>VOID <b style="color: var(--amethyst); font-weight: 400">CLIENT</b></span><small>Prawy Shift – zamknij</small></div>
+            <div class="gui-body">
+              <div class="gui-tabs"><span class="on">HUD</span><span>Gra</span><span>AutoText</span><span>Opcje</span></div>
+              <div class="gui-cards">
+                <span class="on">FPS</span><span class="on">CPS</span><span class="on">Keystrokes</span><span>Zegar</span><span class="on">Zbroja</span><span>Koordynaty</span>
+              </div>
+            </div>
+          </div>
+          <div class="credit-pixel"><b>Void Client </b>by: 1nonly $</div>
+        </div>
+        <ul class="list">
+          <li><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9h4M7 13h7"/></svg><div><b>HUD, który przesuniesz myszką</b><span>FPS, CPS, ping, koordynaty, zegar, Keystrokes i zbroja z wytrzymałością.</span></div></li>
+          <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h10M4 17h6"/><path d="m17 15 3 3-3 3"/></svg><div><b>AutoText</b><span>Zapisz komendę albo wiadomość, przypisz klawisz i wysyłaj ją jednym wciśnięciem.</span></div></li>
+          <li><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5M11 8v6M8 11h6"/></svg><div><b>Zoom, Fullbright, Toggle Sprint</b><span>Przybliżenie pod <span class="keycap">C</span>, pełna jasność w jaskiniach i automatyczny sprint.</span></div></li>
+          <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h8l1 4-3 2v12h-4V9L7 7z"/></svg><div><b>Zmiana skina bez wychodzenia z gry</b><span>Wybierz plik PNG w opcjach – skin trafia prosto na Twoje konto.</span></div></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="funkcje">
+    <div class="wrap section">
+      <div class="section-head">
+        <div class="eyebrow">Launcher</div>
+        <h2>Lekki, szybki <span>i fioletowy</span></h2>
+        <p>Wszystko, czego potrzebujesz, zanim klikniesz GRAJ.</p>
+      </div>
+      <div class="features">
+        <article class="feature"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 4 6v6c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10V6z"/><path d="m9 12 2 2 4-4"/></svg><h3>Konto Microsoft</h3><p>Oficjalne logowanie. Token jest zaszyfrowany przez Windows i nie trafia nigdzie poza Microsoft.</p></article>
+        <article class="feature"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="2" width="8" height="8"/><path d="M8 10v8h3v4M16 10v8h-3M5 11l3-1M19 11l-3-1"/></svg><h3>Twój skin w 3D</h3><p>Obracasz go myszką, włączasz animacje chodu, biegu i machania. Zmienisz go też z launchera.</p></article>
+        <article class="feature"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 3 7v10l9 5 9-5V7z"/><path d="m3 7 9 5 9-5M12 12v10"/></svg><h3>Mody z Modrinth</h3><p>Wyszukiwarka modów, shaderów i resource packów. Zależności instalują się same.</p></article>
+        <article class="feature"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></svg><h3>Pakiet FPS</h3><p>Sodium, Lithium, FerriteCore, Entity Culling i ImmediatelyFast dodają się do profilu automatycznie.</p></article>
+        <article class="feature"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8h10M7 12h6"/><path d="M5 4h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-6l-5 4v-4H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/></svg><h3>Status na Discordzie</h3><p>Znajomi widzą, że grasz w Void Client, na jakiej wersji i jak długo.</p></article>
+        <article class="feature"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><h3>Start w sekundę</h3><p>Ciężkie części ładują się dopiero przy kliknięciu GRAJ. W trakcie gry launcher śpi w zasobniku.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="wersje">
+    <div class="wrap section">
+      <div class="section-head">
+        <div class="eyebrow">Wersje gry</div>
+        <h2>Od <span>1.20.1</span> do <span>26.1</span></h2>
+        <p>Menu pod prawym Shiftem działa na Fabricu w każdej z tych wersji. Vanillę uruchomisz na dowolnej.</p>
+      </div>
+      <div class="versions">
+        <span class="ver">1.20 – <b>1.20.1</b></span>
+        <span class="ver">1.20.2 – <b>1.20.4</b></span>
+        <span class="ver">1.20.5 – <b>1.20.6</b></span>
+        <span class="ver">1.21 – <b>1.21.1</b></span>
+        <span class="ver">1.21.2 – <b>1.21.4</b></span>
+        <span class="ver"><b>1.21.5</b></span>
+        <span class="ver">1.21.6 – <b>1.21.8</b></span>
+        <span class="ver">1.21.9 – <b>1.21.10</b></span>
+        <span class="ver"><b>1.21.11</b></span>
+        <span class="ver">26.1 – <b>26.1.x</b></span>
+      </div>
+    </div>
+  </section>
+
+  <section id="pobierz">
+    <div class="wrap section">
+      <div class="section-head">
+        <div class="eyebrow">Pobieranie</div>
+        <h2>Trzy kroki <span>do gry</span></h2>
+      </div>
+      <div class="download">
+        <div class="side">
+          <a class="btn big dl" href="#pobierz" id="mainDownload"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 19h16"/></svg>POBIERZ</a>
+          <div class="meta" id="releaseMeta2">VoidClient-Setup.exe · Windows 10 / 11</div>
+          <p class="note" id="dlNote">Przycisk pobiera zawsze najnowszą wersję.</p>
+        </div>
+        <ol class="steps">
+          <li><div><b>Pobierz instalator</b><span>Plik VoidClient-Setup.exe ma kilkadziesiąt MB.</span></div></li>
+          <li><div><b>Uruchom go</b><span>Jeśli Windows pokaże „Nieznany wydawca”, kliknij Więcej informacji → Uruchom mimo to. Instalacja trwa kilka sekund.</span></div></li>
+          <li><div><b>Zaloguj się i graj</b><span>Zaloguj się kontem Microsoft z kupionym Minecraftem, wybierz profil i kliknij GRAJ. Java pobierze się sama.</span></div></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="faq">
+    <div class="wrap section">
+      <div class="section-head">
+        <div class="eyebrow">Pytania</div>
+        <h2>Zanim <span>zapytasz</span></h2>
+      </div>
+      <div class="faq">
+        <details><summary>Czy Void Client jest za darmo?</summary><p>Tak. Potrzebujesz tylko konta Microsoft z kupionym Minecraft: Java Edition.</p></details>
+        <details><summary>Czy dostanę bana na serwerze?</summary><p>Void Client nie ma cheatów typu fly czy killaura – tylko moduły takie jak w Lunar czy Badlion. Fullbright i Toggle Sprint są dozwolone na większości serwerów, ale sprawdź regulamin swojego.</p></details>
+        <details><summary>Czy to spowolni moją grę?</summary><p>Nie. Launcher chowa się do zasobnika po starcie gry, a pakiet FPS zwykle daje więcej klatek niż czysta gra.</p></details>
+        <details><summary>Gdzie są moje światy i mody?</summary><p>W folderze %APPDATA%\.voidclient. Każdy profil ma własny folder, który otworzysz z opcji launchera.</p></details>
+        <details><summary>Jak otworzyć menu w grze?</summary><p>Prawym Shiftem. Klawisz zmienisz w Opcje → Sterowanie → Void Client.</p></details>
+        <details><summary>Jak ustawić AutoText?</summary><p>W menu wejdź w zakładkę AutoText i wpisz tekst albo komendę. Klawisz przypiszesz w Sterowanie → Void Client → AutoText 1–6.</p></details>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <span class="by"><b>Void Client</b> by: 1nonly $</span>
+    <span>Nie jest oficjalnym produktem Minecraft. Nie jest zatwierdzony przez Mojang ani Microsoft.</span>
+  </div>
+</footer>
+
+<script>
+// Wpisz tu "nazwa/repozytorium" z GitHuba, jeśli strona nie stoi na GitHub Pages tego repozytorium.
+const REPO = '';
+const FILE = 'VoidClient-Setup.exe';
+
+function detectRepo() {
+  if (REPO) return REPO;
+  const host = location.hostname;
+  if (!host.endsWith('.github.io')) return null;
+  const owner = host.split('.')[0];
+  const first = location.pathname.split('/').filter(Boolean)[0];
+  return owner + '/' + (first || host);
+}
+
+(function setupDownloads() {
+  const repo = detectRepo();
+  if (!repo) {
+    const note = document.getElementById('dlNote');
+    if (note) note.textContent = 'Podgląd strony – po opublikowaniu na GitHub Pages przyciski pobierają najnowszy instalator.';
+    return;
+  }
+  const url = `https://github.com/${repo}/releases/latest/download/${FILE}`;
+  document.querySelectorAll('a.dl').forEach(a => { a.href = url; });
+
+  fetch(`https://api.github.com/repos/${repo}/releases/latest`)
+    .then(r => (r.ok ? r.json() : null))
+    .then(rel => {
+      if (!rel) return;
+      const asset = (rel.assets || []).find(a => a.name === FILE);
+      const size = asset ? ` · ${(asset.size / 1048576).toFixed(0)} MB` : '';
+      const date = new Date(rel.published_at).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' });
+      const text = `Wersja ${rel.tag_name}${size} · ${date}`;
+      document.getElementById('releaseMeta2').textContent = text;
+      document.getElementById('releaseMeta').innerHTML = `Windows 10 / 11 · <b>${text}</b>`;
+    })
+    .catch(() => {});
+})();
+</script>
+</body>
+</html>
