@@ -2,8 +2,8 @@
   "name": "void-client",
   "productName": "Void Client",
   "version": "1.0.0",
-  "description": "Void Client – launcher Minecraft by 1nonly $",
-  "author": "1nonly $",
+  "description": "Void Client – launcher Minecraft by 1nonly",
+  "author": "1nonly",
   "main": "main.js",
   "private": true,
   "scripts": {
