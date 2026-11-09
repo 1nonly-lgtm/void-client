@@ -552,10 +552,10 @@ $('dropzone').onclick = () => toast('Złap plik .jar lub .zip w Eksploratorze i 
 // ───────── „Co nowego” po aktualizacji ─────────
 
 const WHATS_NEW = [
-  'Menu gry w klimacie Void: główne menu, Multiplayer, Singleplayer i Opcje mają gwiezdne tło z mgławicami i kulą pustki',
-  'Nowy ekran startu gry: zamiast „Mojang Studios” wita Cię kula pustki i napis VOID CLIENT',
-  'Łączenie z serwerem i wczytywanie świata w motywie Void',
-  'Dźwięki w launcherze: miękkie kliknięcia i dźwięk otwarcia portalu przy GRAJ (wyłączysz w Opcjach)'
+  'Menu główne w kosmosie Void: obracająca się panorama z kulą pustki, mgławicami i wyspami Endu',
+  'Animacje w menu głównym: unoszące się iskry, spadające gwiazdy i świecący przycisk pod kursorem',
+  'Pozostałe menu (Multiplayer, Singleplayer, Opcje) z gwiezdnym tłem Void',
+  'Ekran startu i wczytywania świata w motywie Void zamiast „Mojang Studios”'
 ];
 
 function showWhatsNew(version) {
