@@ -19,7 +19,8 @@ const DEFAULTS = {
   jvmFlags: true,
   animations: true,
   discord: true,
-  discordShowServer: false,
+  discordServer: true, // adres serwera w statusie
+  discordFps: true, // FPS w statusie (wysyła mod Void Client)
   account: null // { name, uuid, refresh }
 };
 
@@ -32,6 +33,7 @@ function load() {
   } catch {
     data = structuredClone(DEFAULTS);
   }
+  delete data.discordShowServer; // stara nazwa opcji
   if (!Array.isArray(data.profiles) || data.profiles.length === 0) data.profiles = structuredClone(DEFAULT_PROFILES);
   return data;
 }

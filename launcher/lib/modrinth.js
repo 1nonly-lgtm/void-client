@@ -141,4 +141,4 @@ async function ensurePack(slugs, { mc, loader, instanceDir, onStep }) {
   }
 }
 
-module.exports = { search, install, listInstalled, remove, ensurePack, FPS_PACK };
+module.exports = { search, install, listInstalled, remove, ensurePack, FPS_PACK, readIndex, writeIndex };

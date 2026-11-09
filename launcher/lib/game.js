@@ -212,7 +212,9 @@ async function launch(profile, s, emit, onLine) {
   const ram = Math.max(1, Math.min(32, Number(s.ram) || 4));
 
   launcher.on('progress', e => emit({ text: STEP_NAMES[e.type] || 'Pobieranie plików…', cur: e.task, total: e.total }));
-  launcher.on('data', line => onLine && onLine(String(line)));
+  launcher.on('data', chunk => {
+    if (onLine) for (const line of String(chunk).split(/\r?\n/)) if (line) onLine(line);
+  });
   launcher.on('debug', line => { if (/error/i.test(String(line))) console.warn(String(line)); });
 
   emit({ text: 'Uruchamianie gry…' });
