@@ -12,7 +12,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /** Zapis i odczyt ustawień do config/voidclient.json. */
@@ -26,6 +28,10 @@ public final class Config {
         boolean textShadow = true;
         boolean slimSkin = false;
         String[] autoText;
+        Integer freelookKey;
+        Integer zoomKey;
+        Integer waypointKey;
+        List<Waypoints.Point> waypoints = new ArrayList<>();
         Map<String, Entry> modules = new HashMap<>();
     }
 
@@ -52,6 +58,13 @@ public final class Config {
                     AutoText.TEXTS[i] = d.autoText[i] == null ? "" : d.autoText[i];
                 }
             }
+            if (d.freelookKey != null) Keybinds.freelook = d.freelookKey;
+            if (d.zoomKey != null) Keybinds.zoom = d.zoomKey;
+            if (d.waypointKey != null) Keybinds.waypoint = d.waypointKey;
+            if (d.waypoints != null) {
+                Waypoints.ALL.clear();
+                for (Waypoints.Point p : d.waypoints) if (p != null && p.world != null) Waypoints.ALL.add(p);
+            }
             if (d.modules == null) return;
             for (Module m : Modules.all()) {
                 Entry e = d.modules.get(m.id);
@@ -76,6 +89,10 @@ public final class Config {
         d.textShadow = Theme.textShadow;
         d.slimSkin = SkinUploader.slim;
         d.autoText = AutoText.TEXTS.clone();
+        d.freelookKey = Keybinds.freelook;
+        d.zoomKey = Keybinds.zoom;
+        d.waypointKey = Keybinds.waypoint;
+        d.waypoints = new ArrayList<>(Waypoints.ALL);
         for (Module m : Modules.all()) {
             Entry e = new Entry();
             e.enabled = m.isEnabled();

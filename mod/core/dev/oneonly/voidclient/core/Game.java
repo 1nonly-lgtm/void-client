@@ -92,4 +92,10 @@ public interface Game {
 
     /** "sp" w świecie jednoosobowym, adres serwera w multi, "" w menu. */
     String server();
+
+    /** Pozycja oczu gracza {x, y, z}. */
+    double[] eye();
+
+    /** Identyfikator wymiaru (do przypisania waypointów do świata). */
+    String dimension();
 }

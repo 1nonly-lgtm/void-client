@@ -22,13 +22,20 @@ public final class VoidCore {
 
     public static Game game() { return game; }
 
-    /** Koniec ticka gry (20/s). */
-    public static void tick(boolean zoomPressed, boolean freelookHeld) {
+    /** Koniec ticka gry (20/s). Klawisze Void Client czytamy sami – ustawia się je w naszym menu. */
+    public static void tick() {
         CpsTracker.poll(game.leftMouse(), game.rightMouse());
-        Modules.ZOOM.update(game, zoomPressed);
-        Freelook.update(game, freelookHeld);
+        boolean typing = game.screenOpen();
+        Modules.ZOOM.update(game, !typing && Keybinds.isDown(Keybinds.zoom));
+        Freelook.update(game, !typing && Keybinds.isDown(Keybinds.freelook));
+        boolean addWp = Keybinds.pressed("waypoint", Keybinds.waypoint);
+        Waypoints.tick(game);
         status();
-        if (!game.hasPlayer()) return;
+        if (!game.hasPlayer()) {
+            Tps.reset();
+            return;
+        }
+        if (addWp && !typing && Modules.WAYPOINTS.isEnabled()) Waypoints.addHere(game);
         for (Module m : Modules.all()) {
             if (m.isEnabled()) m.onTick(game);
         }
@@ -52,6 +59,7 @@ public final class VoidCore {
     public static void renderHud(Gfx g, int screenW, int screenH) {
         CpsTracker.poll(game.leftMouse(), game.rightMouse());
         if (game.hudHidden()) return;
+        Waypoints.render(g, game, screenW, screenH);
         for (HudModule h : Modules.hud()) {
             if (!h.isEnabled()) continue;
             if (h.draggable()) {
