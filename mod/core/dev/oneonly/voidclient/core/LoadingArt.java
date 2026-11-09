@@ -88,18 +88,52 @@ public final class LoadingArt {
         circle(g, ox, oy, r, 0x507C3AED);
         circle(g, ox, oy, r - Math.max(2, r / 10), 0x602A0A55);
         circle(g, ox, oy, r - Math.max(4, r / 5), 0x700B0418);
-        // spadająca gwiazda co ~7 s
-        long t = now % 7000;
-        if (t < 900) {
-            float p = t / 900f;
-            int sx = (int) (w * (0.95f - 0.5f * p)), sy = (int) (h * (0.05f + 0.25f * p));
-            int fade = (int) (255 * (p < 0.2f ? p / 0.2f : 1f - (p - 0.2f) / 0.8f));
-            for (int i = 0; i < 14; i++) {
-                int al = Math.max(0, fade - i * 18);
-                g.fill(sx + i * 2, sy - i, sx + i * 2 + 2, sy - i + 1, al << 24 | 0xF0ABFC);
-            }
-            g.fill(sx - 1, sy - 1, sx + 2, sy + 2, fade << 24 | 0xFFFFFF);
+        shootingStar(g, w, h, now, 7000, 0.95f, 0.05f);
+    }
+
+    /** Spadająca gwiazda co `period` ms, startuje z (sx0·w, sy0·h) i leci w lewo w dół. */
+    private static void shootingStar(Gfx g, int w, int h, long now, long period, float sx0, float sy0) {
+        long t = now % period;
+        if (t >= 900) return;
+        float p = t / 900f;
+        int sx = (int) (w * (sx0 - 0.5f * p)), sy = (int) (h * (sy0 + 0.25f * p));
+        int fade = (int) (255 * (p < 0.2f ? p / 0.2f : 1f - (p - 0.2f) / 0.8f));
+        for (int i = 0; i < 14; i++) {
+            int al = Math.max(0, fade - i * 18);
+            g.fill(sx + i * 2, sy - i, sx + i * 2 + 2, sy - i + 1, al << 24 | 0xF0ABFC);
         }
+        g.fill(sx - 1, sy - 1, sx + 2, sy + 2, fade << 24 | 0xFFFFFF);
+    }
+
+    // ───────────── Menu główne: animacje na wierzchu obracającej się panoramy pustki ─────────────
+
+    /** Unoszące się iskry pustki i spadające gwiazdy (rysowane po menu – lekkie i przezroczyste). */
+    public static void titleFx(Gfx g, int w, int h) {
+        long now = System.currentTimeMillis();
+        for (int i = 0; i < 46; i++) {
+            float speed = 0.012f + (hash(i * 31 + 3) % 1000) / 1000f * 0.02f;     // px na ms
+            int span = h + 30;
+            int y = h + 10 - (int) ((now * speed + hash(i * 17 + 9) % span) % span);
+            int baseX = (int) (hash(i * 11 + 2) % Math.max(1, w));
+            int x = baseX + (int) (Math.sin(now / 900.0 + i) * 6);
+            float life = 1f - (float) (h + 10 - y) / span;                       // 1 na dole → 0 u góry
+            float tw = 0.6f + 0.4f * (float) Math.sin(now / 250.0 + i * 2.3);
+            float a = Math.min(1f, life * 1.6f) * tw * 0.75f;
+            int s = i % 5 == 0 ? 2 : 1;
+            int col = i % 3 == 0 ? 0xFFF0ABFC : i % 3 == 1 ? 0xFFC084FC : 0xFFE9D5FF;
+            g.fill(x, y, x + s, y + s, mul(col, a));
+            if (s == 2) g.fill(x - 1, y - 1, x + 3, y + 3, mul(col, a * 0.18f));    // mała poświata
+        }
+        shootingStar(g, w, h, now, 5200, 0.9f, 0.08f);
+        shootingStar(g, w, h, now + 2600, 8300, 0.55f, 0.02f);
+    }
+
+    /** Fioletowa poświata wokół przycisku pod kursorem. */
+    public static void buttonGlow(Gfx g, int x, int y, int w, int h) {
+        float p = 0.6f + 0.4f * (float) Math.sin(System.currentTimeMillis() / 220.0);
+        g.border(x - 1, y - 1, w + 2, h + 2, mul(0xFFE9D5FF, 0.9f * p));
+        g.border(x - 2, y - 2, w + 4, h + 4, mul(0xFFC084FC, 0.55f * p));
+        g.border(x - 3, y - 3, w + 6, h + 6, mul(0xFFA855F7, 0.25f * p));
     }
 
     /** Miękka plama: wiele cienkich warstw (co 2 piksele w pionie, żeby było lekko dla FPS). */
