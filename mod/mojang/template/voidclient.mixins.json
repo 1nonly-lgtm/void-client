@@ -7,7 +7,8 @@
     "CameraMixin",
     "NetworkMixin",
     "EntityMixin",
-    "LoadingOverlayMixin"
+    "LoadingOverlayMixin",
+    "MenuBgMixin"
   ],
   "injectors": {
     "defaultRequire": 0
