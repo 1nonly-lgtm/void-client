@@ -1,12 +1,16 @@
 package dev.oneonly.voidclient.yarn;
 
 import dev.oneonly.voidclient.core.AutoText;
+import dev.oneonly.voidclient.core.LoadingArt;
 import dev.oneonly.voidclient.core.VoidCore;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
+import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
+import net.fabricmc.fabric.api.client.screen.v1.Screens;
+import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import org.lwjgl.glfw.GLFW;
@@ -15,6 +19,7 @@ public class VoidClientMod implements ClientModInitializer {
     public static KeyBinding guiKey;
     public static final KeyBinding[] autoKeys = new KeyBinding[AutoText.SLOTS];
     private static final YarnGfx HUD_GFX = new YarnGfx();
+    private static final YarnGfx LOAD_GFX = new YarnGfx();
 
     @Override
     public void onInitializeClient() {
@@ -36,6 +41,19 @@ public class VoidClientMod implements ClientModInitializer {
         });
 
         ClientLifecycleEvents.CLIENT_STOPPING.register(client -> VoidCore.shutdown());
+
+        // Łączenie z serwerem i wczytywanie świata – tło Void Client, przyciski (np. Anuluj) rysujemy na nowo na wierzchu
+        ScreenEvents.AFTER_INIT.register((client, screen, sw, sh) -> {
+            if (!LoadScreens.is(screen)) return;
+            ScreenEvents.afterRender(screen).register((s, ctx, mx, my, delta) -> {
+                try {
+                    LoadingArt.screen(LOAD_GFX.set(ctx, client.textRenderer), s.width, s.height, s.getTitle().getString());
+                    for (ClickableWidget b : Screens.getButtons(s)) b.render(ctx, mx, my, delta);
+                } catch (Throwable ignored) {
+                    // zostaje zwykły ekran gry
+                }
+            });
+        });
 
         // Parametry różnią się między wersjami (float / RenderTickCounter) – lambda pasuje do obu.
         HudRenderCallback.EVENT.register((ctx, tick) -> {
