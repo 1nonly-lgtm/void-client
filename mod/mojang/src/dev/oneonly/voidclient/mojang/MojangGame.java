@@ -157,4 +157,14 @@ public final class MojangGame implements Game {
         net.minecraft.client.multiplayer.ServerData info = mc.getCurrentServer();
         return info == null ? "mp" : info.ip;
     }
+    @Override
+    public double[] eye() {
+        var p = mc().player;
+        return p == null ? new double[3] : new double[]{p.getX(), p.getEyeY(), p.getZ()};
+    }
+
+    @Override
+    public String dimension() {
+        return mc().level == null ? "" : String.valueOf(mc().level.dimension());
+    }
 }
