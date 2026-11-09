@@ -13,8 +13,6 @@ import org.lwjgl.glfw.GLFW;
 
 public class VoidClientMod implements ClientModInitializer {
     public static KeyBinding guiKey;
-    public static KeyBinding zoomKey;
-    public static KeyBinding freelookKey;
     public static final KeyBinding[] autoKeys = new KeyBinding[AutoText.SLOTS];
     private static final YarnGfx HUD_GFX = new YarnGfx();
 
@@ -23,8 +21,6 @@ public class VoidClientMod implements ClientModInitializer {
         VoidCore.init(new YarnGame());
 
         guiKey = KeyBindingHelper.registerKeyBinding(Keys.create("key.voidclient.gui", GLFW.GLFW_KEY_RIGHT_SHIFT));
-        zoomKey = KeyBindingHelper.registerKeyBinding(Keys.create("key.voidclient.zoom", GLFW.GLFW_KEY_C));
-        freelookKey = KeyBindingHelper.registerKeyBinding(Keys.create("key.voidclient.freelook", GLFW.GLFW_KEY_LEFT_ALT));
         for (int i = 0; i < AutoText.SLOTS; i++) {
             autoKeys[i] = KeyBindingHelper.registerKeyBinding(Keys.create("key.voidclient.autotext" + (i + 1), GLFW.GLFW_KEY_UNKNOWN));
         }
@@ -36,7 +32,7 @@ public class VoidClientMod implements ClientModInitializer {
             for (int i = 0; i < autoKeys.length; i++) {
                 while (autoKeys[i].wasPressed()) VoidCore.autoText(i);
             }
-            VoidCore.tick(zoomKey.isPressed(), freelookKey.isPressed());
+            VoidCore.tick(); // Zoom, Freelook i Waypoint – klawisze ustawiane w menu Void Client
         });
 
         ClientLifecycleEvents.CLIENT_STOPPING.register(client -> VoidCore.shutdown());

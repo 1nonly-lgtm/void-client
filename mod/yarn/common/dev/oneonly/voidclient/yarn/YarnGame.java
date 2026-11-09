@@ -157,4 +157,14 @@ public final class YarnGame implements Game {
         net.minecraft.client.network.ServerInfo info = mc.getCurrentServerEntry();
         return info == null ? "mp" : info.address;
     }
+    @Override
+    public double[] eye() {
+        var p = mc().player;
+        return p == null ? new double[3] : new double[]{p.getX(), p.getEyeY(), p.getZ()};
+    }
+
+    @Override
+    public String dimension() {
+        return mc().world == null ? "" : String.valueOf(mc().world.getRegistryKey());
+    }
 }
