@@ -148,4 +148,13 @@ public final class YarnGame implements Game {
     @Override public int perspective() { return mc().options.getPerspective().ordinal(); }
 
     @Override public void setPerspective(int index) { mc().options.setPerspective(Perspective.values()[index]); }
+
+    @Override
+    public String server() {
+        MinecraftClient mc = mc();
+        if (mc.world == null) return "";
+        if (mc.isIntegratedServerRunning()) return "sp";
+        net.minecraft.client.network.ServerInfo info = mc.getCurrentServerEntry();
+        return info == null ? "mp" : info.address;
+    }
 }
