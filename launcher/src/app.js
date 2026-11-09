@@ -10,6 +10,7 @@ let S = null; // ustawienia
 let versions = null;
 let running = false;
 const startedAt = Date.now();
+let gameSince = 0;
 
 // ───────── Pomocnicze ─────────
 
@@ -93,7 +94,7 @@ function renderProfiles() {
   const p = profile();
   $('playName').textContent = p.name;
   $('playMeta').textContent = `${mcLabel(p)} · ${loaderLabel(p)} · RAM ${S.ram} GB`;
-  $('rpcLine1').textContent = `${p.name} · ${mcLabel(p)}`;
+  if (!running) $('rpcLine2').textContent = `${p.name} · ${mcLabel(p)}`;
   renderModsProfiles();
 }
 
@@ -188,7 +189,14 @@ function setPhase(phase) {
   $('idleBox').classList.toggle('hidden', phase !== 'idle');
   $('loadBox').classList.toggle('hidden', phase !== 'loading');
   $('runBox').classList.toggle('hidden', phase !== 'running');
-  $('rpcLine2').textContent = phase === 'running' ? 'W grze' : 'W menu launchera';
+  const p = profile();
+  if (phase === 'running') {
+    $('rpcLine1').textContent = `Minecraft ${mcLabel(p)} · ${p.name}`;
+    $('rpcLine2').textContent = 'W menu gry' + (S.discordFps ? ' · 240 FPS' : '');
+  } else {
+    $('rpcLine1').textContent = 'W menu launchera';
+    $('rpcLine2').textContent = `${p.name} · ${mcLabel(p)}`;
+  }
 }
 
 $('playBtn').onclick = async () => {
@@ -222,9 +230,10 @@ window.api.onProgress(d => {
 });
 
 window.api.onState(d => {
-  if (d.state === 'running') { setPhase('running'); return; }
+  if (d.state === 'running') { gameSince = d.since || Date.now(); setPhase('running'); return; }
   if (d.state === 'closed') {
     running = false;
+    gameSince = 0;
     setPhase('idle');
     if (d.code && d.code !== 0) {
       $('errBox').textContent = `Gra zamknęła się z błędem (kod ${d.code}). Jeśli to się powtarza, usuń ostatnio dodany mod.`;
@@ -233,12 +242,19 @@ window.api.onState(d => {
   }
 });
 
+function clock(ms) {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(s / 3600);
+  const mm = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
+  const ss = String(s % 60).padStart(2, '0');
+  return h ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
+}
+
 setInterval(() => {
   if (document.hidden) return;
-  const s = Math.floor((Date.now() - startedAt) / 1000);
-  const mm = String(Math.floor(s / 60)).padStart(2, '0');
-  const ss = String(s % 60).padStart(2, '0');
-  $('rpcTime').textContent = `${mm}:${ss} upłynęło`;
+  const t = clock(Date.now() - (gameSince || startedAt));
+  $('rpcTime').textContent = `${t} upłynęło`;
+  if (gameSince) $('runTime').textContent = t;
 }, 1000);
 
 // ───────── Skin 3D (skinview3d) ─────────
@@ -419,7 +435,7 @@ async function runSearch(more = false) {
     if (seq !== searchSeq) return;
     $('modsHint').textContent = `Zainstalowane w profilu „${p.name}”`;
     box.innerHTML = list.length
-      ? list.map(m => modCard({ ...m, description: m.type === 'mod' ? 'Mod' : m.type === 'shader' ? 'Shader' : 'Resource pack' }, 'installed')).join('')
+      ? list.map(m => modCard({ ...m, description: (m.local ? 'Własny plik · ' : 'Modrinth · ') + (m.type === 'mod' ? 'Mod' : m.type === 'shader' ? 'Shader' : 'Resource pack') }, 'installed')).join('')
       : '<div class="empty">Nic tu jeszcze nie ma.</div>';
     return;
   }
@@ -469,6 +485,62 @@ $('results').addEventListener('click', async e => {
   }
 });
 
+// ───────── Przeciąganie plików (mody, shadery, resource packi) ─────────
+
+const TYPE_PL = { mod: 'mod', shader: 'shader', resourcepack: 'resource pack' };
+let dragDepth = 0;
+const hasFiles = e => e.dataTransfer && [...e.dataTransfer.types].includes('Files');
+
+function dropProfile() {
+  // w zakładce Mody – profil wybrany na liście, w innych – aktywny profil
+  const modsTab = $('tab-mods').classList.contains('active');
+  return S.profiles.find(p => p.id === (modsTab ? modsProfileId() : S.selectedProfile)) || profile();
+}
+
+document.addEventListener('dragenter', e => {
+  if (!hasFiles(e)) return;
+  e.preventDefault();
+  if (dragDepth++ === 0) {
+    $('dropTarget').textContent = `do profilu „${dropProfile().name}”`;
+    document.body.classList.add('dragging');
+  }
+});
+document.addEventListener('dragover', e => {
+  if (!hasFiles(e)) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'copy';
+});
+document.addEventListener('dragleave', e => {
+  if (!hasFiles(e)) return;
+  if (--dragDepth <= 0) { dragDepth = 0; document.body.classList.remove('dragging'); }
+});
+document.addEventListener('drop', async e => {
+  e.preventDefault(); // bez tego Electron otworzyłby plik zamiast launchera
+  dragDepth = 0;
+  document.body.classList.remove('dragging');
+  const files = [...(e.dataTransfer ? e.dataTransfer.files : [])];
+  const paths = files.map(f => window.api.pathFor(f)).filter(Boolean);
+  if (!paths.length) return;
+  const p = dropProfile();
+  try {
+    const res = await window.api.addLocal(p.id, paths);
+    const ok = res.filter(r => r.ok);
+    const bad = res.filter(r => !r.ok);
+    let msg = '';
+    if (ok.length === 1) msg = `Dodano ${TYPE_PL[ok[0].type]} „${ok[0].title}” do „${p.name}”`;
+    else if (ok.length > 1) msg = `Dodano ${ok.length} pliki do „${p.name}”: ${ok.map(r => r.title).join(', ')}`;
+    const warns = ok.filter(r => r.warn).map(r => `${r.title}: ${r.warn}`);
+    if (warns.length) msg += ` (${warns.join('; ')})`;
+    if (bad.length) msg += (msg ? ' · ' : '') + bad.map(r => r.error).join(' · ');
+    toast(msg || 'Nic nie dodano');
+    if (ok.length) document.querySelectorAll('.dropzone').forEach(z => { z.classList.remove('done'); void z.offsetWidth; z.classList.add('done'); });
+    if (modsLoaded && modType === 'installed') runSearch();
+  } catch (err) {
+    toast(err.message);
+  }
+});
+$('dropzone').onclick = () => toast('Złap plik .jar lub .zip w Eksploratorze i upuść go na okno launchera');
+
 // ───────── Opcje ─────────
 
 function renderSettings() {
@@ -486,6 +558,8 @@ function renderSettings() {
   const dOn = !!S.discord;
   $('discordChip').classList.toggle('on', dOn);
   $('discordText').textContent = dOn ? 'Discord: aktywny' : 'Discord: wyłączony';
+  document.querySelectorAll('.toggle-row.sub').forEach(r => r.classList.toggle('off', !dOn));
+  if (running) setPhase('running');
 }
 
 $('ram').addEventListener('input', () => {
@@ -536,7 +610,7 @@ $('updateBtn').onclick = async () => {
 
 (async () => {
   S = await window.api.getSettings();
-  window.api.version().then(v => { $('versionChip').textContent = 'v' + v; }).catch(() => {});
+  window.api.version().then(v => { $('versionChip').textContent = 'v' + v; $('aboutVer').textContent = v; }).catch(() => {});
   renderAccount();
   renderProfiles();
   renderSettings();
