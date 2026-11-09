@@ -5,6 +5,7 @@ import dev.oneonly.voidclient.core.Game;
 import dev.oneonly.voidclient.core.Gamma;
 import dev.oneonly.voidclient.core.Gfx;
 import dev.oneonly.voidclient.core.Theme;
+import dev.oneonly.voidclient.core.Tps;
 
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -18,6 +19,7 @@ public final class Modules {
     public static final Fps FPS = add(new Fps());
     public static final Cps CPS = add(new Cps());
     public static final Ping PING = add(new Ping());
+    public static final TpsLine TPS = add(new TpsLine());
     public static final Coords COORDS = add(new Coords());
     public static final Clock CLOCK = add(new Clock());
     public static final Keystrokes KEYSTROKES = add(new Keystrokes());
@@ -28,6 +30,7 @@ public final class Modules {
     public static final Fullbright FULLBRIGHT = add(new Fullbright());
     public static final AutoTextModule AUTOTEXT = add(new AutoTextModule());
     public static final FreelookModule FREELOOK = add(new FreelookModule());
+    public static final WaypointsModule WAYPOINTS = add(new WaypointsModule());
 
     private Modules() {}
 
@@ -70,8 +73,18 @@ public final class Modules {
         }
     }
 
+    public static final class TpsLine extends HudModule.Line {
+        TpsLine() { super("tps", "TPS serwera", "Ile ticków na sekundę robi serwer (20 = bez lagów)", false, 4, 52); }
+        @Override protected String label() { return "TPS "; }
+        @Override protected String value(Game g) {
+            double t = Tps.value();
+            if (t < 0) return "-";
+            return String.format(java.util.Locale.ROOT, "%.1f", t);
+        }
+    }
+
     public static final class Coords extends HudModule.Line {
-        Coords() { super("coords", "Koordynaty", "Pozycja XYZ i kierunek", false, 4, 52); }
+        Coords() { super("coords", "Koordynaty", "Pozycja XYZ i kierunek", false, 4, 68); }
         @Override protected String label() { return "XYZ "; }
         @Override protected String value(Game g) {
             if (!g.hasPlayer()) return "-";
@@ -80,7 +93,7 @@ public final class Modules {
     }
 
     public static final class Clock extends HudModule.Line {
-        Clock() { super("clock", "Zegar", "Aktualna godzina", false, 4, 68); }
+        Clock() { super("clock", "Zegar", "Aktualna godzina", false, 4, 84); }
         @Override protected String label() { return "Godz. "; }
         @Override protected String value(Game g) {
             LocalTime t = LocalTime.now();
@@ -93,7 +106,7 @@ public final class Modules {
         private static final int K = 22;
         private static final int G = 2;
 
-        Keystrokes() { super("keystrokes", "Keystrokes", "Podgląd klawiszy WASD, myszy i spacji", true, 4, 90); }
+        Keystrokes() { super("keystrokes", "Keystrokes", "Podgląd klawiszy WASD, myszy i spacji", true, 4, 104); }
 
         @Override public int width(Gfx g) { return K * 3 + G * 2; }
 
@@ -124,7 +137,7 @@ public final class Modules {
     }
 
     public static final class Armor extends HudModule {
-        Armor() { super("armor", "Zbroja", "Zbroja i przedmiot w ręce z wytrzymałością", true, 4, 170); }
+        Armor() { super("armor", "Zbroja", "Zbroja i przedmiot w ręce z wytrzymałością", true, 4, 184); }
 
         @Override public int width(Gfx g) { return 18 + g.width("0000") + 6; }
 
@@ -188,7 +201,7 @@ public final class Modules {
         private Integer savedFov;
         private boolean savedSmooth;
 
-        Zoom() { super("zoom", "Zoom", "Przybliżenie pod klawiszem C (zmienisz w Sterowaniu)", Category.GAME, true); }
+        Zoom() { super("zoom", "Zoom", "Przybliżenie pod klawiszem (domyślnie C, zmienisz w Opcjach)", Category.GAME, true); }
 
         public void update(Game g, boolean pressed) {
             boolean want = isEnabled() && pressed && !g.screenOpen();
@@ -210,7 +223,11 @@ public final class Modules {
     }
 
     public static final class FreelookModule extends Module {
-        FreelookModule() { super("freelook", "Freelook", "Trzymaj lewy Alt i rozglądaj się wokół postaci", Category.GAME, true); }
+        FreelookModule() { super("freelook", "Freelook", "Trzymaj klawisz (domyślnie lewy Alt) i rozglądaj się wokół postaci", Category.GAME, true); }
+    }
+
+    public static final class WaypointsModule extends Module {
+        WaypointsModule() { super("waypoints", "Waypointy", "Znaczniki w świecie – dodasz je klawiszem (domyślnie B) albo w zakładce Waypointy", Category.GAME, true); }
     }
 
     public static final class Fullbright extends Module {
