@@ -69,6 +69,64 @@ public final class LoadingArt {
         draw(g, w, h, 1f, -1f, t, true);
     }
 
+    // ───────────── Tło menu (główne menu, Multiplayer, Opcje… gdy nie ma świata) ─────────────
+
+    /** Gwiezdna pustka z mgławicami i spadającą gwiazdą – zamiast panoramy i ziemi w menu gry. */
+    public static void menu(Gfx g, int w, int h) {
+        long now = System.currentTimeMillis();
+        g.gradient(0, 0, w, h, 0xFF07040F, 0xFF170A2E);
+        // mgławice – duże, bardzo przezroczyste plamy, powoli "oddychają"
+        float b = 0.5f + 0.5f * (float) Math.sin(now / 2600.0);
+        nebula(g, (int) (w * 0.18), (int) (h * 0.3), Math.max(w, h) / 4, 0xFF7C3AED, 0.05f + 0.02f * b);
+        nebula(g, (int) (w * 0.85), (int) (h * 0.75), Math.max(w, h) / 3, 0xFFA855F7, 0.045f + 0.02f * (1 - b));
+        nebula(g, (int) (w * 0.6), (int) (h * 0.12), Math.max(w, h) / 6, 0xFFD946EF, 0.03f);
+        stars(g, w, h, 1f, now, 140);
+        // kula pustki w rogu
+        int r = Math.max(18, Math.min(w, h) / 7);
+        int ox = w - r - Math.max(10, w / 14), oy = h - r - Math.max(30, h / 7);
+        circle(g, ox, oy, r + Math.max(3, r / 6), 0x14A855F7);
+        circle(g, ox, oy, r, 0x507C3AED);
+        circle(g, ox, oy, r - Math.max(2, r / 10), 0x602A0A55);
+        circle(g, ox, oy, r - Math.max(4, r / 5), 0x700B0418);
+        // spadająca gwiazda co ~7 s
+        long t = now % 7000;
+        if (t < 900) {
+            float p = t / 900f;
+            int sx = (int) (w * (0.95f - 0.5f * p)), sy = (int) (h * (0.05f + 0.25f * p));
+            int fade = (int) (255 * (p < 0.2f ? p / 0.2f : 1f - (p - 0.2f) / 0.8f));
+            for (int i = 0; i < 14; i++) {
+                int al = Math.max(0, fade - i * 18);
+                g.fill(sx + i * 2, sy - i, sx + i * 2 + 2, sy - i + 1, al << 24 | 0xF0ABFC);
+            }
+            g.fill(sx - 1, sy - 1, sx + 2, sy + 2, fade << 24 | 0xFFFFFF);
+        }
+    }
+
+    /** Miękka plama: wiele cienkich warstw (co 2 piksele w pionie, żeby było lekko dla FPS). */
+    private static void nebula(Gfx g, int cx, int cy, int r, int rgb, float a) {
+        int layers = 10;
+        for (int k = layers; k >= 1; k--) {
+            int rr = r * k / layers;
+            int col = mul(rgb, a * 0.45f);
+            if ((col >>> 24) == 0) col = 1 << 24 | (rgb & 0xFFFFFF);
+            for (int dy = -rr; dy <= rr; dy += 2) {
+                int half = (int) Math.sqrt((double) rr * rr - (double) dy * dy);
+                g.fill(cx - half, cy + dy, cx + half + 1, cy + dy + 2, col);
+            }
+        }
+    }
+
+    private static void stars(Gfx g, int w, int h, float a, long now, int count) {
+        for (int i = 0; i < count; i++) {
+            int sx = (int) (hash(i * 7 + 1) % Math.max(1, w));
+            int sy = (int) (hash(i * 13 + 5) % Math.max(1, h));
+            float tw = 0.35f + 0.65f * (0.5f + 0.5f * (float) Math.sin(now / 600.0 + i * 1.7));
+            int size = i % 9 == 0 ? 2 : 1;
+            int col = i % 4 == 0 ? 0xFFF0ABFC : i % 3 == 0 ? 0xFFC084FC : 0xFFE9D5FF;
+            g.fill(sx, sy, sx + size, sy + size, mul(col, a * tw * 0.8f));
+        }
+    }
+
     // ───────────── Rysowanie ─────────────
 
     private static final int BG_TOP = 0xFF07040F, BG_BOTTOM = 0xFF1A0B33;
@@ -77,15 +135,7 @@ public final class LoadingArt {
         long now = System.currentTimeMillis();
         g.gradient(0, 0, w, h, mul(BG_TOP, a), mul(BG_BOTTOM, a));
 
-        // gwiazdy – stałe miejsca, migoczą w czasie
-        for (int i = 0; i < 90; i++) {
-            int sx = (int) (hash(i * 7 + 1) % Math.max(1, w));
-            int sy = (int) (hash(i * 13 + 5) % Math.max(1, h));
-            float tw = 0.35f + 0.65f * (0.5f + 0.5f * (float) Math.sin(now / 600.0 + i * 1.7));
-            int size = i % 9 == 0 ? 2 : 1;
-            int col = i % 4 == 0 ? 0xFFF0ABFC : i % 3 == 0 ? 0xFFC084FC : 0xFFE9D5FF;
-            g.fill(sx, sy, sx + size, sy + size, mul(col, a * tw * 0.8f));
-        }
+        stars(g, w, h, a, now, 90); // stałe miejsca, migoczą w czasie
 
         int px = Math.max(2, Math.min(w, h) / 120);           // wielkość "piksela" napisu
         int cx = w / 2;
