@@ -222,6 +222,27 @@
     play.addEventListener('pointerleave', () => { clearInterval(hoverTimer); hoverTimer = 0; });
   }
 
+  // iskry sypiące się z czoła paska ładowania
+  const loadBox = document.getElementById('loadBox');
+  const barFill = document.getElementById('barFill');
+  let barTimer = 0;
+  function barSparks() {
+    if (!enabled() || !barFill) return;
+    const r = barFill.getBoundingClientRect();
+    if (r.width < 4) return;
+    for (let i = 0; i < 2; i++) {
+      spark(front, r.right, rnd(r.top, r.bottom), { ang: rnd(-2.6, -0.4), speed: rnd(0.6, 2.2), g: 0.06, drag: 0.97, life: rnd(20, 38), size: rnd(2, 3), kind: 'px', color: pick(['#ffffff', '#f5e9ff', '#f0abfc', '#c084fc']) });
+    }
+    run();
+  }
+  if (loadBox) {
+    new MutationObserver(() => {
+      const on = !loadBox.classList.contains('hidden');
+      if (on && !barTimer) barTimer = setInterval(barSparks, 70);
+      if (!on && barTimer) { clearInterval(barTimer); barTimer = 0; }
+    }).observe(loadBox, { attributes: true, attributeFilter: ['class'] });
+  }
+
   // wybuchy w tle: co kilka sekund, raczej w pustych miejscach (wokół księżyca i u góry)
   function scheduleAmbient() {
     setTimeout(() => {

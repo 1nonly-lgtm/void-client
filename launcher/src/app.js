@@ -15,9 +15,10 @@ let gameSince = 0;
 // ───────── Pomocnicze ─────────
 
 let toastTimer;
-function toast(msg) {
+function toast(msg, kind = '') {
   const t = $('toast');
   t.textContent = msg;
+  t.dataset.kind = kind;
   t.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
@@ -64,10 +65,10 @@ $('accountBtn').onclick = async () => {
   $('accSub').textContent = 'Logowanie…';
   try {
     S.account = await window.api.login();
-    toast('Zalogowano: ' + S.account.name);
+    toast('Zalogowano: ' + S.account.name, 'ok');
     renderSkin();
   } catch (e) {
-    toast(e.message);
+    toast(e.message, 'err');
   }
   renderAccount();
 };
@@ -305,7 +306,7 @@ $('skinChange').onclick = async () => {
     const data = await window.api.changeSkin($('skinModel').value === 'slim');
     if (data) {
       await showSkin(data, await loadSkinLib());
-      toast('Skin zmieniony! W grze zobaczysz go po ponownym wejściu na serwer.');
+      toast('Skin zmieniony! W grze zobaczysz go po ponownym wejściu na serwer.', 'ok');
     }
   } catch (e) {
     toast(e.message);
@@ -425,11 +426,13 @@ function modCard(m, mode) {
   return `<div class="mod">${icon}<div class="info"><b>${esc(m.title)}</b>${m.description ? `<span>${esc(m.description)}</span>` : ''}<small>${meta}</small></div>${btn}</div>`;
 }
 
+const SKELETON = '<div class="mod skel" aria-hidden="true"><i></i><div class="info"><b></b><span></span><small></small></div></div>'.repeat(6);
+
 async function runSearch(more = false) {
   const seq = ++searchSeq;
   const box = $('results');
   const p = S.profiles.find(x => x.id === modsProfileId()) || profile();
-  if (!more) { modOffset = 0; box.innerHTML = '<div class="empty">Ładowanie…</div>'; }
+  if (!more) { modOffset = 0; box.innerHTML = SKELETON; }
   $('moreBtn').classList.add('hidden');
 
   if (modType === 'installed') {
@@ -472,12 +475,13 @@ $('results').addEventListener('click', async e => {
       const names = await window.api.install({ projectId: inst.dataset.install, type: modType, profileId: modsProfileId(), title: inst.dataset.title });
       installedIds.add(inst.dataset.install);
       inst.textContent = 'Zainstalowany';
-      inst.classList.add('done');
-      toast(names.length > 1 ? `Zainstalowano: ${names.join(', ')}` : `Zainstalowano ${names[0]}`);
+      inst.classList.add('done', 'just');
+      try { const r = inst.getBoundingClientRect(); window.voidFx?.pop(r.left + r.width / 2, r.top + r.height / 2, 1.4); } catch {}
+      toast(names.length > 1 ? `Zainstalowano: ${names.join(', ')}` : `Zainstalowano ${names[0]}`, 'ok');
     } catch (err) {
       inst.disabled = false;
       inst.textContent = 'Zainstaluj';
-      toast(err.message);
+      toast(err.message, 'err');
     }
   } else if (rem) {
     rem.disabled = true;
@@ -534,11 +538,11 @@ document.addEventListener('drop', async e => {
     const warns = ok.filter(r => r.warn).map(r => `${r.title}: ${r.warn}`);
     if (warns.length) msg += ` (${warns.join('; ')})`;
     if (bad.length) msg += (msg ? ' · ' : '') + bad.map(r => r.error).join(' · ');
-    toast(msg || 'Nic nie dodano');
+    toast(msg || 'Nic nie dodano', ok.length && !bad.length ? 'ok' : bad.length ? 'err' : '');
     if (ok.length) document.querySelectorAll('.dropzone').forEach(z => { z.classList.remove('done'); void z.offsetWidth; z.classList.add('done'); });
     if (modsLoaded && modType === 'installed') runSearch();
   } catch (err) {
-    toast(err.message);
+    toast(err.message, 'err');
   }
 });
 $('dropzone').onclick = () => toast('Złap plik .jar lub .zip w Eksploratorze i upuść go na okno launchera');
@@ -546,10 +550,10 @@ $('dropzone').onclick = () => toast('Złap plik .jar lub .zip w Eksploratorze i 
 // ───────── „Co nowego” po aktualizacji ─────────
 
 const WHATS_NEW = [
-  'Fioletowe wybuchy w launcherze: przycisk GRAJ eksploduje, kliknięcia sypią iskrami, a w tle co chwilę błyska pustka',
-  'Poświata za kursorem, iskry z przycisku GRAJ i płynniejsze przejścia między zakładkami',
-  'Freelook i Zoom na dowolnym klawiszu – także na bocznym przycisku myszy (menu w grze → Opcje)',
-  'TPS serwera w HUD i waypointy ze znacznikiem (klawisz B)'
+  'Świecący pasek ładowania, z którego sypią się iskry, i pulsujący znaczek „Gra uruchomiona”',
+  'Nowe Opcje: fioletowy suwak RAM, świecące przełączniki i przyciski',
+  'Mody ładują się z animacją, a po instalacji przycisk błyska i wybucha iskrami',
+  'Kolorowe powiadomienia (zielone = sukces, czerwone = błąd) i obracający się pierścień wokół logo'
 ];
 
 function showWhatsNew(version) {
@@ -570,6 +574,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('whatsN
 function renderSettings() {
   $('ram').value = S.ram;
   $('ramVal').textContent = S.ram + ' GB';
+  ramFill();
   document.querySelectorAll('.pills').forEach(g => {
     g.querySelectorAll('button').forEach(b => b.classList.toggle('on', S[g.dataset.key] === b.dataset.val));
   });
@@ -586,8 +591,14 @@ function renderSettings() {
   if (running) setPhase('running');
 }
 
+function ramFill() {
+  const r = $('ram'), min = Number(r.min) || 0, max = Number(r.max) || 100;
+  r.style.setProperty('--pct', ((Number(r.value) - min) / (max - min) * 100) + '%');
+}
+
 $('ram').addEventListener('input', () => {
   $('ramVal').textContent = $('ram').value + ' GB';
+  ramFill();
 });
 $('ram').addEventListener('change', () => {
   save({ ram: Number($('ram').value) });
@@ -632,7 +643,7 @@ $('updateBtn').onclick = async () => {
     $('updateText').textContent = 'Pobierz VoidClient-Setup.exe ze strony, która się otworzyła';
   } else if (!res) {
     $('updateBtn').disabled = false;
-    toast('Nie udało się uruchomić instalatora – spróbuj ponownie');
+    toast('Nie udało się uruchomić instalatora – spróbuj ponownie', 'err');
   }
 };
 
