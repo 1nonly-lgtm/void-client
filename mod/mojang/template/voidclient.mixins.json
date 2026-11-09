@@ -6,7 +6,8 @@
   "client": [
     "CameraMixin",
     "NetworkMixin",
-    "EntityMixin"
+    "EntityMixin",
+    "LoadingOverlayMixin"
   ],
   "injectors": {
     "defaultRequire": 0
