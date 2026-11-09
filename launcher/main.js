@@ -235,6 +235,7 @@ ipcMain.handle('game:launch', async (_, profileId) => {
 // ───────── Aktualizacje (z wydań na GitHubie) ─────────
 
 let updateReady = false;
+let updateFile = null; // pobrany instalator nowej wersji
 
 function setupUpdates() {
   if (!app.isPackaged) return;
@@ -245,11 +246,14 @@ function setupUpdates() {
     return;
   }
   autoUpdater.autoDownload = true;
-  autoUpdater.autoInstallOnAppQuit = true;
+  // Bez cichej instalacji przy zamykaniu – na części komputerów Windows prosi wtedy o zgodę
+  // i cicha instalacja po cichu się wysypuje. Instalator uruchamiamy sami (niżej).
+  autoUpdater.autoInstallOnAppQuit = false;
   autoUpdater.on('update-available', info => send('update:state', { state: 'downloading', version: info.version }));
   autoUpdater.on('download-progress', p => send('update:state', { state: 'downloading', percent: Math.round(p.percent) }));
   autoUpdater.on('update-downloaded', info => {
     updateReady = true;
+    updateFile = info.downloadedFile || null;
     send('update:state', { state: 'ready', version: info.version });
   });
   autoUpdater.on('error', e => console.warn('Aktualizacja niedostępna:', e && e.message));
@@ -258,10 +262,39 @@ function setupUpdates() {
   setInterval(check, 60 * 60 * 1000); // co godzinę, jeśli launcher jest długo otwarty
 }
 
+const RELEASES = 'https://github.com/1nonly-lgtm/void-client/releases/latest';
+
+/**
+ * Uruchamia zwykły instalator (z paskiem postępu) i zamyka launcher.
+ * „start” przez cmd = Windows sam obsłuży pytanie o zgodę (UAC), a 2 s opóźnienia
+ * dają launcherowi czas na zamknięcie, zanim instalator zacznie podmieniać pliki.
+ * Po instalacji instalator sam włącza nową wersję.
+ */
 ipcMain.handle('update:install', () => {
   if (!updateReady || running) return false;
-  const { autoUpdater } = require('electron-updater');
-  autoUpdater.quitAndInstall(true, true); // cicha instalacja i ponowne uruchomienie
+  const fs = require('fs');
+  if (!updateFile || !fs.existsSync(updateFile)) {
+    shell.openExternal(RELEASES);
+    return 'manual';
+  }
+  try {
+    const { spawn } = require('child_process');
+    // ping = ok. 2 s czekania (timeout nie działa bez konsoli); /s + verbatim = poprawne cudzysłowy przy spacjach w ścieżce
+    const cmd = `"ping -n 3 127.0.0.1 >nul & start "" "${updateFile}""`;
+    const child = spawn('cmd.exe', ['/d', '/s', '/c', cmd], {
+      detached: true,
+      stdio: 'ignore',
+      windowsHide: true,
+      windowsVerbatimArguments: true
+    });
+    child.unref();
+  } catch (e) {
+    console.warn('Nie udało się uruchomić instalatora', e);
+    shell.openExternal(RELEASES);
+    return 'manual';
+  }
+  try { lazy('discord').stop(); } catch { /* ignore */ }
+  setTimeout(() => app.exit(0), 300);
   return true;
 });
 
