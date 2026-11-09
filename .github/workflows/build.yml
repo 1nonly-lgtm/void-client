@@ -1,0 +1,98 @@
+name: Zbuduj Void Client
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 1) Mod na wersje 1.20.1 – 1.21.11 (Java 21)
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Mod 1.20.1 – 1.21.11
+        id: yarn
+        continue-on-error: true
+        working-directory: mod/yarn
+        run: gradle build --continue --no-daemon
+
+      # 2) Mod na 26.1+ (Java 25)
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.4.0'
+      - name: Mod 26.1+
+        id: mojang
+        continue-on-error: true
+        working-directory: mod/mojang
+        run: gradle build --no-daemon
+
+      - name: Zbieranie plików moda
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force launcher/resources/mods | Out-Null
+          $jars = Get-ChildItem mod -Recurse -Filter 'voidclient-*.jar' | Where-Object { $_.FullName -match '[\\/]build[\\/]libs[\\/]' -and $_.Name -notmatch 'sources|dev' }
+          foreach ($j in $jars) { Copy-Item $j.FullName launcher/resources/mods/ -Force }
+          Write-Host "Zbudowane wersje moda:"
+          Get-ChildItem launcher/resources/mods | ForEach-Object { Write-Host " - $($_.Name)" }
+          if ($jars.Count -eq 0) { throw "Żadna wersja moda się nie zbudowała" }
+
+      # 3) Launcher (.exe)
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Instalacja zależności
+        working-directory: launcher
+        run: npm install --no-audit --no-fund
+      - name: Numer wersji
+        working-directory: launcher
+        run: npm version 1.0.${{ github.run_number }} --no-git-tag-version
+      - name: Budowanie instalatora
+        working-directory: launcher
+        run: npx electron-builder --win nsis --x64 --publish never -c.publish.provider=github -c.publish.owner=${{ github.repository_owner }} -c.publish.repo=${{ github.event.repository.name }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: VoidClient-instalator
+          path: launcher/dist/*.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: voidclient-mody
+          path: launcher/resources/mods/*.jar
+
+      # 4) Wydanie na GitHubie – z niego pobiera strona (zawsze najnowsza wersja)
+      - name: Publikacja wydania
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: Void Client 1.0.${{ github.run_number }}
+          make_latest: true
+          files: |
+            launcher/dist/VoidClient-Setup.exe
+            launcher/dist/VoidClient-Setup.exe.blockmap
+            launcher/dist/latest.yml
+            launcher/resources/mods/*.jar
+
+      - name: Podsumowanie
+        if: always()
+        shell: pwsh
+        run: |
+          "## Void Client" >> $env:GITHUB_STEP_SUMMARY
+          "Mod 1.20.1–1.21.11: **${{ steps.yarn.outcome }}**" >> $env:GITHUB_STEP_SUMMARY
+          "Mod 26.1+: **${{ steps.mojang.outcome }}**" >> $env:GITHUB_STEP_SUMMARY
+          Get-ChildItem launcher/resources/mods -ErrorAction SilentlyContinue | ForEach-Object { "- $($_.Name)" >> $env:GITHUB_STEP_SUMMARY }
