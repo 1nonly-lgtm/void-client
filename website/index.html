@@ -4,22 +4,23 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Void Client</title>
-<meta name="description" content="Void Client – szybki launcher Minecraft z menu pod prawym Shiftem, skinem 3D i modami z Modrinth. by: 1nonly $">
+<meta name="description" content="Void Client – szybki launcher Minecraft z menu pod prawym Shiftem, skinem 3D, modami z Modrinth i automatycznymi aktualizacjami. by: 1nonly $">
 <link rel="icon" href="favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap">
 <style>
-/* Layout: kosmiczna „pustka” – hero z logo na orbicie, potem pasy treści na jednej ciemnej scenie z pikselowym horyzontem. */
+/* Ten sam świat co launcher: nocne niebo pustki, fioletowy pikselowy księżyc ze smokiem, wyspy, spadające gwiazdy, pikselowy horyzont. */
 :root {
   --void: #07040f;
-  --void-2: #120a22;
-  --panel: #170d2c;
+  --void-2: #0f0820;
+  --panel: rgba(23, 13, 44, .82);
   --line: rgba(192, 132, 252, .18);
   --line-strong: rgba(192, 132, 252, .5);
   --ink: #f3e8ff;
   --muted: #b9a6d6;
   --amethyst: #c084fc;
+  --pink: #f0abfc;
   --deep: #7c3aed;
   --glow: rgba(168, 85, 247, .55);
   --display: "Silkscreen", "Courier New", monospace;
@@ -29,166 +30,244 @@
 }
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-body {
-  background: var(--void);
-  color: var(--ink);
-  font-family: var(--body);
-  font-size: 16px;
-  line-height: 1.6;
-  overflow-x: hidden;
-}
+body { margin: 0; background: var(--void); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.6; overflow-x: hidden; }
 a { color: var(--amethyst); }
 a:hover { color: var(--ink); }
 :focus-visible { outline: 2px solid var(--amethyst); outline-offset: 3px; border-radius: 6px; }
 svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.wrap { width: 100%; max-width: 1140px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+img { max-width: 100%; }
+.wrap { width: 100%; max-width: 1180px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 
-/* ── Tło ── */
+/* ── Niebo (stałe tło) ── */
 .sky { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
-  background: radial-gradient(900px 600px at 78% -10%, #3b1470 0%, #1a0838 42%, var(--void) 100%); }
-.sky i { position: absolute; bottom: -12px; width: 5px; height: 5px; background: var(--amethyst); box-shadow: 0 0 10px var(--amethyst); opacity: 0; animation: rise 15s linear infinite; }
-.sky i:nth-child(3n) { background: #e9d5ff; box-shadow: 0 0 10px #e9d5ff; width: 4px; height: 4px; }
-.sky i:nth-child(4n) { background: #d946ef; box-shadow: 0 0 12px #d946ef; width: 7px; height: 7px; }
-.sky i:nth-child(1) { left: 5%; animation-delay: -2s; } .sky i:nth-child(2) { left: 14%; animation-delay: -9s; animation-duration: 18s; }
-.sky i:nth-child(3) { left: 23%; animation-delay: -5s; } .sky i:nth-child(4) { left: 33%; animation-delay: -12s; animation-duration: 12s; }
-.sky i:nth-child(5) { left: 42%; animation-delay: -1s; } .sky i:nth-child(6) { left: 51%; animation-delay: -7s; animation-duration: 17s; }
-.sky i:nth-child(7) { left: 60%; animation-delay: -3s; } .sky i:nth-child(8) { left: 68%; animation-delay: -10s; animation-duration: 13s; }
-.sky i:nth-child(9) { left: 76%; animation-delay: -6s; } .sky i:nth-child(10) { left: 84%; animation-delay: -13s; animation-duration: 16s; }
-.sky i:nth-child(11) { left: 91%; animation-delay: -4s; } .sky i:nth-child(12) { left: 97%; animation-delay: -8s; animation-duration: 11s; }
+  background:
+    radial-gradient(700px 420px at 10% 105%, rgba(217, 70, 239, .16), transparent 70%),
+    radial-gradient(1000px 640px at 75% -10%, #3b1470 0%, #1a0838 42%, var(--void) 100%); }
+.stars { position: absolute; inset: -50%; opacity: .55; animation: twinkle 6s ease-in-out infinite alternate;
+  background-image:
+    radial-gradient(1.5px 1.5px at 20px 30px, #fff, transparent),
+    radial-gradient(1px 1px at 120px 80px, #e9d5ff, transparent),
+    radial-gradient(1.5px 1.5px at 200px 160px, #c084fc, transparent),
+    radial-gradient(1px 1px at 310px 40px, #fff, transparent),
+    radial-gradient(1px 1px at 380px 210px, #d8b4fe, transparent);
+  background-size: 420px 260px; }
+.glow { position: absolute; border-radius: 50%; filter: blur(60px); opacity: .5; animation: float2 16s ease-in-out infinite; }
+.g1 { width: 420px; height: 420px; left: 8%; top: 40%; background: rgba(124, 58, 237, .26); }
+.g2 { width: 340px; height: 340px; right: 4%; bottom: 4%; background: rgba(217, 70, 239, .18); animation-delay: -8s; }
+.sky .p { position: absolute; bottom: -12px; width: 5px; height: 5px; background: var(--amethyst); box-shadow: 0 0 10px var(--amethyst); opacity: 0; animation: rise 15s linear infinite; }
+.sky .p:nth-of-type(3n) { background: #e9d5ff; box-shadow: 0 0 10px #e9d5ff; width: 4px; height: 4px; }
+.sky .p:nth-of-type(4n) { background: #d946ef; box-shadow: 0 0 12px #d946ef; width: 7px; height: 7px; }
+.p1 { left: 5%; animation-delay: -2s !important; } .p2 { left: 16%; animation-delay: -9s !important; animation-duration: 18s !important; }
+.p3 { left: 27%; animation-delay: -5s !important; } .p4 { left: 38%; animation-delay: -12s !important; animation-duration: 12s !important; }
+.p5 { left: 49%; animation-delay: -1s !important; } .p6 { left: 60%; animation-delay: -7s !important; animation-duration: 17s !important; }
+.p7 { left: 70%; animation-delay: -3s !important; } .p8 { left: 79%; animation-delay: -10s !important; animation-duration: 13s !important; }
+.p9 { left: 88%; animation-delay: -6s !important; } .p10 { left: 96%; animation-delay: -13s !important; animation-duration: 16s !important; }
+.shoot { position: absolute; width: 160px; height: 2px; border-radius: 2px; background: linear-gradient(90deg, rgba(255, 255, 255, 0), #f5e8ff 70%, #fff); filter: drop-shadow(0 0 6px #d8b4fe); opacity: 0; transform: rotate(-28deg); animation: shoot 9s ease-in infinite; }
+.shoot::after { content: ""; position: absolute; right: -2px; top: -2px; width: 6px; height: 6px; border-radius: 50%; background: #fff; box-shadow: 0 0 10px 3px #c084fc; }
+.s1 { left: 30%; top: 8%; } .s2 { left: 70%; top: 4%; animation-delay: -3.2s; animation-duration: 11s; } .s3 { left: 12%; top: 30%; animation-delay: -6.5s; animation-duration: 13s; }
+.island { position: absolute; width: 140px; height: 70px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 10' shape-rendering='crispEdges'%3E%3Cpath d='M0 2h20v2h-2v2h-3v2h-3v2h-4V8H5V6H2V4H0z' fill='%232a1150'/%3E%3Cpath d='M0 2h20v1H0z' fill='%237c3aed'/%3E%3Cpath d='M3 0h2v2H3zM13 1h1v1h-1z' fill='%23c084fc'/%3E%3C/svg%3E") center / contain no-repeat; image-rendering: pixelated; opacity: .5; animation: bob 7s ease-in-out infinite; }
+.i1 { left: 46%; top: 16%; width: 90px; height: 45px; opacity: .3; }
+.i2 { right: 5%; top: 62%; animation-delay: -2s; animation-duration: 9s; }
+.i3 { left: 3%; top: 70%; width: 80px; height: 40px; opacity: .3; animation-delay: -4s; animation-duration: 11s; }
+
+@keyframes twinkle { from { opacity: .25; } to { opacity: .7; } }
+@keyframes float2 { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(40px, -30px); } }
 @keyframes rise { 0% { transform: translateY(0); opacity: 0; } 12% { opacity: .9; } 100% { transform: translateY(-110vh); opacity: 0; } }
+@keyframes shoot { 0%, 78% { opacity: 0; transform: rotate(-28deg) translateX(0); } 80%, 92% { opacity: 1; } 100% { opacity: 0; transform: rotate(-28deg) translateX(-560px); } }
+@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
 @keyframes spin { to { transform: rotate(360deg); } }
-@keyframes float { 0%, 100% { transform: translateY(0) rotate(45deg); } 50% { transform: translateY(-18px) rotate(58deg); } }
-@keyframes breath { 0%, 100% { filter: drop-shadow(0 0 28px rgba(168, 85, 247, .5)); } 50% { filter: drop-shadow(0 0 60px rgba(192, 132, 252, .9)); } }
-@keyframes glowPulse { 0%, 100% { box-shadow: 0 0 0 0 var(--glow), 0 18px 40px -14px var(--glow); } 50% { box-shadow: 0 0 0 12px rgba(168, 85, 247, 0), 0 18px 60px -8px rgba(192, 132, 252, .85); } }
-@keyframes shine { 0% { transform: translateX(-180%) skewX(-20deg); } 55%, 100% { transform: translateX(800%) skewX(-20deg); } }
+@keyframes moonFloat { 0%, 100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-14px) rotate(3deg); } }
+@keyframes halo { 0%, 100% { opacity: .55; transform: scale(1); } 50% { opacity: .95; transform: scale(1.08); } }
+@keyframes dust { 0% { transform: rotate(0deg) translateX(var(--r)) rotate(0deg); } 100% { transform: rotate(360deg) translateX(var(--r)) rotate(-360deg); } }
+@keyframes wyrm { 0% { offset-distance: 0%; } 55%, 100% { offset-distance: 100%; } }
+@keyframes sparkle { 0% { transform: translate(0, 0); opacity: 1; } 100% { transform: translate(-26px, 14px); opacity: 0; } }
+@keyframes gradientMove { to { background-position: 200% 50%; } }
+@keyframes glowPulse { 0%, 100% { box-shadow: inset 0 3px 0 rgba(255, 255, 255, .35), 0 0 0 0 var(--glow), 0 18px 40px -14px var(--glow); } 50% { box-shadow: inset 0 3px 0 rgba(255, 255, 255, .35), 0 0 0 12px rgba(168, 85, 247, 0), 0 18px 60px -8px rgba(192, 132, 252, .85); } }
+@keyframes shine { 0% { transform: translateX(-180%) skewX(-20deg); } 55%, 100% { transform: translateX(900%) skewX(-20deg); } }
+@keyframes rise-in { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+@keyframes drift { to { transform: translateX(-1280px); } }
 
 main, header, footer { position: relative; z-index: 1; }
 
 /* ── Nagłówek ── */
-.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: rgba(7, 4, 15, .72); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: rgba(7, 4, 15, .7); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
 body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--void); }
 .top .wrap { display: flex; align-items: center; gap: 20px; padding-block: 12px; }
-.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); font-family: var(--display); font-size: 18px; letter-spacing: 1px; }
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); font-weight: 800; letter-spacing: 3px; font-size: 16px; }
 .brand img { width: 36px; height: 36px; border-radius: 50%; box-shadow: 0 0 16px var(--glow); }
-.brand b { color: var(--amethyst); font-weight: 400; }
-.nav { display: flex; gap: 22px; margin-left: auto; }
-.nav a { color: var(--muted); text-decoration: none; font-weight: 600; font-size: 14px; }
-.nav a:hover { color: var(--ink); }
-.top .btn { height: 40px; padding: 0 16px; font-size: 14px; }
+.brand b { color: var(--amethyst); }
+.nav { display: flex; gap: 6px; margin-left: auto; }
+.nav a { position: relative; color: var(--muted); text-decoration: none; font-weight: 700; font-size: 14px; padding: 8px 12px; border-radius: 10px; }
+.nav a:hover { color: var(--ink); background: rgba(192, 132, 252, .1); }
+.top .btn { height: 42px; padding: 0 18px; font-size: 14px; border-bottom-width: 4px; }
 
-/* ── Przyciski ── */
-.btn { position: relative; overflow: hidden; display: inline-flex; align-items: center; gap: 10px; height: 60px; padding: 0 30px; border-radius: 14px; text-decoration: none; font-weight: 800; color: #fff;
-  background: linear-gradient(180deg, #b76cff, var(--deep)); border-bottom: 5px solid #4c1d95; transition: filter .15s, transform .1s; }
-.btn:hover { color: #fff; filter: brightness(1.1); }
-.btn:active { transform: translateY(2px); }
-.btn svg { width: 20px; height: 20px; stroke-width: 2.4; }
-.btn.big { height: 72px; padding: 0 40px; font-family: var(--display); font-size: 24px; letter-spacing: 2px; animation: glowPulse 2.6s ease-in-out infinite; }
-.btn.big::after { content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 56px; background: rgba(255, 255, 255, .3); animation: shine 3.4s ease-in-out infinite; }
-.btn.ghost { background: transparent; border: 1px solid var(--line-strong); border-bottom-width: 1px; color: var(--ink); font-weight: 700; }
-.btn.ghost:hover { background: rgba(192, 132, 252, .1); }
+/* ── Przyciski (jak GRAJ w launcherze) ── */
+.btn { position: relative; overflow: hidden; display: inline-flex; align-items: center; gap: 12px; height: 60px; padding: 0 30px; border-radius: 14px; text-decoration: none; font-weight: 900; color: #fff; letter-spacing: 1px;
+  background: linear-gradient(180deg, #c084fc 0%, #9d4dff 45%, #7c3aed 100%); border-bottom: 6px solid #4c1d95; box-shadow: inset 0 3px 0 rgba(255, 255, 255, .35); text-shadow: 2px 2px 0 #4c1d95; transition: filter .15s, transform .1s; }
+.btn:hover { color: #fff; filter: brightness(1.1); transform: translateY(-1px); }
+.btn:active { transform: translateY(3px); border-bottom-width: 3px; }
+.btn svg { width: 20px; height: 20px; stroke-width: 2.6; filter: drop-shadow(2px 2px 0 #4c1d95); }
+.btn.big { height: 80px; padding: 0 46px; font-size: 28px; letter-spacing: 5px; animation: glowPulse 2.6s ease-in-out infinite; }
+.btn.big svg { width: 28px; height: 28px; }
+.btn.big::after { content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 60px; background: rgba(255, 255, 255, .3); animation: shine 3.4s ease-in-out infinite; }
+.btn.ghost { background: rgba(192, 132, 252, .06); border: 1px solid var(--line-strong); border-bottom-width: 1px; box-shadow: none; text-shadow: none; color: var(--ink); font-weight: 700; }
+.btn.ghost:hover { background: rgba(192, 132, 252, .14); }
 
 /* ── Hero ── */
-.hero .wrap { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: 40px; align-items: center; padding-block: 72px 56px; }
-.eyebrow { font-family: var(--mono); font-size: 13px; letter-spacing: 2px; text-transform: uppercase; color: var(--amethyst); }
-h1 { margin: 14px 0 0; font-family: var(--display); font-weight: 700; font-size: clamp(44px, 7vw, 84px); line-height: .98; letter-spacing: 1px; text-wrap: balance; text-shadow: 5px 5px 0 #3b1470; }
-h1 span { color: var(--amethyst); }
-.lead { margin: 22px 0 0; max-width: 520px; font-size: 18px; color: #d6c6ee; }
-.cta { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 32px; }
+.hero { position: relative; overflow: hidden; }
+.hero .wrap { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: 30px; align-items: center; padding-block: 64px 30px; min-height: calc(100vh - 160px); }
+.eyebrow { font-size: 13px; font-weight: 800; letter-spacing: 4px; text-transform: uppercase; color: var(--amethyst); }
+h1 { margin: 12px 0 0; font-weight: 900; font-size: clamp(48px, 7.4vw, 96px); line-height: .98; letter-spacing: 1px; text-transform: uppercase; text-shadow: 4px 4px 0 rgba(76, 29, 149, .9); }
+h1 span { display: inline-block; background: linear-gradient(90deg, #c084fc, #f0abfc, #a855f7, #c084fc); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: none; filter: drop-shadow(4px 4px 0 rgba(76, 29, 149, .9)); animation: gradientMove 6s linear infinite; }
+.lead { margin: 22px 0 0; max-width: 540px; font-size: 18px; color: #d6c6ee; }
+.lead b { color: var(--ink); }
+.pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+.pills span { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px; border-radius: 999px; font-size: 13px; font-weight: 700; color: #e9d5ff; background: rgba(192, 132, 252, .1); border: 1px solid rgba(192, 132, 252, .28); }
+.pills svg { width: 16px; height: 16px; color: var(--amethyst); }
+.cta { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 30px; }
 .meta { margin-top: 16px; font-family: var(--mono); font-size: 13px; color: var(--muted); }
 .meta b { color: var(--ink); font-weight: 500; }
 
-.orbit { position: relative; aspect-ratio: 1; max-width: 100%; width: 460px; justify-self: center; }
-.orbit .ring { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(168, 85, 247, .16); border-top-color: rgba(192, 132, 252, .8); animation: spin 14s linear infinite; }
-.orbit .ring.r2 { inset: 9%; border-width: 1px; border-top-color: rgba(168, 85, 247, .14); border-right-color: rgba(192, 132, 252, .6); animation-duration: 22s; animation-direction: reverse; }
-.orbit img { position: absolute; inset: 15%; width: 70%; height: 70%; border-radius: 50%; animation: breath 3.2s ease-in-out infinite; }
-.cube { position: absolute; width: 40px; height: 40px; animation: float 8s ease-in-out infinite; }
-.cube.c1 { right: 2%; top: 14%; background: linear-gradient(135deg, #e9d5ff, #9333ea); }
-.cube.c2 { left: 0; bottom: 18%; width: 28px; height: 28px; background: linear-gradient(135deg, #2a1846, #120922); box-shadow: inset 0 0 0 3px #4c2b80, 0 0 22px rgba(124, 58, 237, .5); animation-delay: -3s; }
-.cube.c3 { right: 14%; bottom: 4%; width: 20px; height: 20px; background: linear-gradient(135deg, #c084fc, #581c87); animation-delay: -5s; animation-duration: 10s; }
+/* Księżyc ze smokiem */
+.moon-scene { position: relative; justify-self: center; width: 360px; height: 360px; }
+.moon-halo { position: absolute; inset: -60px; border-radius: 50%; background: radial-gradient(circle, rgba(192, 132, 252, .5) 0%, rgba(168, 85, 247, .2) 38%, transparent 68%); animation: halo 5s ease-in-out infinite; }
+.moon-ring { position: absolute; inset: -14px; border-radius: 50%; border: 1px dashed rgba(216, 180, 254, .4); animation: spin 40s linear infinite; }
+.moon-ring.r2 { inset: -50px; border: 2px solid rgba(168, 85, 247, .14); border-top-color: rgba(192, 132, 252, .75); border-style: solid; animation-duration: 14s; }
+.moon { position: absolute; inset: 50px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Crect x='2' y='1' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='3' y='1' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='4' y='1' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='5' y='1' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='6' y='1' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='7' y='1' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='8' y='1' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='9' y='1' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='10' y='1' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='11' y='1' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='12' y='1' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='13' y='1' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='1' y='2' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='2' y='2' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='3' y='2' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='4' y='2' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='5' y='2' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='6' y='2' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='7' y='2' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='8' y='2' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='9' y='2' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='10' y='2' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='11' y='2' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='12' y='2' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='13' y='2' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='14' y='2' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='1' y='3' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='2' y='3' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='3' y='3' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='4' y='3' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='5' y='3' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='6' y='3' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='7' y='3' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='8' y='3' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='9' y='3' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='10' y='3' width='1' height='1' fill='%235b23b0'/%3E%3Crect x='11' y='3' width='1' height='1' fill='%235b23b0'/%3E%3Crect x='12' y='3' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='13' y='3' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='14' y='3' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='1' y='4' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='2' y='4' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='3' y='4' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='4' y='4' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='5' y='4' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='6' y='4' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='7' y='4' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='8' y='4' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='9' y='4' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='10' y='4' width='1' height='1' fill='%237b3ddc'/%3E%3Crect x='11' y='4' width='1' height='1' fill='%237b3ddc'/%3E%3Crect x='12' y='4' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='13' y='4' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='14' y='4' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='1' y='5' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='2' y='5' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='3' y='5' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='4' y='5' width='1' height='1' fill='%235b23b0'/%3E%3Crect x='5' y='5' width='1' height='1' fill='%235b23b0'/%3E%3Crect x='6' y='5' width='1' height='1' fill='%235b23b0'/%3E%3Crect x='7' y='5' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='8' y='5' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='9' y='5' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='10' y='5' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='11' y='5' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='12' y='5' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='13' y='5' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='14' y='5' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='1' y='6' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='2' y='6' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='3' y='6' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='4' y='6' width='1' height='1' fill='%237b3ddc'/%3E%3Crect x='5' y='6' width='1' height='1' fill='%237b3ddc'/%3E%3Crect x='6' y='6' width='1' height='1' fill='%237b3ddc'/%3E%3Crect x='7' y='6' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='8' y='6' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='9' y='6' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='10' y='6' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='11' y='6' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='12' y='6' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='13' y='6' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='14' y='6' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='1' y='7' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='2' y='7' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='3' y='7' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='4' y='7' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='5' y='7' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='6' y='7' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='7' y='7' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='8' y='7' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='9' y='7' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='10' y='7' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='11' y='7' width='1' height='1' fill='%235b23b0'/%3E%3Crect x='12' y='7' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='13' y='7' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='14' y='7' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='1' y='8' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='2' y='8' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='3' y='8' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='4' y='8' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='5' y='8' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='6' y='8' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='7' y='8' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='8' y='8' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='9' y='8' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='10' y='8' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='11' y='8' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='12' y='8' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='13' y='8' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='14' y='8' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='1' y='9' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='2' y='9' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='3' y='9' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='4' y='9' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='5' y='9' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='6' y='9' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='7' y='9' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='8' y='9' width='1' height='1' fill='%235b23b0'/%3E%3Crect x='9' y='9' width='1' height='1' fill='%235b23b0'/%3E%3Crect x='10' y='9' width='1' height='1' fill='%235b23b0'/%3E%3Crect x='11' y='9' width='1' height='1' fill='%235b23b0'/%3E%3Crect x='12' y='9' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='13' y='9' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='14' y='9' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='1' y='10' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='2' y='10' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='3' y='10' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='4' y='10' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='5' y='10' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='6' y='10' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='7' y='10' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='8' y='10' width='1' height='1' fill='%237b3ddc'/%3E%3Crect x='9' y='10' width='1' height='1' fill='%237b3ddc'/%3E%3Crect x='10' y='10' width='1' height='1' fill='%237b3ddc'/%3E%3Crect x='11' y='10' width='1' height='1' fill='%237b3ddc'/%3E%3Crect x='12' y='10' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='13' y='10' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='14' y='10' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='1' y='11' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='2' y='11' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='3' y='11' width='1' height='1' fill='%235b23b0'/%3E%3Crect x='4' y='11' width='1' height='1' fill='%235b23b0'/%3E%3Crect x='5' y='11' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='6' y='11' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='7' y='11' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='8' y='11' width='1' height='1' fill='%237b3ddc'/%3E%3Crect x='9' y='11' width='1' height='1' fill='%237b3ddc'/%3E%3Crect x='10' y='11' width='1' height='1' fill='%237b3ddc'/%3E%3Crect x='11' y='11' width='1' height='1' fill='%237b3ddc'/%3E%3Crect x='12' y='11' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='13' y='11' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='14' y='11' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='1' y='12' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='2' y='12' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='3' y='12' width='1' height='1' fill='%237b3ddc'/%3E%3Crect x='4' y='12' width='1' height='1' fill='%237b3ddc'/%3E%3Crect x='5' y='12' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='6' y='12' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='7' y='12' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='8' y='12' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='9' y='12' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='10' y='12' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='11' y='12' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='12' y='12' width='1' height='1' fill='%235b23b0'/%3E%3Crect x='13' y='12' width='1' height='1' fill='%235b23b0'/%3E%3Crect x='14' y='12' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='1' y='13' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='2' y='13' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='3' y='13' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='4' y='13' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='5' y='13' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='6' y='13' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='7' y='13' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='8' y='13' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='9' y='13' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='10' y='13' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='11' y='13' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='12' y='13' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='13' y='13' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='14' y='13' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='2' y='14' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='3' y='14' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='4' y='14' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='5' y='14' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='6' y='14' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='7' y='14' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='8' y='14' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='9' y='14' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='10' y='14' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='11' y='14' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='12' y='14' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='13' y='14' width='1' height='1' fill='%23a46bf5'/%3E%3C/svg%3E") center / contain no-repeat; image-rendering: pixelated; animation: moonFloat 9s ease-in-out infinite; filter: drop-shadow(0 0 34px rgba(192, 132, 252, .8)); }
+.moon-dust { --r: 210px; position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; margin: -4px; background: #e9d5ff; box-shadow: 0 0 10px #c084fc; animation: dust 16s linear infinite; }
+.moon-dust.d2 { animation-delay: -4s; width: 5px; height: 5px; }
+.moon-dust.d3 { animation-delay: -8s; background: #d946ef; }
+.moon-dust.d4 { animation-delay: -12s; width: 5px; height: 5px; animation-duration: 22s; }
+.wyrm { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+.wyrm i { --i: 0; position: absolute; left: 0; top: 0; offset-path: path("M -1100 430 C -620 520, -260 260, -40 300 C 30 -80, 420 -110, 420 190 C 420 470, 70 500, 30 330 C 0 170, 260 -40, 520 -120 S 1100 -320, 1500 -380"); offset-rotate: auto; background: center / contain no-repeat; image-rendering: pixelated; filter: drop-shadow(0 0 8px rgba(217, 70, 239, .75)); animation: wyrm 20s linear infinite; animation-delay: calc(var(--i) * .1s); will-change: offset-distance; }
+.wyrm i:nth-child(2) { --i: 1; }
+.wyrm i:nth-child(3) { --i: 2; }
+.wyrm i:nth-child(4) { --i: 3; }
+.wyrm i:nth-child(5) { --i: 4; }
+.wyrm i:nth-child(6) { --i: 5; }
+.wyrm i:nth-child(7) { --i: 6; }
+.wyrm i:nth-child(8) { --i: 7; }
+.wyrm i:nth-child(9) { --i: 8; }
+.wyrm i:nth-child(10) { --i: 9; }
+.wyrm i:nth-child(11) { --i: 10; }
+.wyrm i:nth-child(12) { --i: 11; }
+.wyrm i:nth-child(13) { --i: 12; }
+.wyrm i:nth-child(14) { --i: 13; }
+.wyrm i:nth-child(15) { --i: 14; }
+.wyrm i:nth-child(16) { --i: 15; }
+.wyrm i:nth-child(17) { --i: 16; }
+.wyrm i:nth-child(18) { --i: 17; }
 
-.horizon { height: 90px; background-repeat: repeat-x; background-size: 1280px 90px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1280' height='90' viewBox='0 0 1280 90'%3E%3Cpath d='M0 90V46h64V36h64v10h64V26h64v10h64v14h64V30h64V20h64v20h64v6h64V32h64v10h64V22h64v14h64v10h64V30h64v10h64V26h64v18h64v-6h64v10h64v40z' fill='%23120a22'/%3E%3Cpath d='M0 46h64V36h64v10h64V26h64v10h64v14h64V30h64V20h64v20h64v6h64V32h64v10h64V22h64v14h64v10h64V30h64v10h64V26h64v18h64v-6h64v10h64' fill='none' stroke='%237c3aed' stroke-width='4'/%3E%3C/svg%3E"); }
+.wyrm .w-head { width: 92px; height: 66px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 10' shape-rendering='crispEdges'%3E%3Crect x='2' y='0' width='1' height='1' fill='%23f0abfc'/%3E%3Crect x='2' y='1' width='1' height='1' fill='%23f0abfc'/%3E%3Crect x='3' y='1' width='1' height='1' fill='%23f0abfc'/%3E%3Crect x='6' y='1' width='1' height='1' fill='%23f0abfc'/%3E%3Crect x='3' y='2' width='1' height='1' fill='%23f0abfc'/%3E%3Crect x='4' y='2' width='1' height='1' fill='%23f0abfc'/%3E%3Crect x='6' y='2' width='1' height='1' fill='%23f0abfc'/%3E%3Crect x='7' y='2' width='1' height='1' fill='%23f0abfc'/%3E%3Crect x='2' y='3' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='3' y='3' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='4' y='3' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='5' y='3' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='6' y='3' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='7' y='3' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='8' y='3' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='9' y='3' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='1' y='4' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='2' y='4' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='3' y='4' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='4' y='4' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='5' y='4' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='6' y='4' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='7' y='4' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='8' y='4' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='9' y='4' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='10' y='4' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='11' y='4' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='0' y='5' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='1' y='5' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='2' y='5' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='3' y='5' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='4' y='5' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='5' y='5' width='1' height='1' fill='%23e9d5ff'/%3E%3Crect x='6' y='5' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='7' y='5' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='8' y='5' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='9' y='5' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='10' y='5' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='11' y='5' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='12' y='5' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='0' y='6' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='1' y='6' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='2' y='6' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='3' y='6' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='4' y='6' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='5' y='6' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='6' y='6' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='7' y='6' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='8' y='6' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='9' y='6' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='10' y='6' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='11' y='6' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='12' y='6' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='13' y='6' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='0' y='7' width='1' height='1' fill='%233b1170'/%3E%3Crect x='1' y='7' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='2' y='7' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='3' y='7' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='4' y='7' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='5' y='7' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='6' y='7' width='1' height='1' fill='%232a0a55'/%3E%3Crect x='7' y='7' width='1' height='1' fill='%232a0a55'/%3E%3Crect x='8' y='7' width='1' height='1' fill='%232a0a55'/%3E%3Crect x='9' y='7' width='1' height='1' fill='%232a0a55'/%3E%3Crect x='10' y='7' width='1' height='1' fill='%232a0a55'/%3E%3Crect x='11' y='7' width='1' height='1' fill='%232a0a55'/%3E%3Crect x='12' y='7' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='1' y='8' width='1' height='1' fill='%233b1170'/%3E%3Crect x='2' y='8' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='3' y='8' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='4' y='8' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='5' y='8' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='6' y='8' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='7' y='8' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='8' y='8' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='9' y='8' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='10' y='8' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='11' y='8' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='2' y='9' width='1' height='1' fill='%233b1170'/%3E%3Crect x='3' y='9' width='1' height='1' fill='%233b1170'/%3E%3Crect x='4' y='9' width='1' height='1' fill='%233b1170'/%3E%3Crect x='5' y='9' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='6' y='9' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='7' y='9' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='8' y='9' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='9' y='9' width='1' height='1' fill='%237c3aed'/%3E%3C/svg%3E"); z-index: 2; }
+.wyrm .w-seg { width: calc(54px - var(--i) * 1.6px); height: calc(47px - var(--i) * 1.4px); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 7' shape-rendering='crispEdges'%3E%3Crect x='3' y='0' width='1' height='1' fill='%23f0abfc'/%3E%3Crect x='4' y='0' width='1' height='1' fill='%23f0abfc'/%3E%3Crect x='2' y='1' width='1' height='1' fill='%23f0abfc'/%3E%3Crect x='3' y='1' width='1' height='1' fill='%23e9d5ff'/%3E%3Crect x='4' y='1' width='1' height='1' fill='%23f0abfc'/%3E%3Crect x='1' y='2' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='2' y='2' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='3' y='2' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='4' y='2' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='5' y='2' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='6' y='2' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='0' y='3' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='1' y='3' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='2' y='3' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='3' y='3' width='1' height='1' fill='%23e9d5ff'/%3E%3Crect x='4' y='3' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='5' y='3' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='6' y='3' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='7' y='3' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='0' y='4' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='1' y='4' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='2' y='4' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='3' y='4' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='4' y='4' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='5' y='4' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='6' y='4' width='1' height='1' fill='%23e9d5ff'/%3E%3Crect x='7' y='4' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='0' y='5' width='1' height='1' fill='%233b1170'/%3E%3Crect x='1' y='5' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='2' y='5' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='3' y='5' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='4' y='5' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='5' y='5' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='6' y='5' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='7' y='5' width='1' height='1' fill='%233b1170'/%3E%3Crect x='1' y='6' width='1' height='1' fill='%233b1170'/%3E%3Crect x='2' y='6' width='1' height='1' fill='%233b1170'/%3E%3Crect x='3' y='6' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='4' y='6' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='5' y='6' width='1' height='1' fill='%233b1170'/%3E%3Crect x='6' y='6' width='1' height='1' fill='%233b1170'/%3E%3C/svg%3E"); }
+.wyrm .w-tail { width: 36px; height: 42px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 6 7' shape-rendering='crispEdges'%3E%3Crect x='0' y='0' width='1' height='1' fill='%23f0abfc'/%3E%3Crect x='0' y='1' width='1' height='1' fill='%23f0abfc'/%3E%3Crect x='1' y='1' width='1' height='1' fill='%23f0abfc'/%3E%3Crect x='0' y='2' width='1' height='1' fill='%23e9d5ff'/%3E%3Crect x='1' y='2' width='1' height='1' fill='%23f0abfc'/%3E%3Crect x='2' y='2' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='3' y='2' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='0' y='3' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='1' y='3' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='2' y='3' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='3' y='3' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='4' y='3' width='1' height='1' fill='%23b57cff'/%3E%3Crect x='5' y='3' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='0' y='4' width='1' height='1' fill='%23e9d5ff'/%3E%3Crect x='1' y='4' width='1' height='1' fill='%23f0abfc'/%3E%3Crect x='2' y='4' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='3' y='4' width='1' height='1' fill='%237c3aed'/%3E%3Crect x='0' y='5' width='1' height='1' fill='%23f0abfc'/%3E%3Crect x='1' y='5' width='1' height='1' fill='%23f0abfc'/%3E%3Crect x='0' y='6' width='1' height='1' fill='%23f0abfc'/%3E%3C/svg%3E"); }
+.wyrm i:nth-child(4n + 2)::after { content: ""; position: absolute; left: -6px; top: 50%; width: 4px; height: 4px; background: #f5d0fe; box-shadow: 0 0 6px #e879f9; animation: sparkle 1.2s linear infinite; }
+
+.horizon { position: relative; height: 110px; overflow: hidden; }
+.horizon::before { content: ""; position: absolute; left: 0; bottom: 0; width: calc(100% + 1280px); height: 110px; background-repeat: repeat-x; background-size: 1280px 110px; animation: drift 60s linear infinite;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1280' height='110' viewBox='0 0 1280 110'%3E%3Cpath d='M0 110V58h64V46h64v12h64V34h64v12h64v16h64V38h64V26h64v24h64v8h64V42h64v12h64V30h64v16h64v12h64V38h64v12h64V34h64v20h64v-8h64v12h64v52z' fill='%230f0820'/%3E%3Cpath d='M0 58h64V46h64v12h64V34h64v12h64v16h64V38h64V26h64v24h64v8h64V42h64v12h64V30h64v16h64v12h64V38h64v12h64V34h64v20h64v-8h64v12h64' fill='none' stroke='%237c3aed' stroke-width='4'/%3E%3C/svg%3E"); }
 
 /* ── Sekcje ── */
 .band { background: var(--void-2); }
-.section { padding-block: 72px; }
-.section-head { display: flex; flex-direction: column; gap: 10px; max-width: 640px; }
-h2 { margin: 0; font-family: var(--display); font-weight: 700; font-size: clamp(30px, 4.4vw, 44px); line-height: 1.05; text-wrap: balance; }
+.section { padding-block: 84px; }
+.section-head { display: flex; flex-direction: column; gap: 10px; max-width: 680px; }
+h2 { margin: 0; font-weight: 900; font-size: clamp(32px, 4.6vw, 50px); line-height: 1.05; text-transform: uppercase; text-shadow: 3px 3px 0 rgba(76, 29, 149, .9); text-wrap: balance; }
 h2 span { color: var(--amethyst); }
 .section-head p { margin: 0; color: var(--muted); font-size: 17px; }
+.reveal { animation: rise-in .7s ease-out both; animation-timeline: view(); animation-range: entry 0% entry 40%; }
+
+/* Podgląd launchera */
+.window { position: relative; margin-top: 44px; border-radius: 18px; border: 1px solid var(--line-strong); overflow: hidden; background: #0b0617;
+  box-shadow: 0 40px 100px -30px rgba(124, 58, 237, .7), 0 0 0 1px rgba(255, 255, 255, .04) inset; }
+.window::after { content: ""; position: absolute; inset: 0; border-radius: 18px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12); pointer-events: none; }
+.window img { display: block; width: 100%; height: auto; }
+.callouts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 18px; }
+.callouts div { padding: 16px 18px; border-radius: 14px; background: var(--panel); border: 1px solid var(--line); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06); }
+.callouts b { display: block; font-size: 15px; }
+.callouts span { color: var(--muted); font-size: 14px; }
 
 /* Menu w grze */
 .ingame { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: 40px; align-items: center; margin-top: 40px; }
-.screen { position: relative; border: 2px solid var(--line-strong); background:
+.screen { position: relative; border-radius: 14px; border: 2px solid var(--line-strong); overflow: hidden; background:
   linear-gradient(180deg, rgba(20, 6, 40, .55), rgba(5, 2, 16, .85)),
-  linear-gradient(180deg, #24104a 0 48%, #120626 48% 100%); padding: 18px; min-height: 340px; font-family: var(--display); }
+  linear-gradient(180deg, #24104a 0 48%, #120626 48% 100%); padding: 18px; min-height: 360px; font-family: var(--display); }
 .hud { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
 .hud span { align-self: flex-start; padding: 3px 7px; background: rgba(0, 0, 0, .55); }
 .hud em { font-style: normal; color: var(--amethyst); }
-.gui { position: absolute; left: 50%; top: 52%; width: min(360px, 86%); transform: translate(-50%, -50%); background: rgba(18, 10, 34, .96); border: 2px solid rgba(192, 132, 252, .55); }
+.gui { position: absolute; left: 50%; top: 53%; width: min(380px, 88%); transform: translate(-50%, -50%); background: rgba(18, 10, 34, .96); border: 2px solid rgba(192, 132, 252, .55); border-radius: 10px; box-shadow: 0 0 40px rgba(168, 85, 247, .35); }
 .gui-head { display: flex; justify-content: space-between; padding: 10px 12px; border-bottom: 2px solid rgba(192, 132, 252, .35); font-size: 13px; }
 .gui-head small { color: var(--muted); font-size: 10px; }
-.gui-body { display: grid; grid-template-columns: 82px minmax(0, 1fr); gap: 8px; padding: 10px; }
-.gui-tabs { display: flex; flex-direction: column; gap: 5px; font-size: 11px; }
-.gui-tabs span { padding: 6px 8px; background: #1c1231; color: var(--muted); }
-.gui-tabs span.on { background: rgba(168, 85, 247, .3); color: var(--ink); border-left: 3px solid var(--amethyst); }
-.gui-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; font-size: 10px; }
-.gui-cards span { display: flex; justify-content: space-between; align-items: center; padding: 8px; background: #1c1231; }
-.gui-cards span.on { background: rgba(168, 85, 247, .25); outline: 1px solid var(--amethyst); }
-.gui-cards span::after { content: ""; width: 18px; height: 9px; background: #3a2d55; }
-.gui-cards span.on::after { background: var(--amethyst); }
+.gui-tabs { display: flex; gap: 5px; padding: 10px 10px 0; font-size: 10px; }
+.gui-tabs span { padding: 5px 9px; border-radius: 999px; background: #1c1231; color: var(--muted); }
+.gui-tabs span.on { background: var(--deep); color: #fff; }
+.gui-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 10px; font-size: 10px; }
+.gui-cards span { display: flex; flex-direction: column; gap: 8px; padding: 9px; border-radius: 6px; background: #1c1231; }
+.gui-cards span::after { content: "WYŁĄCZONY"; font-size: 7px; text-align: center; padding: 2px; background: #2c2145; color: var(--muted); }
+.gui-cards span.on { background: rgba(168, 85, 247, .22); outline: 1px solid var(--amethyst); }
+.gui-cards span.on::after { content: "WŁĄCZONY"; background: var(--deep); color: #fff; }
 .credit-pixel { position: absolute; left: 12px; bottom: 10px; font-size: 12px; text-shadow: 2px 2px 0 #000; }
 .credit-pixel b { color: var(--amethyst); font-weight: 400; }
-.keycap { display: inline-block; padding: 1px 8px; border: 1px solid var(--line-strong); border-bottom-width: 3px; border-radius: 6px; font-family: var(--mono); font-size: 13px; color: var(--ink); background: var(--panel); }
-.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
-.list li { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 12px; }
-.list svg { width: 22px; height: 22px; color: var(--amethyst); margin-top: 2px; }
+.keycap { display: inline-block; padding: 1px 8px; border: 1px solid var(--line-strong); border-bottom-width: 3px; border-radius: 6px; font-family: var(--mono); font-size: 13px; color: var(--ink); background: #170d2c; }
+.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 16px; }
+.list li { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 14px; align-items: start; }
+.list .ic { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 10px; background: rgba(168, 85, 247, .16); border: 1px solid var(--line); }
+.list svg { width: 20px; height: 20px; color: var(--amethyst); }
 .list b { display: block; }
 .list span { color: var(--muted); font-size: 15px; }
 
-/* Funkcje launchera */
+/* Funkcje */
 .features { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 40px; }
-.feature { display: flex; flex-direction: column; gap: 10px; padding: 22px; border: 1px solid var(--line); background: var(--panel); border-radius: 16px; transition: border-color .2s, transform .2s; }
-.feature:hover { border-color: var(--line-strong); transform: translateY(-3px); }
-.feature svg { width: 28px; height: 28px; color: var(--amethyst); }
-.feature h3 { margin: 0; font-size: 18px; font-weight: 800; }
+.feature { position: relative; display: flex; flex-direction: column; gap: 10px; padding: 24px; border-radius: 18px; border: 1px solid var(--line); background: var(--panel);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 20px 40px -24px rgba(0, 0, 0, .8); transition: border-color .2s, transform .2s, box-shadow .2s; }
+.feature:hover { border-color: var(--line-strong); transform: translateY(-4px); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 24px 50px -20px rgba(124, 58, 237, .7); }
+.feature .ic { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(160deg, rgba(168, 85, 247, .35), rgba(124, 58, 237, .12)); border: 1px solid rgba(192, 132, 252, .35); }
+.feature svg { width: 24px; height: 24px; color: #e9d5ff; }
+.feature h3 { margin: 4px 0 0; font-size: 18px; font-weight: 800; }
 .feature p { margin: 0; color: var(--muted); font-size: 15px; }
+.feature .new { position: absolute; right: 16px; top: 16px; font-size: 11px; font-weight: 800; letter-spacing: 1px; padding: 3px 9px; border-radius: 999px; background: var(--deep); color: #fff; }
 
 /* Wersje */
 .versions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
-.ver { font-family: var(--mono); font-size: 14px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 10px; background: rgba(192, 132, 252, .06); }
+.ver { font-family: var(--mono); font-size: 14px; padding: 9px 14px; border: 1px solid var(--line); border-radius: 10px; background: rgba(192, 132, 252, .06); }
 .ver b { color: var(--amethyst); font-weight: 500; }
 
 /* Pobieranie */
-.download { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px; align-items: start; margin-top: 40px; padding: 36px; border-radius: 22px; border: 1px solid var(--line-strong);
-  background: radial-gradient(500px 300px at 15% 0%, rgba(168, 85, 247, .3), transparent 70%), var(--panel); }
-.download .side { display: flex; flex-direction: column; gap: 14px; align-items: flex-start; }
-.download .note { font-size: 14px; color: var(--muted); }
+.download { position: relative; overflow: hidden; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px; align-items: center; margin-top: 40px; padding: 40px; border-radius: 24px; border: 1px solid var(--line-strong);
+  background: radial-gradient(520px 320px at 12% 0%, rgba(168, 85, 247, .32), transparent 70%), var(--panel); box-shadow: 0 40px 90px -40px rgba(124, 58, 237, .8); }
+.download .side { position: relative; display: flex; flex-direction: column; gap: 14px; align-items: flex-start; }
+.download .note { margin: 0; font-size: 14px; color: var(--muted); }
+.download .mini-moon { position: absolute; right: -40px; bottom: -60px; width: 200px; height: 200px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Crect x='2' y='1' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='3' y='1' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='4' y='1' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='5' y='1' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='6' y='1' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='7' y='1' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='8' y='1' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='9' y='1' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='10' y='1' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='11' y='1' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='12' y='1' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='13' y='1' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='1' y='2' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='2' y='2' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='3' y='2' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='4' y='2' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='5' y='2' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='6' y='2' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='7' y='2' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='8' y='2' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='9' y='2' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='10' y='2' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='11' y='2' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='12' y='2' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='13' y='2' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='14' y='2' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='1' y='3' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='2' y='3' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='3' y='3' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='4' y='3' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='5' y='3' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='6' y='3' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='7' y='3' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='8' y='3' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='9' y='3' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='10' y='3' width='1' height='1' fill='%235b23b0'/%3E%3Crect x='11' y='3' width='1' height='1' fill='%235b23b0'/%3E%3Crect x='12' y='3' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='13' y='3' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='14' y='3' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='1' y='4' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='2' y='4' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='3' y='4' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='4' y='4' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='5' y='4' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='6' y='4' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='7' y='4' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='8' y='4' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='9' y='4' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='10' y='4' width='1' height='1' fill='%237b3ddc'/%3E%3Crect x='11' y='4' width='1' height='1' fill='%237b3ddc'/%3E%3Crect x='12' y='4' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='13' y='4' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='14' y='4' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='1' y='5' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='2' y='5' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='3' y='5' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='4' y='5' width='1' height='1' fill='%235b23b0'/%3E%3Crect x='5' y='5' width='1' height='1' fill='%235b23b0'/%3E%3Crect x='6' y='5' width='1' height='1' fill='%235b23b0'/%3E%3Crect x='7' y='5' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='8' y='5' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='9' y='5' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='10' y='5' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='11' y='5' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='12' y='5' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='13' y='5' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='14' y='5' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='1' y='6' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='2' y='6' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='3' y='6' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='4' y='6' width='1' height='1' fill='%237b3ddc'/%3E%3Crect x='5' y='6' width='1' height='1' fill='%237b3ddc'/%3E%3Crect x='6' y='6' width='1' height='1' fill='%237b3ddc'/%3E%3Crect x='7' y='6' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='8' y='6' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='9' y='6' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='10' y='6' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='11' y='6' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='12' y='6' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='13' y='6' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='14' y='6' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='1' y='7' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='2' y='7' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='3' y='7' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='4' y='7' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='5' y='7' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='6' y='7' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='7' y='7' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='8' y='7' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='9' y='7' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='10' y='7' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='11' y='7' width='1' height='1' fill='%235b23b0'/%3E%3Crect x='12' y='7' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='13' y='7' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='14' y='7' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='1' y='8' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='2' y='8' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='3' y='8' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='4' y='8' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='5' y='8' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='6' y='8' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='7' y='8' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='8' y='8' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='9' y='8' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='10' y='8' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='11' y='8' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='12' y='8' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='13' y='8' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='14' y='8' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='1' y='9' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='2' y='9' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='3' y='9' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='4' y='9' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='5' y='9' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='6' y='9' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='7' y='9' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='8' y='9' width='1' height='1' fill='%235b23b0'/%3E%3Crect x='9' y='9' width='1' height='1' fill='%235b23b0'/%3E%3Crect x='10' y='9' width='1' height='1' fill='%235b23b0'/%3E%3Crect x='11' y='9' width='1' height='1' fill='%235b23b0'/%3E%3Crect x='12' y='9' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='13' y='9' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='14' y='9' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='1' y='10' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='2' y='10' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='3' y='10' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='4' y='10' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='5' y='10' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='6' y='10' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='7' y='10' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='8' y='10' width='1' height='1' fill='%237b3ddc'/%3E%3Crect x='9' y='10' width='1' height='1' fill='%237b3ddc'/%3E%3Crect x='10' y='10' width='1' height='1' fill='%237b3ddc'/%3E%3Crect x='11' y='10' width='1' height='1' fill='%237b3ddc'/%3E%3Crect x='12' y='10' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='13' y='10' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='14' y='10' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='1' y='11' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='2' y='11' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='3' y='11' width='1' height='1' fill='%235b23b0'/%3E%3Crect x='4' y='11' width='1' height='1' fill='%235b23b0'/%3E%3Crect x='5' y='11' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='6' y='11' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='7' y='11' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='8' y='11' width='1' height='1' fill='%237b3ddc'/%3E%3Crect x='9' y='11' width='1' height='1' fill='%237b3ddc'/%3E%3Crect x='10' y='11' width='1' height='1' fill='%237b3ddc'/%3E%3Crect x='11' y='11' width='1' height='1' fill='%237b3ddc'/%3E%3Crect x='12' y='11' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='13' y='11' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='14' y='11' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='1' y='12' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='2' y='12' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='3' y='12' width='1' height='1' fill='%237b3ddc'/%3E%3Crect x='4' y='12' width='1' height='1' fill='%237b3ddc'/%3E%3Crect x='5' y='12' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='6' y='12' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='7' y='12' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='8' y='12' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='9' y='12' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='10' y='12' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='11' y='12' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='12' y='12' width='1' height='1' fill='%235b23b0'/%3E%3Crect x='13' y='12' width='1' height='1' fill='%235b23b0'/%3E%3Crect x='14' y='12' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='1' y='13' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='2' y='13' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='3' y='13' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='4' y='13' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='5' y='13' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='6' y='13' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='7' y='13' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='8' y='13' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='9' y='13' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='10' y='13' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='11' y='13' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='12' y='13' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='13' y='13' width='1' height='1' fill='%23eedcff'/%3E%3Crect x='14' y='13' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='2' y='14' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='3' y='14' width='1' height='1' fill='%23c08cff'/%3E%3Crect x='4' y='14' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='5' y='14' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='6' y='14' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='7' y='14' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='8' y='14' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='9' y='14' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='10' y='14' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='11' y='14' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='12' y='14' width='1' height='1' fill='%23a46bf5'/%3E%3Crect x='13' y='14' width='1' height='1' fill='%23a46bf5'/%3E%3C/svg%3E") center / contain no-repeat; image-rendering: pixelated; opacity: .16; transform: rotate(12deg); pointer-events: none; }
 .steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 18px; counter-reset: step; }
-.steps li { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 14px; counter-increment: step; }
-.steps li::before { content: counter(step); display: grid; place-items: center; width: 40px; height: 40px; font-family: var(--display); background: var(--deep); border-bottom: 4px solid #4c1d95; border-radius: 8px; }
+.steps li { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 14px; counter-increment: step; }
+.steps li::before { content: counter(step); display: grid; place-items: center; width: 44px; height: 44px; font-weight: 900; font-size: 18px; background: linear-gradient(180deg, #c084fc, #7c3aed); border-bottom: 4px solid #4c1d95; border-radius: 10px; text-shadow: 2px 2px 0 #4c1d95; }
 .steps b { display: block; }
 .steps span { color: var(--muted); font-size: 15px; }
 
 /* FAQ */
 .faq { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 24px; margin-top: 32px; }
-details { border-bottom: 1px solid var(--line); padding-block: 14px; }
-summary { cursor: pointer; font-weight: 700; list-style: none; display: flex; justify-content: space-between; gap: 12px; }
+details { border-radius: 14px; border: 1px solid var(--line); background: var(--panel); padding: 16px 18px; }
+details[open] { border-color: var(--line-strong); }
+summary { cursor: pointer; font-weight: 800; list-style: none; display: flex; justify-content: space-between; gap: 12px; }
 summary::-webkit-details-marker { display: none; }
 summary::after { content: "+"; font-family: var(--display); color: var(--amethyst); }
 details[open] summary::after { content: "−"; }
 details p { margin: 10px 0 0; color: var(--muted); font-size: 15px; }
 
 /* Stopka */
-.foot { border-top: 1px solid var(--line); }
-.foot .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; padding-block: 28px; font-size: 13px; color: var(--muted); }
-.foot .by { font-family: var(--display); font-size: 15px; color: var(--ink); }
-.foot .by b { color: var(--amethyst); font-weight: 400; }
+.foot { border-top: 1px solid var(--line); background: rgba(7, 4, 15, .6); }
+.foot .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; padding-block: 28px; font-size: 13px; color: var(--muted); }
+.foot .by { font-weight: 800; letter-spacing: 1px; font-size: 15px; color: var(--ink); text-shadow: 0 0 12px rgba(168, 85, 247, .6); }
+.foot .by b { color: var(--amethyst); }
 
-@media (max-width: 860px) {
+@media (max-width: 900px) {
   .hero .wrap, .ingame, .download { grid-template-columns: minmax(0, 1fr); }
-  .orbit { width: 300px; order: -1; }
+  .hero .wrap { min-height: 0; }
+  .moon-scene { width: 240px; height: 240px; order: -1; margin: 40px 0 56px; }
+  .moon { inset: 34px; }
+  .moon-dust { --r: 150px; }
+  .wyrm { transform: scale(.66); transform-origin: 0 0; }
   .features { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .callouts { grid-template-columns: minmax(0, 1fr); }
   .faq { grid-template-columns: minmax(0, 1fr); }
   .nav { display: none; }
   .top .btn { margin-left: auto; }
@@ -196,25 +275,33 @@ details p { margin: 10px 0 0; color: var(--muted); font-size: 15px; }
 @media (max-width: 560px) {
   .features { grid-template-columns: minmax(0, 1fr); }
   .download { padding: 22px; }
-  .btn.big { width: 100%; justify-content: center; padding: 0 20px; font-size: 20px; }
+  .btn.big { width: 100%; justify-content: center; padding: 0 20px; font-size: 22px; }
   .top .btn span { display: none; }
+  .cta .btn.ghost { width: 100%; justify-content: center; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
+  .wyrm { display: none; }
   html { scroll-behavior: auto; }
 }
 </style>
 </head>
 <body>
-<div class="sky" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+<div class="sky" aria-hidden="true">
+  <div class="stars"></div>
+  <div class="glow g1"></div><div class="glow g2"></div>
+  <div class="shoot s1"></div><div class="shoot s2"></div><div class="shoot s3"></div>
+  <div class="island i1"></div><div class="island i2"></div><div class="island i3"></div>
+  <i class="p p1"></i><i class="p p2"></i><i class="p p3"></i><i class="p p4"></i><i class="p p5"></i><i class="p p6"></i><i class="p p7"></i><i class="p p8"></i><i class="p p9"></i><i class="p p10"></i>
+</div>
 
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#start"><img src="logo.webp" alt="" width="36" height="36">VOID <b>CLIENT</b></a>
     <nav class="nav" aria-label="Sekcje">
+      <a href="#launcher">Launcher</a>
       <a href="#menu">Menu w grze</a>
       <a href="#funkcje">Funkcje</a>
-      <a href="#wersje">Wersje</a>
       <a href="#faq">Pytania</a>
     </nav>
     <a class="btn dl" href="#pobierz"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 19h16"/></svg><span>Pobierz</span></a>
@@ -227,84 +314,105 @@ details p { margin: 10px 0 0; color: var(--muted); font-size: 15px; }
       <div>
         <div class="eyebrow">Launcher Minecraft · Windows</div>
         <h1>Wejdź<br><span>w pustkę.</span></h1>
-        <p class="lead">Szybki launcher z własnym menu pod prawym Shiftem, Twoim skinem w 3D i modami z Modrinth na jedno kliknięcie. Po starcie gry chowa się do zasobnika, żeby nie zabierać ani klatki.</p>
+        <p class="lead">Szybki launcher z menu pod <b>prawym Shiftem</b>, Twoim skinem w 3D i modami z Modrinth. Po starcie gry chowa się do zasobnika, żeby nie zabierać ani klatki.</p>
+        <div class="pills">
+          <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>Pakiet FPS</span>
+          <span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h.01M11 10h.01M15 10h.01M7 14h10"/></svg>Prawy Shift = menu</span>
+          <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></svg>Aktualizuje się sam</span>
+        </div>
         <div class="cta">
           <a class="btn big dl" href="#pobierz"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 19h16"/></svg>POBIERZ</a>
-          <a class="btn ghost" href="#funkcje">Zobacz funkcje</a>
+          <a class="btn ghost" href="#launcher">Zobacz launcher</a>
         </div>
         <div class="meta" id="releaseMeta">Windows 10 / 11 · 64-bit · <b>za darmo</b></div>
       </div>
-      <div class="orbit" aria-hidden="true">
-        <div class="ring"></div>
-        <div class="ring r2"></div>
-        <img src="logo-big.webp" alt="">
-        <span class="cube c1"></span><span class="cube c2"></span><span class="cube c3"></span>
+      <div class="moon-scene" aria-hidden="true">
+        <div class="moon-halo"></div>
+        <div class="moon-ring r2"></div>
+        <div class="moon-ring"></div>
+        <div class="moon"></div>
+        <i class="moon-dust"></i><i class="moon-dust d2"></i><i class="moon-dust d3"></i><i class="moon-dust d4"></i>
+        <div class="wyrm"><i class="w-head"></i><i class="w-seg"></i><i class="w-seg"></i><i class="w-seg"></i><i class="w-seg"></i><i class="w-seg"></i><i class="w-seg"></i><i class="w-seg"></i><i class="w-seg"></i><i class="w-seg"></i><i class="w-seg"></i><i class="w-seg"></i><i class="w-seg"></i><i class="w-seg"></i><i class="w-seg"></i><i class="w-seg"></i><i class="w-seg"></i><i class="w-tail"></i></div>
       </div>
     </div>
     <div class="horizon" aria-hidden="true"></div>
   </section>
 
-  <section class="band" id="menu">
+  <section class="band" id="launcher">
     <div class="wrap section">
-      <div class="section-head">
+      <div class="section-head reveal">
+        <div class="eyebrow">Launcher</div>
+        <h2>Tak wygląda <span>Void Client</span></h2>
+        <p>Księżyc, smok pustki i Twój skin w 3D – a pod spodem lekki launcher, który włącza się w sekundę.</p>
+      </div>
+      <div class="window reveal"><img src="launcher.webp" alt="Ekran główny launchera Void Client: logo, profile, przycisk GRAJ, fioletowy księżyc ze smokiem i podgląd statusu na Discordzie" width="1400" height="854" loading="lazy" decoding="async"></div>
+      <div class="callouts">
+        <div class="reveal"><b>Przeciągnij i upuść</b><span>Wrzuć mod .jar albo shader .zip na okno – launcher sam wie, gdzie go dać.</span></div>
+        <div class="reveal"><b>Status na Discordzie</b><span>Czas gry, serwer, na którym grasz, i Twoje FPS – każde z osobna da się wyłączyć.</span></div>
+        <div class="reveal"><b>Zawsze najnowsza wersja</b><span>Launcher sam pobiera aktualizacje. Klikasz „Uruchom ponownie” i gotowe.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="menu">
+    <div class="wrap section">
+      <div class="section-head reveal">
         <div class="eyebrow">W grze</div>
         <h2>Wszystko pod <span>prawym Shiftem</span></h2>
         <p>Wciśnij <span class="keycap">Right Shift</span> w grze i włączaj moduły jednym kliknięciem. Ustawienia zapisują się same.</p>
       </div>
       <div class="ingame">
-        <div class="screen" role="img" aria-label="Podgląd menu Void Client w grze">
+        <div class="screen reveal" role="img" aria-label="Podgląd menu Void Client w grze">
           <div class="hud">
             <span><em>FPS </em>240</span>
             <span><em>CPS </em>9 | 0</span>
             <span><em>Ping </em>32 ms</span>
           </div>
           <div class="gui">
-            <div class="gui-head"><span>VOID <b style="color: var(--amethyst); font-weight: 400">CLIENT</b></span><small>Prawy Shift – zamknij</small></div>
-            <div class="gui-body">
-              <div class="gui-tabs"><span class="on">HUD</span><span>Gra</span><span>AutoText</span><span>Opcje</span></div>
-              <div class="gui-cards">
-                <span class="on">FPS</span><span class="on">CPS</span><span class="on">Keystrokes</span><span>Zegar</span><span class="on">Zbroja</span><span>Koordynaty</span>
-              </div>
+            <div class="gui-head"><span>VOID <b style="color: var(--amethyst); font-weight: 400">CLIENT</b></span><small>Szukaj…</small></div>
+            <div class="gui-tabs"><span class="on">Wszystko</span><span>HUD</span><span>Gra</span><span>AutoText</span></div>
+            <div class="gui-cards">
+              <span class="on">FPS</span><span class="on">CPS</span><span class="on">Keys</span><span>Zegar</span><span class="on">Zoom</span><span>Freelook</span>
             </div>
           </div>
           <div class="credit-pixel"><b>Void Client </b>by: 1nonly $</div>
         </div>
         <ul class="list">
-          <li><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9h4M7 13h7"/></svg><div><b>HUD, który przesuniesz myszką</b><span>FPS, CPS, ping, koordynaty, zegar, Keystrokes i zbroja z wytrzymałością.</span></div></li>
-          <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h10M4 17h6"/><path d="m17 15 3 3-3 3"/></svg><div><b>AutoText</b><span>Zapisz komendę albo wiadomość, przypisz klawisz i wysyłaj ją jednym wciśnięciem.</span></div></li>
-          <li><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5M11 8v6M8 11h6"/></svg><div><b>Zoom, Fullbright, Toggle Sprint</b><span>Przybliżenie pod <span class="keycap">C</span>, pełna jasność w jaskiniach i automatyczny sprint.</span></div></li>
-          <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h8l1 4-3 2v12h-4V9L7 7z"/></svg><div><b>Zmiana skina bez wychodzenia z gry</b><span>Wybierz plik PNG w opcjach – skin trafia prosto na Twoje konto.</span></div></li>
+          <li class="reveal"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9h4M7 13h7"/></svg></span><div><b>HUD, który przesuniesz myszką</b><span>FPS, CPS, ping, koordynaty, zegar, Keystrokes i zbroja z wytrzymałością.</span></div></li>
+          <li class="reveal"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/></svg></span><div><b>Freelook na lewym Alcie</b><span>Rozglądaj się dookoła myszką, nie zmieniając kierunku, w którym idziesz.</span></div></li>
+          <li class="reveal"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h10M4 17h6"/><path d="m17 15 3 3-3 3"/></svg></span><div><b>AutoText</b><span>Zapisz komendę albo wiadomość, przypisz klawisz i wysyłaj ją jednym wciśnięciem.</span></div></li>
+          <li class="reveal"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5M11 8v6M8 11h6"/></svg></span><div><b>Zoom, Fullbright, Toggle Sprint</b><span>Przybliżenie pod <span class="keycap">C</span>, pełna jasność w jaskiniach i automatyczny sprint.</span></div></li>
         </ul>
       </div>
     </div>
   </section>
 
-  <section id="funkcje">
+  <section class="band" id="funkcje">
     <div class="wrap section">
-      <div class="section-head">
-        <div class="eyebrow">Launcher</div>
+      <div class="section-head reveal">
+        <div class="eyebrow">Funkcje</div>
         <h2>Lekki, szybki <span>i fioletowy</span></h2>
         <p>Wszystko, czego potrzebujesz, zanim klikniesz GRAJ.</p>
       </div>
       <div class="features">
-        <article class="feature"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 4 6v6c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10V6z"/><path d="m9 12 2 2 4-4"/></svg><h3>Konto Microsoft</h3><p>Oficjalne logowanie. Token jest zaszyfrowany przez Windows i nie trafia nigdzie poza Microsoft.</p></article>
-        <article class="feature"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="2" width="8" height="8"/><path d="M8 10v8h3v4M16 10v8h-3M5 11l3-1M19 11l-3-1"/></svg><h3>Twój skin w 3D</h3><p>Obracasz go myszką, włączasz animacje chodu, biegu i machania. Zmienisz go też z launchera.</p></article>
-        <article class="feature"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 3 7v10l9 5 9-5V7z"/><path d="m3 7 9 5 9-5M12 12v10"/></svg><h3>Mody z Modrinth</h3><p>Wyszukiwarka modów, shaderów i resource packów. Zależności instalują się same.</p></article>
-        <article class="feature"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></svg><h3>Pakiet FPS</h3><p>Sodium, Lithium, FerriteCore, Entity Culling i ImmediatelyFast dodają się do profilu automatycznie.</p></article>
-        <article class="feature"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8h10M7 12h6"/><path d="M5 4h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-6l-5 4v-4H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/></svg><h3>Status na Discordzie</h3><p>Znajomi widzą, że grasz w Void Client, na jakiej wersji i jak długo.</p></article>
-        <article class="feature"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><h3>Start w sekundę</h3><p>Ciężkie części ładują się dopiero przy kliknięciu GRAJ. W trakcie gry launcher śpi w zasobniku.</p></article>
+        <article class="feature reveal"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 4 6v6c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10V6z"/><path d="m9 12 2 2 4-4"/></svg></span><h3>Konto Microsoft</h3><p>Oficjalne logowanie. Token jest zaszyfrowany przez Windows i nie trafia nigdzie poza Microsoft.</p></article>
+        <article class="feature reveal"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="2" width="8" height="8"/><path d="M8 10v8h3v4M16 10v8h-3M5 11l3-1M19 11l-3-1"/></svg></span><h3>Twój skin w 3D</h3><p>Obracasz go myszką, włączasz animacje chodu, biegu i machania. Zmienisz go z launchera i w grze.</p></article>
+        <article class="feature reveal"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 3 7v10l9 5 9-5V7z"/><path d="m3 7 9 5 9-5M12 12v10"/></svg></span><h3>Mody z Modrinth</h3><p>Wyszukiwarka modów, shaderów i resource packów. Zależności instalują się same.</p></article>
+        <article class="feature reveal"><span class="new">NOWE</span><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></span><h3>Przeciągnij mod</h3><p>Upuść plik .jar albo .zip na launcher – rozpozna mod, shader czy resource pack i wrzuci go do profilu.</p></article>
+        <article class="feature reveal"><span class="new">NOWE</span><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8h10M7 12h6"/><path d="M5 4h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-6l-5 4v-4H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/></svg></span><h3>Status na Discordzie</h3><p>Czas w grze, adres serwera i FPS na żywo. Każdą z tych rzeczy wyłączysz w opcjach.</p></article>
+        <article class="feature reveal"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></svg></span><h3>Pakiet FPS</h3><p>Sodium, Lithium, FerriteCore, Entity Culling i ImmediatelyFast dodają się do profilu automatycznie.</p></article>
       </div>
     </div>
   </section>
 
-  <section class="band" id="wersje">
+  <section id="wersje">
     <div class="wrap section">
-      <div class="section-head">
+      <div class="section-head reveal">
         <div class="eyebrow">Wersje gry</div>
         <h2>Od <span>1.20.1</span> do <span>26.1</span></h2>
         <p>Menu pod prawym Shiftem działa na Fabricu w każdej z tych wersji. Vanillę uruchomisz na dowolnej.</p>
       </div>
-      <div class="versions">
+      <div class="versions reveal">
         <span class="ver">1.20 – <b>1.20.1</b></span>
         <span class="ver">1.20.2 – <b>1.20.4</b></span>
         <span class="ver">1.20.5 – <b>1.20.6</b></span>
@@ -319,17 +427,18 @@ details p { margin: 10px 0 0; color: var(--muted); font-size: 15px; }
     </div>
   </section>
 
-  <section id="pobierz">
+  <section class="band" id="pobierz">
     <div class="wrap section">
-      <div class="section-head">
+      <div class="section-head reveal">
         <div class="eyebrow">Pobieranie</div>
         <h2>Trzy kroki <span>do gry</span></h2>
       </div>
-      <div class="download">
+      <div class="download reveal">
+        <div class="mini-moon" aria-hidden="true"></div>
         <div class="side">
           <a class="btn big dl" href="#pobierz" id="mainDownload"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 19h16"/></svg>POBIERZ</a>
           <div class="meta" id="releaseMeta2">VoidClient-Setup.exe · Windows 10 / 11</div>
-          <p class="note" id="dlNote">Przycisk pobiera zawsze najnowszą wersję.</p>
+          <p class="note" id="dlNote">Przycisk zawsze pobiera najnowszą wersję. Masz już launcher? Zaktualizuje się sam.</p>
         </div>
         <ol class="steps">
           <li><div><b>Pobierz instalator</b><span>Plik VoidClient-Setup.exe ma kilkadziesiąt MB.</span></div></li>
@@ -340,9 +449,9 @@ details p { margin: 10px 0 0; color: var(--muted); font-size: 15px; }
     </div>
   </section>
 
-  <section class="band" id="faq">
+  <section id="faq">
     <div class="wrap section">
-      <div class="section-head">
+      <div class="section-head reveal">
         <div class="eyebrow">Pytania</div>
         <h2>Zanim <span>zapytasz</span></h2>
       </div>
@@ -350,9 +459,9 @@ details p { margin: 10px 0 0; color: var(--muted); font-size: 15px; }
         <details><summary>Czy Void Client jest za darmo?</summary><p>Tak. Potrzebujesz tylko konta Microsoft z kupionym Minecraft: Java Edition.</p></details>
         <details><summary>Czy dostanę bana na serwerze?</summary><p>Void Client nie ma cheatów typu fly czy killaura – tylko moduły takie jak w Lunar czy Badlion. Fullbright i Toggle Sprint są dozwolone na większości serwerów, ale sprawdź regulamin swojego.</p></details>
         <details><summary>Czy to spowolni moją grę?</summary><p>Nie. Launcher chowa się do zasobnika po starcie gry, a pakiet FPS zwykle daje więcej klatek niż czysta gra.</p></details>
+        <details><summary>Jak działają aktualizacje?</summary><p>Launcher sam sprawdza nowe wersje. Gdy jakaś jest, na dole pojawi się pasek – kliknij „Uruchom ponownie”, a jeśli Windows zapyta o zgodę, wybierz „Tak”.</p></details>
         <details><summary>Gdzie są moje światy i mody?</summary><p>W folderze %APPDATA%\.voidclient. Każdy profil ma własny folder, który otworzysz z opcji launchera.</p></details>
         <details><summary>Jak otworzyć menu w grze?</summary><p>Prawym Shiftem. Klawisz zmienisz w Opcje → Sterowanie → Void Client.</p></details>
-        <details><summary>Jak ustawić AutoText?</summary><p>W menu wejdź w zakładkę AutoText i wpisz tekst albo komendę. Klawisz przypiszesz w Sterowanie → Void Client → AutoText 1–6.</p></details>
       </div>
     </div>
   </section>
