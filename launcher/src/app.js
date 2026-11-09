@@ -205,6 +205,7 @@ $('playBtn').onclick = async () => {
   $('errBox').classList.add('hidden');
   if (!S.account) { toast('Najpierw zaloguj się kontem Microsoft (prawy górny róg)'); $('accountBtn').focus(); return; }
   running = true;
+  try { const r = $('playBtn').getBoundingClientRect(); window.voidFx?.boom(r.left + r.width / 2, r.top + r.height / 2, 1); } catch {}
   setPhase('loading');
   $('barFill').style.width = '0%';
   $('loadText').textContent = 'Przygotowanie…';
@@ -545,10 +546,10 @@ $('dropzone').onclick = () => toast('Złap plik .jar lub .zip w Eksploratorze i 
 // ───────── „Co nowego” po aktualizacji ─────────
 
 const WHATS_NEW = [
+  'Fioletowe wybuchy w launcherze: przycisk GRAJ eksploduje, kliknięcia sypią iskrami, a w tle co chwilę błyska pustka',
+  'Poświata za kursorem, iskry z przycisku GRAJ i płynniejsze przejścia między zakładkami',
   'Freelook i Zoom na dowolnym klawiszu – także na bocznym przycisku myszy (menu w grze → Opcje)',
-  'Nowy element HUD: TPS serwera – widzisz, kiedy serwer laguje',
-  'Waypointy: zapisz miejsce klawiszem B, a na ekranie zobaczysz znacznik z nazwą i odległością',
-  'Odświeżony launcher: portal pod skinem, pikselowe bloki profili i świecące akcenty'
+  'TPS serwera w HUD i waypointy ze znacznikiem (klawisz B)'
 ];
 
 function showWhatsNew(version) {
