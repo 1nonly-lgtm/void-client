@@ -616,5 +616,6 @@ $('updateBtn').onclick = async () => {
   renderSettings();
   setPhase('idle');
   // Skin ładuje się po pokazaniu okna – nie spowalnia startu.
-  (window.requestIdleCallback || setTimeout)(() => renderSkin(), 50);
+  const later = cb => (window.requestIdleCallback ? window.requestIdleCallback(cb, { timeout: 600 }) : setTimeout(cb, 50));
+  later(() => renderSkin().catch(e => console.warn('Skin', e)));
 })();
