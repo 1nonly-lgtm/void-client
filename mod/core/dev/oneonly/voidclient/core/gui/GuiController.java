@@ -2,7 +2,10 @@ package dev.oneonly.voidclient.core.gui;
 
 import dev.oneonly.voidclient.core.AutoText;
 import dev.oneonly.voidclient.core.Config;
+import dev.oneonly.voidclient.core.Game;
 import dev.oneonly.voidclient.core.Gfx;
+import dev.oneonly.voidclient.core.Keybinds;
+import dev.oneonly.voidclient.core.Waypoints;
 import dev.oneonly.voidclient.core.SkinUploader;
 import dev.oneonly.voidclient.core.Theme;
 import dev.oneonly.voidclient.core.VoidCore;
@@ -26,6 +29,7 @@ public final class GuiController {
         HUD("HUD", "Elementy na ekranie", new int[]{0b11111, 0b10001, 0b10001, 0b11111, 0b00100}),
         GAME("Gra", "Dodatki do rozgrywki", new int[]{0b00001, 0b00010, 0b10100, 0b01000, 0b10100}),
         AUTOTEXT("AutoText", "Wiadomości pod klawiszami", new int[]{0b11111, 0b10001, 0b11111, 0b01000, 0b10000}),
+        WAYPOINTS("Waypointy", "Znaczniki w świecie", new int[]{0b01110, 0b11011, 0b01110, 0b00100, 0b00100}),
         OPTIONS("Opcje", "Wygląd, FPS i skin", new int[]{0b10101, 0b01110, 0b11011, 0b01110, 0b10101});
 
         final String label;
@@ -84,6 +88,10 @@ public final class GuiController {
     private int editing = -1;
     private String fpsStatus = "";
     private String search = "";
+    /** Który klawisz właśnie zmieniamy: "freelook", "zoom", "waypoint" albo null. */
+    private String binding;
+    /** Waypoint, którego nazwę edytujemy. */
+    private Waypoints.Point editingWp;
 
     private HudModule dragging;
     private int dragDx, dragDy;
@@ -225,6 +233,8 @@ public final class GuiController {
         ICONS.put("fullbright", new int[]{0b10101, 0b01110, 0b11111, 0b01110, 0b10101});
         ICONS.put("autotext", new int[]{0b11111, 0b10001, 0b11111, 0b01000, 0b10000});
         ICONS.put("freelook", new int[]{0b00000, 0b01110, 0b11011, 0b01110, 0b00000});
+        ICONS.put("tps", new int[]{0b11111, 0b00100, 0b00100, 0b10101, 0b01110});
+        ICONS.put("waypoints", new int[]{0b01110, 0b11011, 0b01110, 0b00100, 0b00100});
     }
 
     private static final int[] TILE_COLORS = {0xFFC084FC, 0xFFE9D5FF, 0xFFD946EF, 0xFFA78BFA, 0xFFF0ABFC, 0xFF8B5CF6, 0xFFDDD6FE};
@@ -367,7 +377,7 @@ public final class GuiController {
             hits.add(new Hit(pillX[i], pyRow, pillX[i] + pillW[i], pyRow + 18, () -> switchTab(t), t.subtitle));
         }
         String chip = chipText();
-        if (!chip.isEmpty()) text(g, chip, px + PW - 12 - g.width(chip), pyRow + 5, DIM, false);
+        if (!chip.isEmpty() && cur + 6 < px + PW - 12 - g.width(chip)) text(g, chip, px + PW - 12 - g.width(chip), pyRow + 5, DIM, false);
 
         // ── treść ──
         int cx = px + 12;
@@ -380,6 +390,7 @@ public final class GuiController {
         switch (tab) {
             case OPTIONS: contentH = renderOptions(g, mx, my, cx, top - sc, cw, top, top + ch); break;
             case AUTOTEXT: contentH = renderAutoText(g, mx, my, cx, top - sc, cw, top, top + ch); break;
+            case WAYPOINTS: contentH = renderWaypoints(g, mx, my, cx, top - sc, cw, top, top + ch); break;
             default: contentH = renderModules(g, mx, my, cx, top - sc, cw, top, top + ch, tab);
         }
         g.noScissor();
@@ -392,9 +403,11 @@ public final class GuiController {
 
         // stopka
         g.fill(cx, py + PH - 21, cx + cw, py + PH - 20, a(0x16FFFFFF));
-        String tip = tab == Tab.AUTOTEXT
-                ? "Kliknij pole i wpisz tekst. Klawisz: Sterowanie → Void Client."
+        String tip = tab == Tab.AUTOTEXT ? "Kliknij pole i wpisz tekst. Klawisz: Sterowanie → Void Client."
+                : tab == Tab.WAYPOINTS ? "Kliknij nazwę, żeby ją zmienić · kolorowy kwadrat zmienia kolor"
+                : tab == Tab.OPTIONS ? "Kliknij klawisz, a potem wciśnij nowy (Esc – anuluj, Backspace – usuń)"
                 : "Kliknij kafelek, aby włączyć lub wyłączyć. Pisz, aby szukać.";
+        if (binding != null) tip = "Wciśnij klawisz albo przycisk myszy… (Esc – anuluj, Backspace – usuń)";
         for (Hit h : hits) if (h.tooltip != null && h.contains(mx, my)) tip = h.tooltip;
         String close = "Prawy Shift – zamknij";
         text(g, g.trim(tip, cw - g.width(close) - 10), cx, py + PH - 14, MUTED, false);
@@ -407,6 +420,10 @@ public final class GuiController {
             int on = 0;
             for (Module m : list) if (m.isEnabled()) on++;
             return on + "/" + list.size() + " aktywne";
+        }
+        if (tab == Tab.WAYPOINTS) {
+            Game g = VoidCore.game();
+            return g.hasPlayer() ? Waypoints.here(g).size() + " w tym świecie" : "";
         }
         if (tab == Tab.AUTOTEXT) {
             int used = 0;
@@ -423,7 +440,9 @@ public final class GuiController {
         scroll = 0;
         anims.put("scroll", 0f);
         editing = -1;
-        if (t == Tab.AUTOTEXT || t == Tab.OPTIONS) search = "";
+        binding = null;
+        finishWpEdit();
+        if (t == Tab.AUTOTEXT || t == Tab.OPTIONS || t == Tab.WAYPOINTS) search = "";
         tabChangedAt = System.currentTimeMillis();
     }
 
@@ -506,6 +525,9 @@ public final class GuiController {
                 fpsStatus = "Nie udało się zmienić ustawień grafiki";
             }
         }, clipTop, clipBottom, "Minimalne cząsteczki, bez chmur i cieni, bez vsync i limitu klatek");
+        row = bindRow(g, mx, my, x, y + (h + gap) * row, w, h, row, "Klawisz Freelook (rozglądanie)", "freelook", Keybinds.freelook, clipTop, clipBottom);
+        row = bindRow(g, mx, my, x, y + (h + gap) * row, w, h, row, "Klawisz Zoom", "zoom", Keybinds.zoom, clipTop, clipBottom);
+        row = bindRow(g, mx, my, x, y + (h + gap) * row, w, h, row, "Klawisz: dodaj waypoint", "waypoint", Keybinds.waypoint, clipTop, clipBottom);
         optionRow(g, mx, my, x, y + (h + gap) * row, w, h, row++, "Kolor akcentu", Theme.accentName(),
                 () -> Theme.accentIndex = (Theme.accentIndex + 1) % Theme.ACCENTS.length, clipTop, clipBottom, null);
         optionRow(g, mx, my, x, y + (h + gap) * row, w, h, row++, "Tło elementów HUD", Theme.hudBackground ? "Włączone" : "Wyłączone",
@@ -522,8 +544,143 @@ public final class GuiController {
         if (!fpsStatus.isEmpty()) { text(g, g.trim(fpsStatus, w), x, ty, Theme.accent(), false); ty += 11; }
         String st = SkinUploader.status;
         if (st != null && !st.isEmpty()) { text(g, g.trim(st, w), x, ty, Theme.accent(), false); ty += 11; }
-        text(g, g.trim("Klawisze: Opcje → Sterowanie → Void Client", w), x, ty, DIM, false);
+        text(g, g.trim("Menu i AutoText: Opcje gry → Sterowanie → Void Client", w), x, ty, DIM, false);
         return ty - y + 12;
+    }
+
+    /** Wiersz z klawiszem – po kliknięciu czeka na nowy klawisz. */
+    private int bindRow(Gfx g, int mx, int my, int x, int y, int w, int h, int row, String label, String id, int code, int clipTop, int clipBottom) {
+        boolean waiting = id.equals(binding);
+        boolean blink = (System.currentTimeMillis() / 400) % 2 == 0;
+        String value = waiting ? (blink ? "Wciśnij klawisz…" : "") : Keybinds.name(code);
+        if (waiting && value.isEmpty()) value = " ";
+        optionRow(g, mx, my, x, y, w, h, row, label, value, () -> {
+            binding = id;
+            editing = -1;
+            finishWpEdit();
+        }, clipTop, clipBottom, "Kliknij i wciśnij nowy klawisz albo przycisk myszy (np. boczny)");
+        if (waiting) {
+            float st = stagger(row);
+            int yy = y + (int) ((1 - st) * 8);
+            roundOutline(g, x, yy, x + w, yy + h, 6, a(Theme.accent(255)));
+        }
+        return row + 1;
+    }
+
+    private void setBinding(int code) {
+        if ("freelook".equals(binding)) Keybinds.freelook = code;
+        else if ("zoom".equals(binding)) Keybinds.zoom = code;
+        else if ("waypoint".equals(binding)) Keybinds.waypoint = code;
+        binding = null;
+        Config.save();
+    }
+
+    // ───────────── Waypointy ─────────────
+
+    private void finishWpEdit() {
+        if (editingWp == null) return;
+        if (editingWp.name == null || editingWp.name.trim().isEmpty()) editingWp.name = "Punkt";
+        editingWp = null;
+        Config.save();
+    }
+
+    private int renderWaypoints(Gfx g, int mx, int my, int x, int y, int w, int clipTop, int clipBottom) {
+        Game game = VoidCore.game();
+        int h = 24;
+        int gap = 5;
+        if (!game.hasPlayer()) {
+            String m = "Wejdź do świata albo na serwer, żeby dodawać waypointy";
+            text(g, m, x + (w - g.width(m)) / 2, y + 40, MUTED, false);
+            return 60;
+        }
+        // przycisk „Dodaj tutaj”
+        String add = "+  Dodaj waypoint tutaj";
+        String hint = "klawisz: " + Keybinds.name(Keybinds.waypoint);
+        boolean hov = mx >= x && mx < x + w && my >= y && my < y + h && my >= clipTop && my < clipBottom;
+        float hv = anim("wpAdd", hov ? 1 : 0, 14f);
+        round(g, x, y, x + w, y + h, 6, a(lerpColor(0xFF6D28D9, 0xFF8B45F5, hv)));
+        text(g, add, x + 10, y + 8, 0xFFFFFFFF, false);
+        text(g, hint, x + w - 10 - g.width(hint), y + 8, 0xFFE9D5FF, false);
+        if (y + h > clipTop && y < clipBottom) {
+            hits.add(new Hit(x, Math.max(y, clipTop), x + w, Math.min(y + h, clipBottom), () -> {
+                finishWpEdit();
+                editingWp = Waypoints.addHere(game);
+                if (!Modules.WAYPOINTS.isEnabled()) Modules.WAYPOINTS.setEnabled(true);
+            }, "Zapisuje Twoją obecną pozycję – od razu możesz wpisać nazwę"));
+        }
+
+        List<Waypoints.Point> list = Waypoints.here(game);
+        int ry = y + h + gap + 2;
+        if (list.isEmpty()) {
+            String m = "Brak waypointów w tym świecie";
+            text(g, m, x + (w - g.width(m)) / 2, ry + 14, DIM, false);
+            return ry + 30 - y;
+        }
+        boolean blink = (System.currentTimeMillis() / 500) % 2 == 0;
+        for (int i = 0; i < list.size(); i++) {
+            Waypoints.Point p = list.get(i);
+            float st = stagger(i + 1);
+            int yy = ry + i * (h + gap) + (int) ((1 - st) * 8);
+            boolean visible = yy + h > clipTop && yy < clipBottom;
+            boolean ed = p == editingWp;
+            boolean rowHover = visible && mx >= x && mx < x + w && my >= yy && my < yy + h && my >= clipTop && my < clipBottom;
+            float rh = anim("wr" + i, rowHover || ed ? 1 : 0, 14f);
+            round(g, x, yy, x + w, yy + h, 6, a(lerpColor(CARD, CARD_HOVER, rh), st));
+            roundOutline(g, x, yy, x + w, yy + h, 6, a(ed ? Theme.accent(255) : lerpColor(0x14FFFFFF, (p.argb() & 0xFFFFFF) | 0x90000000, rh), st));
+
+            // kolor
+            int c = p.argb();
+            round(g, x + 6, yy + 6, x + 18, yy + 18, 3, a(p.visible ? c : 0xFF4A3D66, st));
+            if (visible) hits.add(new Hit(x + 4, Math.max(yy, clipTop), x + 20, Math.min(yy + h, clipBottom), () -> {
+                p.color = (p.color + 1) % Waypoints.COLORS.length;
+                Config.save();
+            }, "Zmień kolor"));
+
+            // przyciski po prawej: oko i usuń
+            int bx = x + w - 22;
+            boolean delHover = visible && mx >= bx && mx < bx + 18 && my >= yy + 3 && my < yy + h - 3;
+            round(g, bx, yy + 3, bx + 18, yy + h - 3, 5, a(lerpColor(0x14FFFFFF, 0xFFB42318, anim("wd" + i, delHover ? 1 : 0, 14f)), st));
+            for (int k = 0; k < 6; k++) {
+                g.fill(bx + 6 + k, yy + 9 + k, bx + 7 + k, yy + 10 + k, a(TEXT, st));
+                g.fill(bx + 11 - k, yy + 9 + k, bx + 12 - k, yy + 10 + k, a(TEXT, st));
+            }
+            if (visible) hits.add(new Hit(bx, yy + 3, bx + 18, yy + h - 3, () -> {
+                if (p == editingWp) editingWp = null;
+                Waypoints.remove(p);
+            }, "Usuń waypoint"));
+            int ex = bx - 22;
+            round(g, ex, yy + 3, ex + 18, yy + h - 3, 5, a(p.visible ? Theme.accent(170) : 0x14FFFFFF, st));
+            icon(g, p.visible ? new int[]{0b00000, 0b01110, 0b11011, 0b01110, 0b00000} : new int[]{0b10001, 0b01110, 0b11111, 0b01110, 0b10001},
+                    ex + 4, yy + 7, 2, a(p.visible ? 0xFFFFFFFF : DIM, st));
+            if (visible) hits.add(new Hit(ex, yy + 3, ex + 18, yy + h - 3, () -> {
+                p.visible = !p.visible;
+                Config.save();
+            }, p.visible ? "Ukryj znacznik" : "Pokaż znacznik"));
+
+            // współrzędne i odległość
+            String info = p.x + " " + p.y + " " + p.z + "  ·  " + Waypoints.distance(game, p) + " m";
+            int iw = g.width(info);
+            int infoX = ex - 8 - iw;
+            text(g, info, infoX, yy + 8, MUTED, false, st);
+
+            // nazwa (klik = edycja)
+            int nx = x + 26;
+            int nw = infoX - 8 - nx;
+            String name = p.name == null ? "" : p.name;
+            String fit = name;
+            while (g.width(fit) > nw - 4 && fit.length() > 1) fit = ed ? fit.substring(1) : fit.substring(0, fit.length() - 1);
+            text(g, fit, nx, yy + 8, TEXT, false, st);
+            if (ed && blink) g.fill(nx + g.width(fit) + 1, yy + 6, nx + g.width(fit) + 2, yy + 17, a(TEXT));
+            if (visible) hits.add(new Hit(nx - 2, Math.max(yy, clipTop), infoX - 4, Math.min(yy + h, clipBottom), () -> {
+                finishWpEdit();
+                editingWp = p;
+            }, "Kliknij, żeby zmienić nazwę (Enter – zapisz)"));
+        }
+        int end = ry + list.size() * (h + gap) + 2;
+        String note = Modules.WAYPOINTS.isEnabled() ? "Znaczniki pokazują się na ekranie z nazwą i odległością"
+                : "Moduł Waypointy jest wyłączony (zakładka Gra) – znaczniki są ukryte";
+        text(g, g.trim(note, w), x, end, DIM, false);
+        return end - y + 12;
     }
 
     private void optionRow(Gfx g, int mx, int my, int x, int y, int w, int h, int idx, String label, String value,
@@ -642,6 +799,11 @@ public final class GuiController {
 
     public boolean mouseClicked(double mx, double my, int button) {
         if (closingAt >= 0) return true;
+        if (binding != null) {
+            if (button >= 2) { setBinding(Keybinds.MOUSE + button); return true; }
+            binding = null; // klik gdzie indziej – anuluj
+            if (button != 0) return true;
+        }
         if (button != 0) return editHud;
         if (editHud) {
             if (lastGfx == null) return true;
@@ -662,6 +824,7 @@ public final class GuiController {
         }
         int before = editing;
         editing = -1;
+        Waypoints.Point wpBefore = editingWp;
         for (Hit h : new ArrayList<>(hits)) {
             if (h.contains(mx, my)) {
                 h.action.run();
@@ -669,6 +832,7 @@ public final class GuiController {
             }
         }
         if (before >= 0) Config.save();
+        if (wpBefore != null) { editingWp = wpBefore; finishWpEdit(); }
         return false;
     }
 
@@ -714,6 +878,8 @@ public final class GuiController {
      * Zawsze obsłużone – ekran zamyka się sam po animacji (closeFinished).
      */
     public boolean escape() {
+        if (binding != null) { binding = null; return true; }
+        if (editingWp != null) { finishWpEdit(); return true; }
         if (editHud) {
             editHud = false;
             dragging = null;
@@ -726,13 +892,22 @@ public final class GuiController {
     }
 
     public void closed() {
+        binding = null;
+        finishWpEdit();
         Config.save();
     }
 
     /** Wpisany znak (pole AutoText). */
     public boolean charTyped(int codepoint) {
+        if (binding != null) return true;
+        if (editingWp != null) {
+            if (codepoint < 32 || codepoint == 127) return true;
+            String n = editingWp.name == null ? "" : editingWp.name;
+            if (n.length() < Waypoints.MAX_NAME) editingWp.name = n + new String(Character.toChars(codepoint));
+            return true;
+        }
         if (editing < 0) {
-            if (editHud || closingAt >= 0 || tab == Tab.AUTOTEXT || tab == Tab.OPTIONS) return false;
+            if (editHud || closingAt >= 0 || tab == Tab.AUTOTEXT || tab == Tab.OPTIONS || tab == Tab.WAYPOINTS) return false;
             if (codepoint < 32 || codepoint == 127 || search.length() >= 24) return true;
             search += new String(Character.toChars(codepoint));
             scroll = 0;
@@ -747,6 +922,21 @@ public final class GuiController {
 
     /** Klawisze specjalne podczas wpisywania. Zwraca true, jeśli menu je obsłużyło. */
     public boolean keyPressed(int key, int modifiers) {
+        if (binding != null) {
+            if (key == 256) binding = null;                                 // Esc – anuluj
+            else if (key == 259 || key == 261) setBinding(Keybinds.NONE);    // Backspace / Delete – usuń
+            else setBinding(key);
+            return true;
+        }
+        if (editingWp != null) {
+            String n = editingWp.name == null ? "" : editingWp.name;
+            if (key == 259) {
+                if (!n.isEmpty()) editingWp.name = (modifiers & 2) != 0 ? "" : n.substring(0, n.offsetByCodePoints(n.length(), -1));
+            } else if (key == 257 || key == 335 || key == 256) {
+                finishWpEdit();
+            }
+            return true;
+        }
         if (editing < 0) {
             if (search.isEmpty() || editHud) return false;
             if (key == 259) { // Backspace
