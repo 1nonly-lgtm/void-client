@@ -10,6 +10,7 @@ import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.Screens;
+import net.minecraft.client.gui.screen.TitleScreen;
 import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
@@ -44,6 +45,21 @@ public class VoidClientMod implements ClientModInitializer {
 
         // Łączenie z serwerem i wczytywanie świata – tło Void Client, przyciski (np. Anuluj) rysujemy na nowo na wierzchu
         ScreenEvents.AFTER_INIT.register((client, screen, sw, sh) -> {
+            if (screen instanceof TitleScreen) {
+                // menu główne: unoszące się iskry, spadające gwiazdy i poświata przycisku pod kursorem
+                ScreenEvents.afterRender(screen).register((s, ctx, mx, my, delta) -> {
+                    try {
+                        YarnGfx gx = LOAD_GFX.set(ctx, client.textRenderer);
+                        LoadingArt.titleFx(gx, s.width, s.height);
+                        for (ClickableWidget b : Screens.getButtons(s)) {
+                            if (b.visible && b.active && b.isHovered()) LoadingArt.buttonGlow(gx, b.getX(), b.getY(), b.getWidth(), b.getHeight());
+                        }
+                    } catch (Throwable ignored) {
+                        // bez animacji
+                    }
+                });
+                return;
+            }
             if (!LoadScreens.is(screen)) return;
             ScreenEvents.afterRender(screen).register((s, ctx, mx, my, delta) -> {
                 try {
