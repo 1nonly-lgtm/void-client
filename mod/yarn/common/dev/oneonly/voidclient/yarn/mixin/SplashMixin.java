@@ -16,7 +16,11 @@ public abstract class SplashMixin {
     @Inject(method = "render", at = @At("TAIL"), require = 0)
     private void voidclient$splash(DrawContext ctx, int mouseX, int mouseY, float delta, CallbackInfo ci) {
         try {
-            LoadingArt.splash(new YarnGfx().set(ctx, MinecraftClient.getInstance().textRenderer), this, ctx.getScaledWindowWidth(), ctx.getScaledWindowHeight());
+            MinecraftClient c = MinecraftClient.getInstance();
+            LoadingArt.splash(new YarnGfx().set(ctx, c.textRenderer), this, ctx.getScaledWindowWidth(), ctx.getScaledWindowHeight(), () -> {
+                // przy wygaszaniu rysujemy menu na planszy Mojang, żeby jej logo nie prześwitywało
+                if (c.currentScreen != null) c.currentScreen.render(ctx, mouseX, mouseY, delta);
+            });
         } catch (Throwable ignored) {
             // nigdy nie psujemy startu gry
         }
