@@ -17,7 +17,10 @@ public abstract class LoadingOverlayMixin {
     private void voidclient$splash(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta, CallbackInfo ci) {
         try {
             Minecraft c = Minecraft.getInstance();
-            LoadingArt.splash(new MojangGfx().set(graphics, c.font), this, c.getWindow().getGuiScaledWidth(), c.getWindow().getGuiScaledHeight());
+            LoadingArt.splash(new MojangGfx().set(graphics, c.font), this, c.getWindow().getGuiScaledWidth(), c.getWindow().getGuiScaledHeight(), () -> {
+                // przy wygaszaniu rysujemy menu na planszy Mojang, żeby jej logo nie prześwitywało
+                if (c.screen != null) c.screen.extractRenderState(graphics, mouseX, mouseY, delta);
+            });
         } catch (Throwable ignored) {
             // nigdy nie psujemy startu gry
         }
