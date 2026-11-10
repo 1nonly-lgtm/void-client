@@ -25,6 +25,15 @@ public final class LoadingArt {
      * więc działa bez względu na nazwy pól w danej wersji gry.
      */
     public static void splash(Gfx g, Object overlay, int w, int h) {
+        splash(g, overlay, w, h, null);
+    }
+
+    /**
+     * Jak wyżej, ale gdy plansza się wygasza (alpha &lt; 1), najpierw wywołuje `behind` – adapter rysuje w nim
+     * menu gry jeszcze raz. Dzięki temu spod naszej półprzezroczystej planszy nie prześwituje „Mojang Studios”,
+     * tylko menu – czyste przejście Void → menu.
+     */
+    public static void splash(Gfx g, Object overlay, int w, int h, Runnable behind) {
         float progress = -1f, alpha = 1f;
         try {
             lookup(overlay.getClass());
@@ -39,6 +48,9 @@ public final class LoadingArt {
             else if (reloading) alpha = clamp(s);
         } catch (Throwable ignored) {
             // brak pól – zostaje pełna plansza z animowanym paskiem
+        }
+        if (alpha < 0.999f && behind != null) {
+            try { behind.run(); } catch (Throwable ignored) { /* bez menu pod spodem */ }
         }
         if (alpha <= 0.01f) return;
         draw(g, w, h, alpha, progress, null, false);
