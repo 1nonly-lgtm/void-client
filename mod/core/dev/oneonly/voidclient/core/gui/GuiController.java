@@ -5,6 +5,9 @@ import dev.oneonly.voidclient.core.Config;
 import dev.oneonly.voidclient.core.Game;
 import dev.oneonly.voidclient.core.Gfx;
 import dev.oneonly.voidclient.core.Keybinds;
+import dev.oneonly.voidclient.core.Look;
+import dev.oneonly.voidclient.core.Screenshots;
+import dev.oneonly.voidclient.core.Sky;
 import dev.oneonly.voidclient.core.Waypoints;
 import dev.oneonly.voidclient.core.SkinUploader;
 import dev.oneonly.voidclient.core.Theme;
@@ -30,6 +33,8 @@ public final class GuiController {
         GAME("Gra", "Dodatki do rozgrywki", new int[]{0b00001, 0b00010, 0b10100, 0b01000, 0b10100}),
         AUTOTEXT("AutoText", "Wiadomości pod klawiszami", new int[]{0b11111, 0b10001, 0b11111, 0b01000, 0b10000}),
         WAYPOINTS("Waypointy", "Znaczniki w świecie", new int[]{0b01110, 0b11011, 0b01110, 0b00100, 0b00100}),
+        SKY("Niebo", "Własne nieba Void", new int[]{0b00100, 0b01110, 0b11111, 0b01110, 0b00100}),
+        LOOK("Celownik", "Celownik i ramka bloku", new int[]{0b00100, 0b00100, 0b11011, 0b00100, 0b00100}),
         OPTIONS("Opcje", "Wygląd, FPS i skin", new int[]{0b10101, 0b01110, 0b11011, 0b01110, 0b10101});
 
         final String label;
@@ -242,6 +247,17 @@ public final class GuiController {
         ICONS.put("freelook", new int[]{0b00000, 0b01110, 0b11011, 0b01110, 0b00000});
         ICONS.put("tps", new int[]{0b11111, 0b00100, 0b00100, 0b10101, 0b01110});
         ICONS.put("waypoints", new int[]{0b01110, 0b11011, 0b01110, 0b00100, 0b00100});
+        ICONS.put("effects", new int[]{0b01110, 0b00100, 0b01110, 0b11111, 0b01110});
+        ICONS.put("items", new int[]{0b11111, 0b10001, 0b10101, 0b10001, 0b11111});
+        ICONS.put("direction", new int[]{0b00100, 0b01110, 0b10101, 0b00100, 0b00100});
+        ICONS.put("crosshair", new int[]{0b00100, 0b00100, 0b11011, 0b00100, 0b00100});
+        ICONS.put("outline", new int[]{0b11111, 0b10001, 0b10001, 0b10001, 0b11111});
+        ICONS.put("chattime", new int[]{0b01110, 0b10101, 0b10111, 0b10001, 0b01110});
+        ICONS.put("chatstack", new int[]{0b11110, 0b00000, 0b11110, 0b00000, 0b11010});
+        ICONS.put("chathistory", new int[]{0b11111, 0b10001, 0b11111, 0b01000, 0b10000});
+        ICONS.put("screenshots", new int[]{0b01100, 0b11111, 0b10101, 0b10001, 0b11111});
+        ICONS.put("shulker", new int[]{0b11111, 0b10001, 0b11111, 0b10001, 0b11111});
+        ICONS.put("motionblur", new int[]{0b00111, 0b01110, 0b11100, 0b01110, 0b00111});
     }
 
     private static final int[] TILE_COLORS = {0xFFC084FC, 0xFFE9D5FF, 0xFFD946EF, 0xFFA78BFA, 0xFFF0ABFC, 0xFF8B5CF6, 0xFFDDD6FE};
@@ -442,6 +458,8 @@ public final class GuiController {
             case OPTIONS: contentH = renderOptions(g, mx, my, cx, top - sc, cw, top, top + ch); break;
             case AUTOTEXT: contentH = renderAutoText(g, mx, my, cx, top - sc, cw, top, top + ch); break;
             case WAYPOINTS: contentH = renderWaypoints(g, mx, my, cx, top - sc, cw, top, top + ch); break;
+            case SKY: contentH = renderSky(g, mx, my, cx, top - sc, cw, top, top + ch); break;
+            case LOOK: contentH = renderLook(g, mx, my, cx, top - sc, cw, top, top + ch); break;
             default: contentH = renderModules(g, mx, my, cx, top - sc, cw, top, top + ch, tab);
         }
         g.noScissor();
@@ -458,6 +476,8 @@ public final class GuiController {
         // stopka
         String tip = tab == Tab.AUTOTEXT ? "Kliknij pole i wpisz tekst. Klawisz: Sterowanie → Void Client."
                 : tab == Tab.WAYPOINTS ? "Kliknij nazwę, żeby ją zmienić · kolorowy kwadrat zmienia kolor"
+                : tab == Tab.SKY ? "Kliknij niebo, żeby je ustawić – gra przeładuje zasoby"
+                : tab == Tab.LOOK ? "Kliknij wartość, żeby ją zmienić – podgląd na górze"
                 : tab == Tab.OPTIONS ? "Kliknij klawisz, a potem wciśnij nowy (Esc – anuluj, Backspace – usuń)"
                 : "Kliknij kartę, aby włączyć lub wyłączyć. Pisz, aby szukać.";
         if (binding != null) tip = "Wciśnij klawisz albo przycisk myszy… (Esc – anuluj, Backspace – usuń)";
@@ -496,7 +516,7 @@ public final class GuiController {
         editing = -1;
         binding = null;
         finishWpEdit();
-        if (t == Tab.AUTOTEXT || t == Tab.OPTIONS || t == Tab.WAYPOINTS) search = "";
+        if (t != Tab.ALL && t != Tab.HUD && t != Tab.GAME) search = "";
         tabChangedAt = System.currentTimeMillis();
     }
 
@@ -523,6 +543,8 @@ public final class GuiController {
             float st = stagger(i);
             int cx = x + (i % cols) * (cardW + gap);
             int cy = y + (i / cols) * (cardH + gap) + (int) ((1 - st) * 10);
+            boolean ok = m.available();
+            if (!ok) st *= 0.45f; // niedostępne w tej wersji – wyszarzone
             boolean visible = cy + cardH > clipTop && cy < clipBottom;
             boolean hover = visible && mx >= cx && mx < cx + cardW && my >= cy && my < cy + cardH && my >= clipTop && my < clipBottom;
             float hv = anim("h" + m.id, hover ? 1 : 0, 14f);
@@ -549,7 +571,7 @@ public final class GuiController {
             // nazwa i stan
             int nx = tx + tileS + 7, nw = cx + cardW - 6 - nx;
             text(g, ellipsis(g, m.name, nw), nx, tyy + 3, TEXT, false, st);
-            text(g, m.isEnabled() ? "Włączony" : "Wyłączony", nx, tyy + 14, lerpColor(DIM, Theme.accent(), on), false, st);
+            text(g, !ok ? "Niedostępny" : m.isEnabled() ? "Włączony" : "Wyłączony", nx, tyy + 14, lerpColor(DIM, Theme.accent(), on), false, st);
 
             // opis (jedna linia) i przełącznik jak w launcherze
             int by = top + cardH - 18;
@@ -563,13 +585,111 @@ public final class GuiController {
 
             if (visible) {
                 hits.add(new Hit(cx, Math.max(top, clipTop), cx + cardW, Math.min(top + cardH, clipBottom), () -> {
+                    if (!m.available()) return;
                     m.toggle();
                     Config.save();
-                }, m.name + " – " + m.description));
+                }, m.name + " – " + (ok ? m.description : m.unavailableReason())));
             }
         }
         int rows = (list.size() + cols - 1) / cols;
         return rows * (cardH + gap) - gap;
+    }
+
+    private int renderSky(Gfx g, int mx, int my, int x, int y, int w, int clipTop, int clipBottom) {
+        Game game = VoidCore.game();
+        int ty = y;
+        if (!Sky.rendererPresent(game)) {
+            round(g, x, ty, x + w, ty + 22, 6, a(0x40B42318));
+            text(g, ellipsis(g, "Brak moda Nuit – uruchom grę z launchera Void, on go zainstaluje", w - 16), x + 8, ty + 7, 0xFFFFD0D0, false);
+            ty += 28;
+        }
+        int gap = 7;
+        int cols = w >= 330 ? 3 : 2;
+        int cardW = (w - gap * (cols - 1)) / cols;
+        int imgH = Math.max(36, cardW * 9 / 20);
+        int cardH = imgH + 30;
+        int n = Sky.ALL.length + 1;
+        for (int i = 0; i < n; i++) {
+            Sky.Def d = i == 0 ? null : Sky.ALL[i - 1];
+            String id = d == null ? "" : d.id;
+            float st = stagger(i);
+            int cx = x + (i % cols) * (cardW + gap);
+            int cy = ty + (i / cols) * (cardH + gap) + (int) ((1 - st) * 10);
+            boolean visible = cy + cardH > clipTop && cy < clipBottom;
+            boolean hover = visible && mx >= cx && mx < cx + cardW && my >= cy && my < cy + cardH && my >= clipTop && my < clipBottom;
+            float hv = anim("sky" + i, hover ? 1 : 0, 14f);
+            float on = anim("skyOn" + i, id.equals(Sky.selected) ? 1 : 0, 12f);
+            int top = cy - (int) (hv * 2);
+            float glow = Math.max(on, hv * 0.8f);
+            if (glow > 0.02f) round(g, cx - 2, top - 2, cx + cardW + 2, top + cardH + 2, 9, a(Theme.accent((int) (60 * glow)), st));
+            round(g, cx, top, cx + cardW, top + cardH, 7, a(lerpColor(CARD, CARD_HOVER, hv), st));
+            // obrazek nieba (miniatura z jara) na gradiencie – gradient widać, gdyby tekstury nie było
+            int ix = cx + 4, iy = top + 4, iw = cardW - 8;
+            if (d == null) {
+                g.gradient(ix, iy, ix + iw, iy + imgH, a(0xFF6FA8FF, st), a(0xFFBFD9FF, st));
+                g.fill(ix, iy + imgH - 8, ix + iw, iy + imgH, a(0xFF5A9E3A, st));
+            } else {
+                g.gradient(ix, iy, ix + iw, iy + imgH, a(d.top, st), a(d.bottom, st));
+                if (st > 0.9f) g.image("voidclient:textures/gui/sky/" + d.id + ".png", ix, iy, iw, imgH, 256, 128);
+            }
+            roundOutline(g, ix - 1, iy - 1, ix + iw + 1, iy + imgH + 1, 3, a(lerpColor(0x20FFFFFF, Theme.accent(230), on), st));
+            String name = d == null ? "Zwykłe niebo" : d.name;
+            String sub = d == null ? "Gra albo Twoja paczka tekstur" : d.desc;
+            text(g, ellipsis(g, name, cardW - 26), cx + 7, iy + imgH + 5, TEXT, false, st);
+            text(g, ellipsis(g, sub, cardW - 12), cx + 7, iy + imgH + 15, DIM, false, st);
+            if (on > 0.05f) {
+                int bx = cx + cardW - 16, by = iy + imgH + 4;
+                round(g, bx, by, bx + 11, by + 11, 5, a(Theme.accent(255), on * st));
+                g.fill(bx + 3, by + 5, bx + 5, by + 7, a(0xFFFFFFFF, on));
+                g.fill(bx + 5, by + 6, bx + 7, by + 8, a(0xFFFFFFFF, on));
+                g.fill(bx + 7, by + 3, bx + 9, by + 6, a(0xFFFFFFFF, on));
+            }
+            if (visible) {
+                hits.add(new Hit(cx, Math.max(top, clipTop), cx + cardW, Math.min(top + cardH, clipBottom),
+                        () -> Sky.select(game, id), name + " – " + sub));
+            }
+        }
+        int rows = (n + cols - 1) / cols;
+        int end = ty + rows * (cardH + gap);
+        text(g, ellipsis(g, "Niebo powoli obraca się w rytm dnia w grze. Działa w każdym świecie i na serwerach.", w), x, end + 2, DIM, false);
+        return end + 14 - y;
+    }
+
+    private int renderLook(Gfx g, int mx, int my, int x, int y, int w, int clipTop, int clipBottom) {
+        // podgląd: celownik na tle „świata”
+        int ph = 56;
+        round(g, x, y, x + w, y + ph, 7, a(0xFF0B0617));
+        g.gradient(x + 2, y + 2, x + w - 2, y + ph * 2 / 3, a(0xFF3B5BA8), a(0xFF8FB4F0));
+        g.fill(x + 2, y + ph * 2 / 3, x + w - 2, y + ph - 2, a(0xFF4E8A34));
+        g.fill(x + 2, y + ph * 2 / 3, x + w - 2, y + ph * 2 / 3 + 2, a(0xFF6CB24A));
+        int bx = x + w / 2 + 34, by = y + ph * 2 / 3 - 18;
+        g.fill(bx, by, bx + 18, by + 18, a(0xFF8A6A44));
+        g.border(bx - 1, by - 1, 20, 20, a(Modules.OUTLINE.isEnabled() ? Look.outlineArgb() : 0x66000000));
+        if (alpha > 0.5f) Look.draw(g, x + w / 2, y + ph / 2, Modules.CROSSHAIR.isEnabled() ? Look.crossColor() : 0xFFFFFFFF);
+        text(g, Modules.CROSSHAIR.isEnabled() ? "Własny celownik" : "Celownik z gry (włącz własny niżej)", x + 6, y + 5, 0xFFFFFFFF, true);
+
+        int h = 22, gap = 4, row = 0;
+        int ry = y + ph + 6;
+        optionRow(g, mx, my, x, ry + (h + gap) * row, w, h, row++, "Własny celownik", Modules.CROSSHAIR.isEnabled() ? "Włączony" : "Wyłączony",
+                Modules.CROSSHAIR::toggle, clipTop, clipBottom, "Zastępuje celownik z gry");
+        optionRow(g, mx, my, x, ry + (h + gap) * row, w, h, row++, "Kształt", Look.SHAPES[Look.shape],
+                () -> Look.shape = (Look.shape + 1) % Look.SHAPES.length, clipTop, clipBottom, null);
+        optionRow(g, mx, my, x, ry + (h + gap) * row, w, h, row++, "Kolor", Look.COLOR_NAMES[Look.color],
+                () -> Look.color = (Look.color + 1) % Look.COLOR_NAMES.length, clipTop, clipBottom, null);
+        optionRow(g, mx, my, x, ry + (h + gap) * row, w, h, row++, "Rozmiar", Integer.toString(Look.size),
+                () -> Look.size = Look.size >= 10 ? 2 : Look.size + 1, clipTop, clipBottom, "Od 2 do 10");
+        optionRow(g, mx, my, x, ry + (h + gap) * row, w, h, row++, "Kropka w środku", Look.dot ? "Tak" : "Nie",
+                () -> Look.dot = !Look.dot, clipTop, clipBottom, null);
+        optionRow(g, mx, my, x, ry + (h + gap) * row, w, h, row++, "Czarny obrys", Look.outline ? "Tak" : "Nie",
+                () -> Look.outline = !Look.outline, clipTop, clipBottom, "Celownik widać na jasnym i ciemnym tle");
+        boolean outOk = Modules.OUTLINE.available();
+        optionRow(g, mx, my, x, ry + (h + gap) * row, w, h, row++, "Kolor ramki bloku",
+                !outOk ? "Niedostępne" : Modules.OUTLINE.isEnabled() ? "Włączony" : "Wyłączony",
+                () -> { if (Modules.OUTLINE.available()) Modules.OUTLINE.toggle(); }, clipTop, clipBottom,
+                outOk ? "Ramka wokół bloku, na który patrzysz" : Modules.OUTLINE.unavailableReason());
+        optionRow(g, mx, my, x, ry + (h + gap) * row, w, h, row++, "Kolor ramki", Look.OUTLINE_NAMES[Look.outlineColor],
+                () -> Look.outlineColor = (Look.outlineColor + 1) % Look.OUTLINE_NAMES.length, clipTop, clipBottom, null);
+        return ry + (h + gap) * row - y;
     }
 
     private int renderOptions(Gfx g, int mx, int my, int x, int y, int w, int clipTop, int clipBottom) {
@@ -597,6 +717,8 @@ public final class GuiController {
                 () -> SkinUploader.slim = !SkinUploader.slim, clipTop, clipBottom, null);
         optionRow(g, mx, my, x, y + (h + gap) * row, w, h, row++, "Zmień skin (PNG 64×64)", SkinUploader.busy() ? "Wysyłanie…" : "Wybierz plik",
                 () -> SkinUploader.pickAndUpload(VoidCore.game()), clipTop, clipBottom, "Skin trafi na Twoje konto – zobaczysz go po ponownym wejściu na serwer");
+        optionRow(g, mx, my, x, y + (h + gap) * row, w, h, row++, "Zrzuty ekranu", "Otwórz folder",
+                () -> Screenshots.openFolder(VoidCore.game()), clipTop, clipBottom, "Folder screenshots tego profilu");
         optionRow(g, mx, my, x, y + (h + gap) * row, w, h, row++, "Pozycje HUD", "Resetuj",
                 () -> { for (HudModule m : Modules.hud()) { m.x = m.defaultX; m.y = m.defaultY; } }, clipTop, clipBottom, null);
         int ty = y + (h + gap) * row + 2;
@@ -970,7 +1092,7 @@ public final class GuiController {
             return true;
         }
         if (editing < 0) {
-            if (editHud || closingAt >= 0 || tab == Tab.AUTOTEXT || tab == Tab.OPTIONS || tab == Tab.WAYPOINTS) return false;
+            if (editHud || closingAt >= 0 || (tab != Tab.ALL && tab != Tab.HUD && tab != Tab.GAME)) return false;
             if (codepoint < 32 || codepoint == 127 || search.length() >= 24) return true;
             search += new String(Character.toChars(codepoint));
             scroll = 0;
