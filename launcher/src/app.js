@@ -552,10 +552,11 @@ $('dropzone').onclick = () => toast('Złap plik .jar lub .zip w Eksploratorze i 
 // ───────── „Co nowego” po aktualizacji ─────────
 
 const WHATS_NEW = [
-  'Nowe menu w grze (prawy Shift) w stylu launchera: boczny pasek z zakładkami, świecące karty i przełączniki',
-  'Menu główne w kosmosie Void: obracająca się panorama z kulą pustki i wyspami Endu',
-  'Animacje w menu głównym: unoszące się iskry, spadające gwiazdy i świecący przycisk pod kursorem',
-  'Płynne przejście z ekranu ładowania Void do menu – bez prześwitującego „Mojang Studios”'
+  'Własne nieba w grze (zakładka Niebo): Pustka, Gwiaździsta noc, Różowy zachód, Zorza, End i Mgławica – powoli się obracają',
+  'Nowe elementy HUD: efekty mikstur, licznik przedmiotów (strzały, perły, jabłka, bloki, leczenie), kierunek i biom',
+  'Własny celownik (kształt, kolor, rozmiar, kropka) i kolor ramki wskazanego bloku',
+  'Czat: godzina przy wiadomościach, łączenie powtórzeń w ×N i 1000 wiadomości historii',
+  'Szybkie zrzuty (F2 = od razu w schowku) i podgląd zawartości shulkera po najechaniu'
 ];
 
 function showWhatsNew(version) {
