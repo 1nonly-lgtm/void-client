@@ -1,0 +1,5 @@
+{
+  "providers": [
+    { "type": "bitmap", "file": "voidclient:font/void_icon.png", "ascent": 7, "height": 8, "chars": ["\ue7a0"] }
+  ]
+}
