@@ -33,4 +33,18 @@ public final class YarnGfx implements Gfx {
     @Override public void noScissor() { ctx.disableScissor(); }
 
     @Override public void logo(int x, int y, int size) { Tex.draw(ctx, Tex.LOGO, x, y, size, 128); }
+
+    private static final java.util.Map<String, net.minecraft.util.Identifier> IDS = new java.util.HashMap<>();
+
+    @Override
+    public void image(String id, int x, int y, int w, int h, int texW, int texH) {
+        net.minecraft.util.Identifier i = IDS.computeIfAbsent(id, net.minecraft.util.Identifier::tryParse);
+        if (i != null) Tex.rect(ctx, i, x, y, w, h, texW, texH);
+    }
+
+    @Override
+    public void itemWithCount(Object stack, int x, int y) {
+        ctx.drawItem((ItemStack) stack, x, y);
+        Tex.overlay(ctx, tr, (ItemStack) stack, x, y);
+    }
 }

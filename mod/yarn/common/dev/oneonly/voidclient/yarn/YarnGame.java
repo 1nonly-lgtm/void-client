@@ -167,4 +167,82 @@ public final class YarnGame implements Game {
     public String dimension() {
         return mc().world == null ? "" : String.valueOf(mc().world.getRegistryKey());
     }
+
+    // ───────────── nowe: HUD, niebo, czat, shulker ─────────────
+
+    @Override
+    public java.util.List<Effect> effects() {
+        var p = mc().player;
+        java.util.List<Effect> out = new java.util.ArrayList<>();
+        if (p == null) return out;
+        for (net.minecraft.entity.effect.StatusEffectInstance e : p.getStatusEffects()) {
+            String name = net.minecraft.text.Text.translatable(e.getTranslationKey()).getString();
+            out.add(new Effect(name, e.getAmplifier(), e.getDuration(), e.isInfinite()));
+        }
+        out.sort(java.util.Comparator.comparingInt(Effect::ticks));
+        return out;
+    }
+
+    @Override
+    public Slot countItems(java.util.function.Predicate<String> match, boolean blocks) {
+        var p = mc().player;
+        if (p == null) return Slot.EMPTY;
+        var inv = p.getInventory();
+        ItemStack first = null;
+        int total = 0;
+        for (int i = 0; i < inv.size(); i++) {
+            ItemStack s = inv.getStack(i);
+            if (s.isEmpty()) continue;
+            boolean ok;
+            if (blocks) ok = s.getItem() instanceof net.minecraft.item.BlockItem;
+            else ok = match.test(net.minecraft.registry.Registries.ITEM.getId(s.getItem()) + "|" + s.getName().getString());
+            if (!ok) continue;
+            total += s.getCount();
+            if (first == null) first = s;
+        }
+        return first == null ? Slot.EMPTY : new Slot(first, false, false, 0, 0, total);
+    }
+
+    @Override
+    public String biome() {
+        var m = mc();
+        if (m.world == null || m.player == null) return "";
+        return m.world.getBiome(m.player.getBlockPos()).getKey()
+                .map(k -> net.minecraft.text.Text.translatable("biome." + k.getValue().getNamespace() + "." + k.getValue().getPath()).getString())
+                .orElse("");
+    }
+
+    @Override public Path gameDir() { return FabricLoader.getInstance().getGameDir(); }
+
+    @Override public boolean modLoaded(String id) { return FabricLoader.getInstance().isModLoaded(id); }
+
+    @Override
+    public void reloadPack(String packId, boolean enabled) {
+        MinecraftClient m = mc();
+        var mgr = m.getResourcePackManager();
+        mgr.scanPacks();
+        boolean changed = enabled ? mgr.enable(packId) : mgr.disable(packId);
+        if (changed) m.options.refreshResourcePacks(mgr);
+        else m.reloadResources();
+    }
+
+    @Override
+    public void chatInfo(String text) {
+        MinecraftClient m = mc();
+        if (m.inGameHud != null) m.inGameHud.getChatHud().addMessage(net.minecraft.text.Text.literal(text));
+    }
+
+    @Override
+    public java.util.List<Object> containerItems(Object stack) {
+        java.util.List<Object> out = new java.util.ArrayList<>();
+        for (ItemStack s : Contents.of((ItemStack) stack)) out.add(s.isEmpty() ? null : s);
+        return out;
+    }
+
+    @Override
+    public boolean outlineSupported() {
+        // 1.20 – 1.21.8: kolor podajemy przy rysowaniu ramki; od 1.21.9 ramka idzie innym torem
+        String v = FabricLoader.getInstance().getModContainer("minecraft").map(c -> c.getMetadata().getVersion().getFriendlyString()).orElse("");
+        return !(v.startsWith("1.21.9") || v.startsWith("1.21.10") || v.startsWith("1.21.11"));
+    }
 }

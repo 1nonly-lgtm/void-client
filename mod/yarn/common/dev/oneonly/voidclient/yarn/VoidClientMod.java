@@ -60,6 +60,20 @@ public class VoidClientMod implements ClientModInitializer {
                 });
                 return;
             }
+            if (screen instanceof net.minecraft.client.gui.screen.ingame.HandledScreen) {
+                // podgląd zawartości shulkera pod kursorem
+                ScreenEvents.afterRender(screen).register((s, ctx, mx, my, delta) -> {
+                    try {
+                        var slot = ((dev.oneonly.voidclient.yarn.mixin.HandledScreenAccessor) s).voidclient$focusedSlot();
+                        if (slot == null || !slot.hasStack()) return;
+                        dev.oneonly.voidclient.core.ShulkerPreview.draw(LOAD_GFX.set(ctx, client.textRenderer), VoidCore.game(),
+                                slot.getStack(), mx, my, s.width, s.height);
+                    } catch (Throwable ignored) {
+                        // bez podglądu
+                    }
+                });
+                return;
+            }
             if (!LoadScreens.is(screen)) return;
             ScreenEvents.afterRender(screen).register((s, ctx, mx, my, delta) -> {
                 try {
