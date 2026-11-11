@@ -12,7 +12,9 @@
     "ChatMixin",
     "CrosshairMixin",
     "TabNameMixin",
-    "PlayerNameMixin"
+    "PlayerNameMixin",
+    "ViewmodelMixin",
+    "AspectMixin"
   ],
   "injectors": {
     "defaultRequire": 0
