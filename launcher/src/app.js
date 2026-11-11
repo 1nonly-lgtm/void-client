@@ -553,11 +553,11 @@ $('dropzone').onclick = () => toast('Złap plik .jar lub .zip w Eksploratorze i 
 // ───────── „Co nowego” po aktualizacji ─────────
 
 const WHATS_NEW = [
-  'Scoreboard da się przesunąć – złap jego ramkę w „Edytuj HUD” (prawy Shift)',
-  'Nowy HUD: pasek zbroi (pancerz jak serca + wytrzymałość każdej części)',
-  'Wskaźnik ataku przy celowniku – pokazuje naładowanie ciosu i KRYT, gdy uderzenie będzie krytyczne',
-  'Godzina przy wiadomościach na czacie jest teraz domyślnie włączona',
-  'Znajomi, powiadomienia i ikonka Void przy nicku z poprzedniej wersji'
+  'Viewmodel: przesuń, obróć i zmień rozmiar przedmiotu w ręce (prawy Shift → Widok)',
+  'Rozciągnięty obraz jak na 4:3, 5:4, 3:2 albo 16:10 – bez zmiany rozdzielczości w Windowsie',
+  'Nowy ekran łączenia z serwerem – napis i przycisk Anuluj już na nic nie nachodzą',
+  'Przesuwany scoreboard, pasek zbroi i wskaźnik ataku (KRYT)',
+  'Godzina przy wiadomościach na czacie domyślnie włączona'
 ];
 
 function showWhatsNew(version) {
