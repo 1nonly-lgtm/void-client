@@ -12,4 +12,13 @@ final class Tex {
     static void draw(DrawContext ctx, Identifier id, int x, int y, int size, int texSize) {
         ctx.drawTexture(id, x, y, size, size, 0f, 0f, texSize, texSize, texSize, texSize);
     }
+
+    static void rect(DrawContext ctx, Identifier id, int x, int y, int w, int h, int texW, int texH) {
+        ctx.drawTexture(id, x, y, w, h, 0f, 0f, texW, texH, texW, texH);
+    }
+
+    /** Liczba sztuk / pasek wytrzymałości na przedmiocie. */
+    static void overlay(DrawContext ctx, net.minecraft.client.font.TextRenderer tr, net.minecraft.item.ItemStack stack, int x, int y) {
+        ctx.drawItemInSlot(tr, stack, x, y);
+    }
 }
