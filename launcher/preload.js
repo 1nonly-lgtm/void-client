@@ -33,5 +33,10 @@ contextBridge.exposeInMainWorld('api', {
   onState: cb => ipcRenderer.on('game:state', (_, d) => cb(d)),
   onUpdate: cb => ipcRenderer.on('update:state', (_, d) => cb(d)),
   installUpdate: () => call('update:install'),
-  version: () => call('app:version')
+  version: () => call('app:version'),
+  friends: () => call('friends:list'),
+  refreshFriends: () => call('friends:refresh'),
+  addFriend: name => call('friends:add', name),
+  removeFriend: uuid => call('friends:remove', uuid),
+  onFriends: cb => ipcRenderer.on('friends:update', (_, d) => cb(d))
 });

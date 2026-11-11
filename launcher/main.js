@@ -1,5 +1,5 @@
 // Void Client – proces główny. Ciężkie moduły ładowane dopiero, gdy są potrzebne (szybki start).
-const { app, BrowserWindow, ipcMain, shell, Tray, Menu, nativeImage, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, Tray, Menu, nativeImage, dialog, Notification } = require('electron');
 const path = require('path');
 
 if (!app.requestSingleInstanceLock()) app.exit(0);
@@ -125,8 +125,8 @@ ipcMain.on('win:close', () => app.quit());
 
 ipcMain.handle('versions:list', () => lazy('game').listVersions());
 
-ipcMain.handle('auth:login', () => lazy('auth').login());
-ipcMain.handle('auth:logout', () => lazy('auth').logout());
+ipcMain.handle('auth:login', async () => { const a = await lazy('auth').login(); lazy('friends').reset(); setTimeout(friendsTick, 500); return a; });
+ipcMain.handle('auth:logout', () => { lazy('auth').logout(); lazy('friends').reset(); setTimeout(friendsTick, 100); });
 ipcMain.handle('skin:get', () => {
   const acc = settings.get().account;
   return acc ? lazy('skin').getSkin(acc.uuid) : null;
@@ -219,6 +219,7 @@ ipcMain.handle('game:launch', async (_, profileId) => {
   running = { proc, profile, mc, since: Date.now(), status: {} };
   send('game:state', { state: 'running', since: running.since });
   discordUpdate();
+  setTimeout(friendsTick, 1000);
 
   if (s.afterLaunch === 'hide') hideToTray();
   else if (s.afterLaunch === 'close') setTimeout(() => app.quit(), 1500);
@@ -227,6 +228,7 @@ ipcMain.handle('game:launch', async (_, profileId) => {
     running = null;
     send('game:state', { state: 'closed', code });
     discordUpdate();
+    setTimeout(friendsTick, 1000);
     if (settings.get().afterLaunch === 'hide') showWindow();
   });
   return { ok: true };
@@ -303,12 +305,48 @@ ipcMain.handle('app:version', () => app.getVersion());
 // ───────── Start ─────────
 
 app.on('second-instance', showWindow);
+// ───────── Znajomi z Void Client ─────────
+// Co minutę: „jestem online” (i czy gram), potem lista znajomych. Gdy znajomy odpali grę – powiadomienie.
+
+let friends = [];
+let friendsError = '';
+const playingBefore = new Map();
+let friendsTimer = null;
+
+async function friendsTick() {
+  clearTimeout(friendsTimer);
+  friendsTimer = setTimeout(friendsTick, 60 * 1000);
+  if (!settings.get().account) { friends = []; friendsError = ''; send('friends:update', { list: [], error: '' }); return; }
+  try {
+    const f = lazy('friends');
+    await f.heartbeat(!!running);
+    friends = await f.list();
+    friendsError = '';
+    for (const fr of friends) {
+      const was = playingBefore.get(fr.uuid);
+      if (fr.playing && was === false && Notification.isSupported()) {
+        new Notification({ title: 'Void Client', body: fr.name + ' właśnie odpalił Minecrafta', icon: path.join(__dirname, 'build', 'icon.png'), silent: false }).show();
+      }
+      playingBefore.set(fr.uuid, !!fr.playing);
+    }
+  } catch (e) {
+    friendsError = e.message || String(e);
+  }
+  send('friends:update', { list: friends, error: friendsError });
+}
+
+ipcMain.handle('friends:list', () => ({ list: friends, error: friendsError }));
+ipcMain.handle('friends:refresh', async () => { await friendsTick(); return { list: friends, error: friendsError }; });
+ipcMain.handle('friends:add', async (_, name) => { const n = await lazy('friends').add(name); friendsTick(); return n; });
+ipcMain.handle('friends:remove', async (_, uuid) => { await lazy('friends').remove(uuid); friendsTick(); });
+
 app.whenReady().then(() => {
   createWindow();
   // Discord startuje po pokazaniu okna, żeby nie spowalniać uruchamiania.
   setTimeout(discordUpdate, 1500);
   // Sprawdzanie aktualizacji w tle, gdy okno już działa.
   setTimeout(setupUpdates, 4000);
+  setTimeout(friendsTick, 2500);
 });
 app.on('window-all-closed', () => {
   if (!running) app.quit();
