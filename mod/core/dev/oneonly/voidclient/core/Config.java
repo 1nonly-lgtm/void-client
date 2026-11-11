@@ -34,6 +34,8 @@ public final class Config {
         String sky;
         Integer crossShape, crossColor, crossSize, outlineColor;
         Boolean crossDot, crossOutline;
+        Float vmX, vmY, vmZ, vmScale;
+        Integer vmRotX, vmRotY, vmRotZ, aspect;
         List<Waypoints.Point> waypoints = new ArrayList<>();
         Map<String, Entry> modules = new HashMap<>();
     }
@@ -71,6 +73,14 @@ public final class Config {
             if (d.outlineColor != null) Look.outlineColor = Math.floorMod(d.outlineColor, Look.OUTLINE_NAMES.length);
             if (d.crossDot != null) Look.dot = d.crossDot;
             if (d.crossOutline != null) Look.outline = d.crossOutline;
+            if (d.vmX != null) View.x = d.vmX;
+            if (d.vmY != null) View.y = d.vmY;
+            if (d.vmZ != null) View.z = d.vmZ;
+            if (d.vmScale != null) View.scale = Math.max(0.5f, Math.min(1.5f, d.vmScale));
+            if (d.vmRotX != null) View.rotX = d.vmRotX;
+            if (d.vmRotY != null) View.rotY = d.vmRotY;
+            if (d.vmRotZ != null) View.rotZ = d.vmRotZ;
+            if (d.aspect != null) View.aspect = Math.floorMod(d.aspect, View.ASPECTS.length);
             if (d.waypoints != null) {
                 Waypoints.ALL.clear();
                 for (Waypoints.Point p : d.waypoints) if (p != null && p.world != null) Waypoints.ALL.add(p);
@@ -109,6 +119,9 @@ public final class Config {
         d.crossDot = Look.dot;
         d.crossOutline = Look.outline;
         d.outlineColor = Look.outlineColor;
+        d.vmX = View.x; d.vmY = View.y; d.vmZ = View.z; d.vmScale = View.scale;
+        d.vmRotX = View.rotX; d.vmRotY = View.rotY; d.vmRotZ = View.rotZ;
+        d.aspect = View.aspect;
         d.waypoints = new ArrayList<>(Waypoints.ALL);
         for (Module m : Modules.all()) {
             Entry e = new Entry();
