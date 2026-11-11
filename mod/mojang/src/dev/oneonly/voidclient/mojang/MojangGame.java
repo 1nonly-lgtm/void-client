@@ -288,4 +288,12 @@ public final class MojangGame implements Game {
     }
 
     @Override public boolean scoreboardMovable() { return false; }
+
+    @Override
+    public Object invStack(int index) {
+        LocalPlayer p = mc().player;
+        if (p == null) return null;
+        ItemStack s = p.getInventory().getItem(index);
+        return s.isEmpty() ? null : s;
+    }
 }
