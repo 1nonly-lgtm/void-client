@@ -22,4 +22,14 @@ final class Tex {
     static void overlay(DrawContext ctx, net.minecraft.client.font.TextRenderer tr, net.minecraft.item.ItemStack stack, int x, int y) {
         ctx.drawStackOverlay(tr, stack, x, y);
     }
+
+    /** Przesunięcie wszystkiego, co gra narysuje do pop() (scoreboard w innym miejscu). */
+    static void push(DrawContext ctx, int dx, int dy) {
+        ctx.getMatrices().pushMatrix();
+        ctx.getMatrices().translate((float) dx, (float) dy);
+    }
+
+    static void pop(DrawContext ctx) {
+        ctx.getMatrices().popMatrix();
+    }
 }
