@@ -553,11 +553,11 @@ $('dropzone').onclick = () => toast('Złap plik .jar lub .zip w Eksploratorze i 
 // ───────── „Co nowego” po aktualizacji ─────────
 
 const WHATS_NEW = [
-  'Viewmodel: przesuń, obróć i zmień rozmiar przedmiotu w ręce (prawy Shift → Widok)',
-  'Rozciągnięty obraz jak na 4:3, 5:4, 3:2 albo 16:10 – bez zmiany rozdzielczości w Windowsie',
-  'Nowy ekran łączenia z serwerem – napis i przycisk Anuluj już na nic nie nachodzą',
-  'Przesuwany scoreboard, pasek zbroi i wskaźnik ataku (KRYT)',
-  'Godzina przy wiadomościach na czacie domyślnie włączona'
+  'Mocniejszy tryb FPS: 16 nowych modów optymalizacyjnych (Sodium Extra, EBE, Particle Core, C2ME, Krypton, ThreadTweak i więcej)',
+  'Tryb FPS raz ustawia grafikę pod wydajność: szybka grafika, bez chmur i cieni, minimalne cząsteczki, 8 chunków',
+  'Viewmodel i rozciągnięty obraz (prawy Shift → Widok)',
+  'Nowy ekran łączenia z serwerem',
+  'Przesuwany scoreboard, pasek zbroi i wskaźnik ataku (KRYT)'
 ];
 
 function showWhatsNew(version) {
