@@ -245,4 +245,10 @@ public final class YarnGame implements Game {
         String v = FabricLoader.getInstance().getModContainer("minecraft").map(c -> c.getMetadata().getVersion().getFriendlyString()).orElse("");
         return !(v.startsWith("1.21.9") || v.startsWith("1.21.10") || v.startsWith("1.21.11"));
     }
+
+    @Override
+    public java.util.List<java.util.UUID> tabUuids() {
+        ClientPlayNetworkHandler h = mc().getNetworkHandler();
+        return h == null ? java.util.List.of() : new java.util.ArrayList<>(h.getPlayerUuids());
+    }
 }
