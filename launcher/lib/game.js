@@ -231,6 +231,7 @@ async function launch(profile, s, emit, onLine) {
     window: s.windowMode === 'full' ? { fullscreen: true } : { width: 1280, height: 720 },
     overrides: {
       gameDirectory: dir,
+      cwd: dir, // logi gry (logs/latest.log) mają trafiać do folderu profilu, a nie do głównego folderu launchera
       maxSockets: 32,
       detached: s.afterLaunch === 'close'
     }
