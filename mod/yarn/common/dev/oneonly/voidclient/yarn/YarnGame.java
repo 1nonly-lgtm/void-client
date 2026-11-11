@@ -272,4 +272,12 @@ public final class YarnGame implements Game {
     }
 
     @Override public boolean scoreboardMovable() { return true; }
+
+    @Override
+    public Object invStack(int index) {
+        var p = mc().player;
+        if (p == null) return null;
+        ItemStack s = p.getInventory().getStack(index);
+        return s.isEmpty() ? null : s;
+    }
 }
