@@ -8,7 +8,9 @@
     "NetworkMixin",
     "EntityMixin",
     "LoadingOverlayMixin",
-    "MenuBgMixin"
+    "MenuBgMixin",
+    "ChatMixin",
+    "CrosshairMixin"
   ],
   "injectors": {
     "defaultRequire": 0
