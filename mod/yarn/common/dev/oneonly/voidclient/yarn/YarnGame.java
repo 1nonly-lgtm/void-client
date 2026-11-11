@@ -251,4 +251,25 @@ public final class YarnGame implements Game {
         ClientPlayNetworkHandler h = mc().getNetworkHandler();
         return h == null ? java.util.List.of() : new java.util.ArrayList<>(h.getPlayerUuids());
     }
+
+    @Override
+    public int armorPoints() {
+        ClientPlayerEntity p = mc().player;
+        return p == null ? 0 : p.getArmor();
+    }
+
+    @Override
+    public float attackCooldown() {
+        ClientPlayerEntity p = mc().player;
+        return p == null ? 0f : p.getAttackCooldownProgress(0.5f);
+    }
+
+    @Override
+    public boolean critReady() {
+        ClientPlayerEntity p = mc().player;
+        return p != null && !p.isOnGround() && p.getVelocity().y < 0 && !p.isClimbing()
+                && !p.isTouchingWater() && !p.hasVehicle() && !p.isSprinting();
+    }
+
+    @Override public boolean scoreboardMovable() { return true; }
 }
