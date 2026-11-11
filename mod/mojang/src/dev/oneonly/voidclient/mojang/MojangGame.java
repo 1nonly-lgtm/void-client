@@ -261,4 +261,10 @@ public final class MojangGame implements Game {
     }
 
     @Override public boolean outlineSupported() { return false; }
+
+    @Override
+    public java.util.List<java.util.UUID> tabUuids() {
+        ClientPacketListener c = mc().getConnection();
+        return c == null ? java.util.List.of() : new java.util.ArrayList<>(c.getOnlinePlayerIds());
+    }
 }
