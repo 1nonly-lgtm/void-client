@@ -8,6 +8,7 @@ import dev.oneonly.voidclient.core.Keybinds;
 import dev.oneonly.voidclient.core.Look;
 import dev.oneonly.voidclient.core.Screenshots;
 import dev.oneonly.voidclient.core.Sky;
+import dev.oneonly.voidclient.core.View;
 import dev.oneonly.voidclient.core.Waypoints;
 import dev.oneonly.voidclient.core.SkinUploader;
 import dev.oneonly.voidclient.core.Theme;
@@ -35,6 +36,7 @@ public final class GuiController {
         WAYPOINTS("Waypointy", "Znaczniki w świecie", new int[]{0b01110, 0b11011, 0b01110, 0b00100, 0b00100}),
         SKY("Niebo", "Własne nieba Void", new int[]{0b00100, 0b01110, 0b11111, 0b01110, 0b00100}),
         LOOK("Celownik", "Celownik i ramka bloku", new int[]{0b00100, 0b00100, 0b11011, 0b00100, 0b00100}),
+        VIEW("Widok", "Viewmodel i proporcje obrazu", new int[]{0b00011, 0b00110, 0b01100, 0b11000, 0b10000}),
         OPTIONS("Opcje", "Wygląd, FPS i skin", new int[]{0b10101, 0b01110, 0b11011, 0b01110, 0b10101});
 
         final String label;
@@ -257,6 +259,7 @@ public final class GuiController {
         ICONS.put("chathistory", new int[]{0b11111, 0b10001, 0b11111, 0b01000, 0b10000});
         ICONS.put("screenshots", new int[]{0b01100, 0b11111, 0b10101, 0b10001, 0b11111});
         ICONS.put("shulker", new int[]{0b11111, 0b10001, 0b11111, 0b10001, 0b11111});
+        ICONS.put("viewmodel", new int[]{0b00011, 0b00110, 0b01100, 0b11000, 0b10000});
         ICONS.put("voidicon", new int[]{0b01110, 0b10001, 0b10101, 0b10001, 0b01110});
         ICONS.put("armorbar", new int[]{0b11011, 0b11111, 0b11111, 0b01110, 0b00100});
         ICONS.put("attack", new int[]{0b00001, 0b00010, 0b10100, 0b01000, 0b10100});
@@ -464,6 +467,7 @@ public final class GuiController {
             case WAYPOINTS: contentH = renderWaypoints(g, mx, my, cx, top - sc, cw, top, top + ch); break;
             case SKY: contentH = renderSky(g, mx, my, cx, top - sc, cw, top, top + ch); break;
             case LOOK: contentH = renderLook(g, mx, my, cx, top - sc, cw, top, top + ch); break;
+            case VIEW: contentH = renderView(g, mx, my, cx, top - sc, cw, top, top + ch); break;
             default: contentH = renderModules(g, mx, my, cx, top - sc, cw, top, top + ch, tab);
         }
         g.noScissor();
@@ -482,6 +486,7 @@ public final class GuiController {
                 : tab == Tab.WAYPOINTS ? "Kliknij nazwę, żeby ją zmienić · kolorowy kwadrat zmienia kolor"
                 : tab == Tab.SKY ? "Kliknij niebo, żeby je ustawić – gra przeładuje zasoby"
                 : tab == Tab.LOOK ? "Kliknij wartość, żeby ją zmienić – podgląd na górze"
+                : tab == Tab.VIEW ? "Kliknij wartość, żeby ją zmienić – zmiany widać od razu w grze"
                 : tab == Tab.OPTIONS ? "Kliknij klawisz, a potem wciśnij nowy (Esc – anuluj, Backspace – usuń)"
                 : "Kliknij kartę, aby włączyć lub wyłączyć. Pisz, aby szukać.";
         if (binding != null) tip = "Wciśnij klawisz albo przycisk myszy… (Esc – anuluj, Backspace – usuń)";
@@ -657,6 +662,37 @@ public final class GuiController {
         int end = ty + rows * (cardH + gap);
         text(g, ellipsis(g, "Niebo powoli obraca się w rytm dnia w grze. Działa w każdym świecie i na serwerach.", w), x, end + 2, DIM, false);
         return end + 14 - y;
+    }
+
+    private int renderView(Gfx g, int mx, int my, int x, int y, int w, int clipTop, int clipBottom) {
+        int h = 22, gap = 4, row = 0;
+        text(g, "VIEWMODEL – przedmiot w ręce", x + 2, y + 2, Theme.accent(), false);
+        int ry = y + 14;
+        optionRow(g, mx, my, x, ry + (h + gap) * row, w, h, row++, "Viewmodel", Modules.VIEWMODEL.isEnabled() ? "Włączony" : "Wyłączony",
+                Modules.VIEWMODEL::toggle, clipTop, clipBottom, "Włącz, żeby poniższe ustawienia działały");
+        optionRow(g, mx, my, x, ry + (h + gap) * row, w, h, row++, "W prawo / w lewo", View.fmt(View.x),
+                () -> View.x = View.next(View.x, -0.5f, 0.5f, 0.1f), clipTop, clipBottom, "Od -0.5 do +0.5");
+        optionRow(g, mx, my, x, ry + (h + gap) * row, w, h, row++, "W górę / w dół", View.fmt(View.y),
+                () -> View.y = View.next(View.y, -0.5f, 0.5f, 0.1f), clipTop, clipBottom, "Od -0.5 do +0.5");
+        optionRow(g, mx, my, x, ry + (h + gap) * row, w, h, row++, "Bliżej / dalej", View.fmt(View.z),
+                () -> View.z = View.next(View.z, -0.5f, 0.5f, 0.1f), clipTop, clipBottom, "Od -0.5 do +0.5");
+        optionRow(g, mx, my, x, ry + (h + gap) * row, w, h, row++, "Rozmiar", Math.round(View.scale * 100) + "%",
+                () -> View.scale = View.next(View.scale, 0.5f, 1.5f, 0.1f), clipTop, clipBottom, "Od 50% do 150%");
+        optionRow(g, mx, my, x, ry + (h + gap) * row, w, h, row++, "Obrót X", View.rotX + "°",
+                () -> View.rotX = View.rotX >= 45 ? -45 : View.rotX + 15, clipTop, clipBottom, "Pochylenie do przodu / do tyłu");
+        optionRow(g, mx, my, x, ry + (h + gap) * row, w, h, row++, "Obrót Y", View.rotY + "°",
+                () -> View.rotY = View.rotY >= 45 ? -45 : View.rotY + 15, clipTop, clipBottom, "Obrót w lewo / w prawo");
+        optionRow(g, mx, my, x, ry + (h + gap) * row, w, h, row++, "Obrót Z", View.rotZ + "°",
+                () -> View.rotZ = View.rotZ >= 45 ? -45 : View.rotZ + 15, clipTop, clipBottom, "Przechylenie na bok");
+        optionRow(g, mx, my, x, ry + (h + gap) * row, w, h, row++, "Ustawienia viewmodelu", "Resetuj",
+                View::reset, clipTop, clipBottom, "Wraca do wyglądu z gry");
+        int ay = ry + (h + gap) * row + 8;
+        text(g, "PROPORCJE OBRAZU", x + 2, ay, Theme.accent(), false);
+        boolean noAspect = View.aspect > 0 && View.aspectHits == 0 && VoidCore.game() != null && VoidCore.game().hasPlayer();
+        optionRow(g, mx, my, x, ay + 12, w, h, row++, noAspect ? "Rozciągnięty obraz (nie działa w tej wersji)" : "Rozciągnięty obraz", View.ASPECTS[View.aspect],
+                () -> View.aspect = (View.aspect + 1) % View.ASPECTS.length, clipTop, clipBottom,
+                "Jak rozciągnięta rozdzielczość (np. 4:3) – szersze moby i bloki, bez zmiany ustawień Windowsa");
+        return ay + 12 + h + gap - y;
     }
 
     private int renderLook(Gfx g, int mx, int my, int x, int y, int w, int clipTop, int clipBottom) {
