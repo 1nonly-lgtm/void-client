@@ -167,4 +167,84 @@ public final class MojangGame implements Game {
     public String dimension() {
         return mc().level == null ? "" : String.valueOf(mc().level.dimension());
     }
+
+    // ───────────── nowe: HUD, niebo, czat, shulker ─────────────
+
+    @Override
+    public java.util.List<Effect> effects() {
+        LocalPlayer p = mc().player;
+        java.util.List<Effect> out = new java.util.ArrayList<>();
+        if (p == null) return out;
+        for (net.minecraft.world.effect.MobEffectInstance e : p.getActiveEffects()) {
+            String name = net.minecraft.network.chat.Component.translatable(e.getDescriptionId()).getString();
+            out.add(new Effect(name, e.getAmplifier(), e.getDuration(), e.isInfiniteDuration()));
+        }
+        out.sort(java.util.Comparator.comparingInt(Effect::ticks));
+        return out;
+    }
+
+    @Override
+    public Slot countItems(java.util.function.Predicate<String> match, boolean blocks) {
+        LocalPlayer p = mc().player;
+        if (p == null) return Slot.EMPTY;
+        var inv = p.getInventory();
+        ItemStack first = null;
+        int total = 0;
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            ItemStack s = inv.getItem(i);
+            if (s.isEmpty()) continue;
+            boolean ok;
+            if (blocks) ok = s.getItem() instanceof net.minecraft.world.item.BlockItem;
+            else ok = match.test(net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(s.getItem()) + "|" + s.getHoverName().getString());
+            if (!ok) continue;
+            total += s.getCount();
+            if (first == null) first = s;
+        }
+        return first == null ? Slot.EMPTY : new Slot(first, false, false, 0, 0, total);
+    }
+
+    @Override
+    public String biome() {
+        Minecraft m = mc();
+        if (m.level == null || m.player == null) return "";
+        // "ResourceKey[minecraft:worldgen/biome / minecraft:plains]" → biome.minecraft.plains
+        String k = m.level.getBiome(m.player.blockPosition()).unwrapKey().map(String::valueOf).orElse("");
+        int i = k.lastIndexOf(" / ");
+        if (i < 0) return "";
+        String id = k.substring(i + 3).replace("]", "").trim();
+        return net.minecraft.network.chat.Component.translatable("biome." + id.replace(':', '.')).getString();
+    }
+
+    @Override public Path gameDir() { return FabricLoader.getInstance().getGameDir(); }
+
+    @Override public boolean modLoaded(String id) { return FabricLoader.getInstance().isModLoaded(id); }
+
+    @Override
+    public void reloadPack(String packId, boolean enabled) {
+        Minecraft m = mc();
+        var repo = m.getResourcePackRepository();
+        repo.reload();
+        boolean changed = enabled ? repo.addPack(packId) : repo.removePack(packId);
+        if (changed) m.options.updateResourcePacks(repo);
+        else m.reloadResourcePacks();
+    }
+
+    @Override
+    public void chatInfo(String text) {
+        Minecraft m = mc();
+        if (m.gui != null) m.gui.getChat().addMessage(net.minecraft.network.chat.Component.literal(text));
+    }
+
+    @Override
+    public java.util.List<Object> containerItems(Object stack) {
+        java.util.List<Object> out = new java.util.ArrayList<>();
+        var c = ((ItemStack) stack).get(net.minecraft.core.component.DataComponents.CONTAINER);
+        if (c == null) return out;
+        net.minecraft.core.NonNullList<ItemStack> list = net.minecraft.core.NonNullList.withSize(27, ItemStack.EMPTY);
+        c.copyInto(list);
+        for (ItemStack s : list) out.add(s.isEmpty() ? null : s);
+        return out;
+    }
+
+    @Override public boolean outlineSupported() { return false; }
 }

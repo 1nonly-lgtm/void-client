@@ -68,6 +68,20 @@ public class VoidClientMod implements ClientModInitializer {
                 });
                 return;
             }
+            if (screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen) {
+                // podgląd zawartości shulkera pod kursorem
+                ScreenEvents.afterExtract(screen).register((s, graphics, mx, my, delta) -> {
+                    try {
+                        Object slot = hoveredSlot(s);
+                        if (!(slot instanceof net.minecraft.world.inventory.Slot sl) || !sl.hasItem()) return;
+                        dev.oneonly.voidclient.core.ShulkerPreview.draw(LOAD_GFX.set(graphics, client.font), VoidCore.game(),
+                                sl.getItem(), mx, my, s.width, s.height);
+                    } catch (Throwable ignored) {
+                        // bez podglądu
+                    }
+                });
+                return;
+            }
             if (!isLoading(screen)) return;
             ScreenEvents.afterExtract(screen).register((s, graphics, mx, my, delta) -> {
                 try {
@@ -83,6 +97,17 @@ public class VoidClientMod implements ClientModInitializer {
             Minecraft c = Minecraft.getInstance();
             VoidCore.renderHud(HUD_GFX.set(graphics, c.font), c.getWindow().getGuiScaledWidth(), c.getWindow().getGuiScaledHeight());
         });
+    }
+
+    private static java.lang.reflect.Field hovered;
+
+    /** 26.1 nie jest zaciemnione, więc pole „hoveredSlot” czytamy po nazwie. */
+    private static Object hoveredSlot(Screen s) throws ReflectiveOperationException {
+        if (hovered == null) {
+            hovered = net.minecraft.client.gui.screens.inventory.AbstractContainerScreen.class.getDeclaredField("hoveredSlot");
+            hovered.setAccessible(true);
+        }
+        return hovered.get(s);
     }
 
     private static boolean isLoading(Screen s) {

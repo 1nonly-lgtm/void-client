@@ -58,5 +58,38 @@ public final class MojangGfx implements Gfx {
 
     @Override public void noScissor() { g.disableScissor(); }
 
+    private static final java.util.Map<String, Identifier> IDS = new java.util.HashMap<>();
+
+    @Override
+    public void image(String id, int x, int y, int w, int h, int texW, int texH) {
+        Identifier i = IDS.computeIfAbsent(id, Identifier::tryParse);
+        if (i != null) g.blit(RenderPipelines.GUI_TEXTURED, i, x, y, 0f, 0f, w, h, texW, texH, texW, texH);
+    }
+
+    private static Method decoMethod;
+    private static boolean decoLookupDone;
+
+    /** Liczba sztuk na przedmiocie – metodę (Font, ItemStack, int, int) szukamy po parametrach. */
+    @Override
+    public void itemWithCount(Object stack, int x, int y) {
+        item(stack, x, y);
+        if (!decoLookupDone) {
+            decoLookupDone = true;
+            for (Method m : GuiGraphicsExtractor.class.getMethods()) {
+                Class<?>[] p = m.getParameterTypes();
+                if (p.length == 4 && p[0] == Font.class && p[1] == ItemStack.class && p[2] == int.class && p[3] == int.class) {
+                    decoMethod = m;
+                    break;
+                }
+            }
+        }
+        if (decoMethod == null) return;
+        try {
+            decoMethod.invoke(g, font, stack, x, y);
+        } catch (ReflectiveOperationException ignored) {
+            decoMethod = null;
+        }
+    }
+
     @Override public void logo(int x, int y, int size) { g.blit(RenderPipelines.GUI_TEXTURED, LOGO, x, y, 0f, 0f, size, size, 128, 128, 128, 128); }
 }
