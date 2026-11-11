@@ -24,6 +24,8 @@ subprojects {
     def fam = project.property('family') as String
     def render = project.property('render') as String
     def javaVer = (project.property('java_version') as String) as int
+    // zawartość shulkera: do 1.20.4 w NBT, od 1.20.5 w komponentach przedmiotów
+    def items = (mc in ['1.20.1', '1.20.4']) ? 'nbt' : 'comp'
 
     def yarnVersion = fetchJson("https://meta.fabricmc.net/v2/versions/yarn/${mc}")[0].version
     def apiVersions = fetchJson("https://api.modrinth.com/v2/project/fabric-api/version?game_versions=${enc('["' + mc + '"]')}&loaders=${enc('["fabric"]')}")
@@ -37,7 +39,7 @@ subprojects {
 
     sourceSets {
         main {
-            java { srcDirs = ["${rootDir}/../core", "${rootDir}/common", "${rootDir}/fam-${fam}", "${rootDir}/render-${render}"] }
+            java { srcDirs = ["${rootDir}/../core", "${rootDir}/common", "${rootDir}/fam-${fam}", "${rootDir}/render-${render}", "${rootDir}/items-${items}"] }
             resources { srcDirs = ["${rootDir}/template", "${rootDir}/../resources"] }
         }
     }
