@@ -185,6 +185,44 @@ const STEP_NAMES = {
  * @param emit callback postępu: {text, cur, total}
  * @param onLine callback linii logu gry
  */
+// Ustawienia grafiki pod FPS – raz na profil z trybem FPS (potem gracz zmienia je w grze, jak chce).
+const FPS_OPTIONS = {
+  renderDistance: '8',
+  simulationDistance: '6',
+  graphicsMode: '0',          // Szybka
+  ao: 'false',                // bez gładkiego oświetlenia
+  renderClouds: '"false"',
+  particles: '2',             // minimalne
+  entityShadows: 'false',
+  biomeBlendRadius: '0',
+  mipmapLevels: '0',
+  enableVsync: 'false',
+  maxFps: '260',              // bez limitu
+  entityDistanceScaling: '0.75'
+};
+
+function applyFpsPreset(dir) {
+  const marker = path.join(dir, '.void-fps-preset');
+  if (fs.existsSync(marker)) return;
+  try {
+    const file = path.join(dir, 'options.txt');
+    // plik tworzy gra przy pierwszym uruchomieniu (z numerem wersji) – dopiero wtedy go uzupełniamy
+    if (!fs.existsSync(file)) return;
+    const lines = fs.readFileSync(file, 'utf8').split(/\r?\n/).filter(Boolean);
+    const seen = new Set();
+    const out = lines.map(l => {
+      const k = l.slice(0, l.indexOf(':'));
+      if (k in FPS_OPTIONS) { seen.add(k); return k + ':' + FPS_OPTIONS[k]; }
+      return l;
+    });
+    for (const [k, v] of Object.entries(FPS_OPTIONS)) if (!seen.has(k)) out.push(k + ':' + v);
+    fs.writeFileSync(file, out.join('\n') + '\n');
+    fs.writeFileSync(marker, new Date().toISOString());
+  } catch (e) {
+    console.warn('Nie udało się ustawić grafiki pod FPS:', e.message);
+  }
+}
+
 async function launch(profile, s, emit, onLine) {
   emit({ text: 'Logowanie…' });
   const authorization = await require('./auth').getLaunchAuth();
@@ -209,6 +247,8 @@ async function launch(profile, s, emit, onLine) {
     if (withVoid) pack.push(sky);
     if (pack.length) await modrinth.ensurePack(pack, { mc, loader: 'fabric', instanceDir: dir, onStep: text => emit({ text }) });
   }
+
+  if (profile.optimize) applyFpsPreset(dir);
 
   const { Client } = require('minecraft-launcher-core');
   const launcher = new Client();

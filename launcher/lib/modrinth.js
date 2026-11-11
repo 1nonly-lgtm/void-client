@@ -114,7 +114,21 @@ const FPS_PACK = [
   'moreculling',     // pomija niewidoczne ściany bloków
   'modernfix',       // szybszy start i mniej RAM
   'badoptimizations',// drobne optymalizacje renderu
-  'dynamic-fps'      // gdy gra jest w tle, nie męczy komputera
+  'dynamic-fps',     // gdy gra jest w tle, nie męczy komputera
+  'sodium-extra',    // wyłączanie animacji, cząsteczek, mgły – więcej FPS
+  'particle-core',   // pomija niewidoczne cząsteczki
+  'ebe',             // skrzynie, znaki i łóżka bez drogiego renderowania
+  'threadtweak',     // lepszy podział pracy na wątki procesora
+  'krypton',         // lżejsza obsługa sieci na serwerach
+  'c2me-fabric',     // szybsze wczytywanie chunków w trybie jednoosobowym
+  'noisium',         // szybsze generowanie świata
+  'starlight',       // szybkie światło (1.20.x – w nowszych jest już w grze)
+  'scalablelux',     // szybkie światło (nowe wersje)
+  'memoryleakfix',   // łata wycieki pamięci (1.20.x)
+  'clumps',          // łączy kulki doświadczenia
+  'ksyxis',          // szybsze wejście do świata
+  'lazy-language-loader', // szybszy start gry
+  'fastquit'         // wyjście ze świata bez czekania
 ];
 
 async function ensurePack(slugs, { mc, loader, instanceDir, onStep }) {
