@@ -10,7 +10,9 @@
     "LoadingOverlayMixin",
     "MenuBgMixin",
     "ChatMixin",
-    "CrosshairMixin"
+    "CrosshairMixin",
+    "TabNameMixin",
+    "PlayerNameMixin"
   ],
   "injectors": {
     "defaultRequire": 0
