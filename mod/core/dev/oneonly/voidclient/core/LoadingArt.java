@@ -77,8 +77,67 @@ public final class LoadingArt {
 
     /** Pełne tło z logo i podpisem – rysowane na ekranach wczytywania (przyciski dorysowuje adapter). */
     public static void screen(Gfx g, int w, int h, String title) {
-        String t = title == null || title.isBlank() ? "Wczytywanie świata" : title;
-        draw(g, w, h, 1f, -1f, t, true);
+        // Środek ekranu zostaje pusty – tam gra pisze status („Łączenie…”, „Szyfrowanie…”) i stawia „Anuluj”.
+        // Nasze elementy są tylko w tle, w lewym dolnym rogu i na samym dole, więc nic na siebie nie wchodzi.
+        long now = System.currentTimeMillis();
+        g.gradient(0, 0, w, h, 0xFF07040F, 0xFF150A2A);
+        float b = 0.5f + 0.5f * (float) Math.sin(now / 2600.0);
+        nebula(g, (int) (w * 0.2), (int) (h * 0.25), Math.max(w, h) / 4, 0xFF7C3AED, 0.05f + 0.02f * b);
+        nebula(g, (int) (w * 0.82), (int) (h * 0.8), Math.max(w, h) / 3, 0xFFA855F7, 0.045f + 0.02f * (1 - b));
+        stars(g, w, h, 1f, now, 120);
+
+        // delikatne, wolno rosnące kręgi za napisem gry (fala z pustki)
+        int cx = w / 2, cy = h / 2 - 46; // środek na napisie gry (rysowany na h/2 - 50)
+        for (int i = 0; i < 3; i++) {
+            float p = ((now + i * 1100L) % 3300L) / 3300f;
+            int r = (int) (Math.min(w, h) * (0.12f + 0.38f * p));
+            ring(g, cx, cy, r, mul(0xFFA855F7, 0.22f * (1f - p)));
+        }
+
+        // logo w lewym dolnym rogu: mała kula + VOID / CLIENT
+        int pad = Math.max(8, Math.min(w, h) / 24);
+        int r = Math.max(9, Math.min(w, h) / 20);
+        int ox = pad + r, oy = h - pad - r - 4;
+        orb(g, ox, oy, r, 1f, now);
+        int px = Math.max(2, Math.min(w, h) / 110);
+        int wx = ox + r + pad;
+        wordLeft(g, "VOID", wx, oy - 7 * px - px, px, 0xFFF5E9FF, 0xFF6D28D9);
+        int px2 = Math.max(1, px * 2 / 3);
+        wordLeft(g, "CLIENT", wx, oy + px, px2, 0xFFC084FC, 0xFF3B1170);
+
+        String by = "by: 1nonly $";
+        g.text(by, w - g.width(by) - pad, h - pad - 10, 0xFF8B7AA8, false);
+
+        // pasek na samym dole – płynący fioletowy odcinek (gra nie podaje postępu łączenia)
+        int barH = Math.max(2, px + 1);
+        g.fill(0, h - barH, w, h, 0xFF120A24);
+        int seg = w / 4;
+        int off = (int) ((now / 3) % (w + seg)) - seg;
+        int x1 = Math.max(0, off), x2 = Math.min(w, off + seg);
+        if (x2 > x1) {
+            g.gradient(x1, h - barH, x2, h, 0xFFC084FC, 0xFF7C3AED);
+            g.fill(x1, h - barH - 1, x2, h - barH, 0x40C084FC);
+        }
+    }
+
+    /** Cienki okrąg (zarys) – do fal w tle. */
+    private static void ring(Gfx g, int cx, int cy, int r, int argb) {
+        if (r <= 0 || (argb >>> 24) == 0) return;
+        int steps = Math.max(24, r * 3);
+        int lastX = Integer.MIN_VALUE, lastY = Integer.MIN_VALUE;
+        for (int i = 0; i < steps; i++) {
+            double t = i * Math.PI * 2 / steps;
+            int x = cx + (int) Math.round(Math.cos(t) * r), y = cy + (int) Math.round(Math.sin(t) * r * 0.55);
+            if (x == lastX && y == lastY) continue;
+            g.fill(x, y, x + 1, y + 1, argb);
+            lastX = x; lastY = y;
+        }
+    }
+
+    /** Pikselowy napis wyrównany do lewej (x = lewa krawędź). */
+    private static void wordLeft(Gfx g, String text, int x, int y, int px, int color, int shadow) {
+        int w = text.length() * 6 * px - px;
+        word(g, text, x + w / 2, y, px, color, shadow);
     }
 
     // ───────────── Tło menu (główne menu, Multiplayer, Opcje… gdy nie ma świata) ─────────────
