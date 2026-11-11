@@ -143,4 +143,7 @@ public interface Game {
 
     /** Czy da się przesuwać scoreboard (wersje 1.20–1.21.11). */
     boolean scoreboardMovable();
+
+    /** Przedmiot z ekwipunku gracza (indeksy jak w grze: 9–35 to plecak) albo null, gdy slot pusty. */
+    Object invStack(int index);
 }
