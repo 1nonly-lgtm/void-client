@@ -203,7 +203,10 @@ async function launch(profile, s, emit, onLine) {
     custom = await ensureFabric(mc);
     const withVoid = syncVoidMod(dir, profile.voidMod, mc);
     const modrinth = require('./modrinth');
-    const pack = profile.optimize ? modrinth.FPS_PACK : withVoid ? ['fabric-api'] : [];
+    // Nieba Void Client rysuje mod Nuit (na 1.21.10 jego port Horizon) – instaluje się sam razem z Void Client
+    const sky = mc === '1.21.10' ? 'horizon-port' : 'nuit';
+    const pack = profile.optimize ? modrinth.FPS_PACK.slice() : withVoid ? ['fabric-api'] : [];
+    if (withVoid) pack.push(sky);
     if (pack.length) await modrinth.ensurePack(pack, { mc, loader: 'fabric', instanceDir: dir, onStep: text => emit({ text }) });
   }
 
