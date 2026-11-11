@@ -12,7 +12,9 @@
     "ChatMixin",
     "CrosshairMixin",
     "OutlineMixin",
-    "HandledScreenAccessor"
+    "HandledScreenAccessor",
+    "TabNameMixin",
+    "PlayerNameMixin"
   ],
   "injectors": {
     "defaultRequire": 0
