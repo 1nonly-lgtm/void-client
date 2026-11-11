@@ -14,7 +14,8 @@
     "OutlineMixin",
     "HandledScreenAccessor",
     "TabNameMixin",
-    "PlayerNameMixin"
+    "PlayerNameMixin",
+    "ScoreboardMixin"
   ],
   "injectors": {
     "defaultRequire": 0
