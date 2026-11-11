@@ -37,6 +37,7 @@ public final class Modules {
     public static final ArmorBar ARMOR_BAR = add(new ArmorBar());
     public static final AttackIndicator ATTACK = add(new AttackIndicator());
     public static final Scoreboard SCOREBOARD = add(new Scoreboard());
+    public static final InvPreview INVENTORY = add(new InvPreview());
     public static final Simple CROSSHAIR = add(new Simple("crosshair", "Własny celownik", "Kształt, kolor i rozmiar w zakładce Celownik", false));
     public static final Outline OUTLINE = add(new Outline());
     public static final Simple CHAT_TIME = add(new Simple("chattime2", "Godzina na czacie", "Przy każdej wiadomości [12:34]", true));
@@ -496,5 +497,30 @@ public final class Modules {
         public int offsetY() { return isEnabled() && !atAuto() ? y - defY : 0; }
 
         @Override public void render(Gfx g, Game game) { /* rysuje gra – my tylko przesuwamy */ }
+    }
+
+    /** Podgląd plecaka (27 slotów) na ekranie – widać, co masz, bez otwierania ekwipunku. */
+    public static final class InvPreview extends HudModule {
+        InvPreview() { super("inventory", "Podgląd ekwipunku", "27 slotów plecaka na ekranie", false, AUTO, AUTO); }
+
+        @Override protected int[] autoPos(Gfx g, int sw, int sh) { return new int[]{sw / 2 - 82, sh - 110}; } // nad sercami i hotbarem
+
+        @Override public int width(Gfx g) { return 9 * 18 + 2; }
+
+        @Override public int height(Gfx g) { return 3 * 18 + 2; }
+
+        @Override
+        public void render(Gfx g, Game game) {
+            if (!game.hasPlayer()) return;
+            if (Theme.hudBackground) g.fill(x, y, x + width(g), y + height(g), 0x70000000);
+            for (int i = 0; i < 27; i++) {
+                int sx = x + 1 + (i % 9) * 18, sy = y + 1 + (i / 9) * 18;
+                g.fill(sx, sy, sx + 18, sy + 1, 0x30FFFFFF);
+                g.fill(sx, sy, sx + 1, sy + 18, 0x30FFFFFF);
+                Object st;
+                try { st = game.invStack(9 + i); } catch (Throwable t) { st = null; }
+                if (st != null) g.itemWithCount(st, sx + 1, sy + 1);
+            }
+        }
     }
 }
