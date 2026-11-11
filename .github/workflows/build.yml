@@ -67,7 +67,7 @@ jobs:
           foreach ($j in $jars) { Copy-Item $j.FullName launcher/resources/mods/ -Force }
           Write-Host "Zbudowane wersje moda:"
           Get-ChildItem launcher/resources/mods -Filter *.jar | ForEach-Object { Write-Host " - $($_.Name)" }
-          if ($jars.Count -eq 0) { Write-Host "::warning::Żadna wersja moda się nie zbudowała – launcher powstanie bez menu w grze" }
+          if ($jars.Count -eq 0) { Write-Host "::error::Żadna wersja moda się nie zbudowała – nie publikuję wydania"; exit 1 }
 
       # 3) Launcher (.exe)
       - uses: actions/setup-node@v5
