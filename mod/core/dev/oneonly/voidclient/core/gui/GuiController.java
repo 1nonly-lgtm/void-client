@@ -257,6 +257,7 @@ public final class GuiController {
         ICONS.put("chathistory", new int[]{0b11111, 0b10001, 0b11111, 0b01000, 0b10000});
         ICONS.put("screenshots", new int[]{0b01100, 0b11111, 0b10101, 0b10001, 0b11111});
         ICONS.put("shulker", new int[]{0b11111, 0b10001, 0b11111, 0b10001, 0b11111});
+        ICONS.put("voidicon", new int[]{0b01110, 0b10001, 0b10101, 0b10001, 0b01110});
         ICONS.put("motionblur", new int[]{0b00111, 0b01110, 0b11100, 0b01110, 0b00111});
     }
 
