@@ -34,9 +34,12 @@ public final class Modules {
     public static final Effects EFFECTS = add(new Effects());
     public static final ItemCounter ITEMS = add(new ItemCounter());
     public static final Direction DIRECTION = add(new Direction());
+    public static final ArmorBar ARMOR_BAR = add(new ArmorBar());
+    public static final AttackIndicator ATTACK = add(new AttackIndicator());
+    public static final Scoreboard SCOREBOARD = add(new Scoreboard());
     public static final Simple CROSSHAIR = add(new Simple("crosshair", "Własny celownik", "Kształt, kolor i rozmiar w zakładce Celownik", false));
     public static final Outline OUTLINE = add(new Outline());
-    public static final Simple CHAT_TIME = add(new Simple("chattime", "Godzina na czacie", "Przy każdej wiadomości [12:34]", false));
+    public static final Simple CHAT_TIME = add(new Simple("chattime2", "Godzina na czacie", "Przy każdej wiadomości [12:34]", true));
     public static final Simple CHAT_STACK = add(new Simple("chatstack", "Łączenie powtórzeń", "Ta sama wiadomość kilka razy = jedna linijka z ×N", true));
     public static final Simple CHAT_HISTORY = add(new Simple("chathistory", "Dłuższa historia czatu", "1000 wiadomości zamiast 100", true));
     public static final Simple SCREENSHOTS = add(new Simple("screenshots", "Szybkie zrzuty", "Po F2 zrzut trafia do schowka – wklejasz go Ctrl+V", true));
@@ -395,5 +398,102 @@ public final class Modules {
             g.text(a, x + 4, y + 3, Theme.accent(), Theme.textShadow);
             if (!b.isEmpty()) g.text(b, x + 4, y + 14, 0xFFFFFFFF, Theme.textShadow);
         }
+    }
+
+    /** Pasek zbroi jak pasek życia: punkty pancerza + wytrzymałość każdej części. */
+    public static final class ArmorBar extends HudModule {
+        ArmorBar() { super("armorbar", "Pasek zbroi", "Ile masz pancerza i jak bardzo zniszczony jest set", false, AUTO, AUTO); }
+
+        @Override protected int[] autoPos(Gfx g, int sw, int sh) { return new int[]{sw / 2 - 91, sh - 70}; }
+
+        @Override public int width(Gfx g) { return 92; }
+
+        @Override public int height(Gfx g) { return 18; }
+
+        @Override
+        public void render(Gfx g, Game game) {
+            if (!game.hasPlayer()) return;
+            int pts;
+            try { pts = game.armorPoints(); } catch (Throwable t) { pts = 0; }
+            box(g, width(g), height(g));
+            // 10 segmentów jak serca – każdy to 2 punkty pancerza
+            for (int i = 0; i < 10; i++) {
+                int sx = x + 2 + i * 9, sy = y + 2;
+                g.fill(sx, sy, sx + 8, sy + 6, 0xFF1A1030);
+                int fill = Math.max(0, Math.min(2, pts - i * 2));
+                if (fill == 2) g.fill(sx, sy, sx + 8, sy + 6, 0xFFB8C4D6);
+                else if (fill == 1) g.fill(sx, sy, sx + 4, sy + 6, 0xFFB8C4D6);
+                if (fill > 0) g.fill(sx, sy, sx + (fill == 2 ? 8 : 4), sy + 2, 0xFFE8EEF8);
+            }
+            // wytrzymałość 4 części (hełm, napierśnik, spodnie, buty)
+            for (int i = 0; i < 4; i++) {
+                Game.Slot s = game.slot(i);
+                int sx = x + 2 + i * 22, sy = y + 11;
+                g.fill(sx, sy, sx + 20, sy + 4, 0xFF1A1030);
+                if (s.empty() || !s.damageable() || s.max() <= 0) continue;
+                float pct = s.left() / (float) s.max();
+                int c = pct < 0.15f ? 0xFFFF5555 : pct < 0.4f ? 0xFFFFC94D : Theme.accent();
+                g.fill(sx, sy, sx + Math.max(1, Math.round(20 * pct)), sy + 4, c);
+            }
+        }
+    }
+
+    /** Wskaźnik ataku: naładowanie ciosu i sygnał, kiedy wejdzie cios krytyczny. */
+    public static final class AttackIndicator extends HudModule {
+        AttackIndicator() { super("attack", "Wskaźnik ataku", "Naładowanie ciosu i KRYT, gdy uderzenie będzie krytyczne", false, AUTO, AUTO); }
+
+        @Override protected int[] autoPos(Gfx g, int sw, int sh) { return new int[]{sw / 2 - 16, sh / 2 + 9}; }
+
+        @Override public int width(Gfx g) { return 32; }
+
+        @Override public int height(Gfx g) { return 14; }
+
+        @Override
+        public void render(Gfx g, Game game) {
+            if (!game.hasPlayer()) return;
+            float p;
+            boolean crit;
+            try { p = game.attackCooldown(); crit = game.critReady(); } catch (Throwable t) { return; }
+            boolean ready = p >= 0.999f;
+            if (p > 0.9f && crit) { // gra liczy krytyka już od 90% naładowania
+                String t = "KRYT";
+                int tx = x + (32 - g.width(t)) / 2;
+                g.fill(x, y, x + 32, y + 12, 0x90000000);
+                g.text(t, tx, y + 2, 0xFFFFD84D, true);
+                return;
+            }
+            g.fill(x, y + 4, x + 32, y + 8, 0xA0000000);
+            g.fill(x, y + 4, x + Math.max(1, Math.round(32 * Math.min(1f, p))), y + 8, ready ? Theme.accent() : 0xFFB9A6D6);
+        }
+    }
+
+    /** Scoreboard z gry – w edytorze HUD przeciągasz jego ramkę, gra rysuje go w nowym miejscu. */
+    public static final class Scoreboard extends HudModule {
+        Scoreboard() { super("scoreboard", "Scoreboard", "Przesuń tablicę wyników serwera w Edytuj HUD", true, AUTO, AUTO); }
+
+        private int defX, defY;
+
+        @Override protected int[] autoPos(Gfx g, int sw, int sh) {
+            defX = sw - width(g) - 1;
+            defY = sh / 2 - height(g) / 2;
+            return new int[]{defX, defY};
+        }
+
+        @Override public boolean available() {
+            try { return dev.oneonly.voidclient.core.VoidCore.game().scoreboardMovable(); } catch (Throwable t) { return false; }
+        }
+
+        @Override public String unavailableReason() { return "Na tej wersji gry scoreboard zostaje na miejscu"; }
+
+        @Override public int width(Gfx g) { return 110; }
+
+        @Override public int height(Gfx g) { return 100; }
+
+        /** O ile przesunąć scoreboard względem miejsca z gry. */
+        public int offsetX() { return isEnabled() && !atAuto() ? x - defX : 0; }
+
+        public int offsetY() { return isEnabled() && !atAuto() ? y - defY : 0; }
+
+        @Override public void render(Gfx g, Game game) { /* rysuje gra – my tylko przesuwamy */ }
     }
 }

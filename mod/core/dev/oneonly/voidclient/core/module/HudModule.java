@@ -25,7 +25,22 @@ public abstract class HudModule extends Module {
 
     public boolean draggable() { return true; }
 
+    /** x == AUTO: pozycja domyślna zależy od rozmiaru ekranu (np. przy celowniku albo przy prawej krawędzi). */
+    public static final int AUTO = -10000;
+    private int autoX = AUTO, autoY = AUTO;
+
+    /** Domyślne miejsce zależne od ekranu – null, gdy moduł ma stałe domyślne x/y. */
+    protected int[] autoPos(Gfx g, int screenW, int screenH) { return null; }
+
+    /** Czy element stoi tam, gdzie domyślnie (nikt go nie przesunął). */
+    public boolean atAuto() { return x == autoX && y == autoY; }
+
     public void clamp(Gfx g, int screenW, int screenH) {
+        int[] d = autoPos(g, screenW, screenH);
+        if (d != null && (x == AUTO || atAuto())) {
+            x = autoX = d[0];
+            y = autoY = d[1];
+        }
         x = Math.max(0, Math.min(x, screenW - width(g)));
         y = Math.max(0, Math.min(y, screenH - height(g)));
     }
