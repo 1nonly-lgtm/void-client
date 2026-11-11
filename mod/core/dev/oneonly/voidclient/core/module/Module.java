@@ -26,7 +26,16 @@ public abstract class Module {
         this.enabled = defaultEnabled;
     }
 
-    public boolean isEnabled() { return enabled; }
+    public boolean isEnabled() { return enabled && available(); }
+
+    /** Czy działa na tej wersji gry. Niedostępny moduł jest wyszarzony w menu. */
+    public boolean available() { return true; }
+
+    /** Krótki powód, gdy moduł jest niedostępny. */
+    public String unavailableReason() { return "Niedostępne w tej wersji gry"; }
+
+    /** Zapisany stan (także dla modułów niedostępnych w tej wersji). */
+    public boolean savedEnabled() { return enabled; }
 
     public void setEnabled(boolean value) {
         if (value == enabled) return;

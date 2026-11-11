@@ -31,6 +31,17 @@ public final class Modules {
     public static final AutoTextModule AUTOTEXT = add(new AutoTextModule());
     public static final FreelookModule FREELOOK = add(new FreelookModule());
     public static final WaypointsModule WAYPOINTS = add(new WaypointsModule());
+    public static final Effects EFFECTS = add(new Effects());
+    public static final ItemCounter ITEMS = add(new ItemCounter());
+    public static final Direction DIRECTION = add(new Direction());
+    public static final Simple CROSSHAIR = add(new Simple("crosshair", "Własny celownik", "Kształt, kolor i rozmiar w zakładce Celownik", false));
+    public static final Outline OUTLINE = add(new Outline());
+    public static final Simple CHAT_TIME = add(new Simple("chattime", "Godzina na czacie", "Przy każdej wiadomości [12:34]", false));
+    public static final Simple CHAT_STACK = add(new Simple("chatstack", "Łączenie powtórzeń", "Ta sama wiadomość kilka razy = jedna linijka z ×N", true));
+    public static final Simple CHAT_HISTORY = add(new Simple("chathistory", "Dłuższa historia czatu", "1000 wiadomości zamiast 100", true));
+    public static final Simple SCREENSHOTS = add(new Simple("screenshots", "Szybkie zrzuty", "Po F2 zrzut trafia do schowka – wklejasz go Ctrl+V", true));
+    public static final Simple SHULKER = add(new Simple("shulker", "Podgląd shulkera", "Najedź na shulkera w ekwipunku, żeby zobaczyć co ma w środku", true));
+    public static final MotionBlur MOTION_BLUR = add(new MotionBlur());
 
     private Modules() {}
 
@@ -250,6 +261,138 @@ public final class Modules {
         @Override
         protected void onDisable() {
             if (game != null) game.setGamma(previous != null ? previous : 0.5);
+        }
+    }
+
+    // ───────────── nowe ─────────────
+
+    /** Moduł bez własnej logiki – sprawdzany w innych miejscach (czat, celownik, zrzuty). */
+    public static final class Simple extends Module {
+        Simple(String id, String name, String description, boolean on) { super(id, name, description, Category.GAME, on); }
+    }
+
+    public static final class Outline extends Module {
+        Outline() { super("outline", "Kolor obramowania", "Kolor ramki wskazanego bloku (zakładka Celownik)", Category.GAME, false); }
+
+        @Override public boolean available() {
+            try { return dev.oneonly.voidclient.core.VoidCore.game().outlineSupported(); } catch (Throwable t) { return false; }
+        }
+
+        @Override public String unavailableReason() { return "Ta wersja gry rysuje ramkę inaczej – wkrótce"; }
+    }
+
+    public static final class MotionBlur extends Module {
+        MotionBlur() { super("motionblur", "Rozmycie ruchu", "Smuga przy szybkim obracaniu kamerą", Category.GAME, false); }
+
+        @Override public boolean available() { return false; }
+
+        @Override public String unavailableReason() { return "W przygotowaniu – pojawi się w kolejnej wersji"; }
+    }
+
+    public static final class Effects extends HudModule {
+        private static final String[] ROMAN = {"", " II", " III", " IV", " V", " VI", " VII", " VIII", " IX", " X"};
+        private List<Game.Effect> list = Collections.emptyList();
+
+        Effects() { super("effects", "Efekty mikstur", "Aktywne efekty i ile jeszcze zostało", true, 4, 280); }
+
+        private static String time(Game.Effect e) {
+            if (e.infinite()) return "∞";
+            int s = e.ticks() / 20;
+            return s / 60 + ":" + (s % 60 < 10 ? "0" : "") + s % 60;
+        }
+
+        private static String name(Game.Effect e) {
+            int a = e.amplifier();
+            return e.name() + (a >= 0 && a < ROMAN.length ? ROMAN[a] : " " + (a + 1));
+        }
+
+        @Override public int width(Gfx g) {
+            int w = g.width("Efekty mikstur");
+            for (Game.Effect e : list) w = Math.max(w, g.width(name(e) + "  " + time(e)));
+            return w + 8;
+        }
+
+        @Override public int height(Gfx g) { return Math.max(1, list.size()) * 11 + 4; }
+
+        @Override
+        public void render(Gfx g, Game game) {
+            try { list = game.hasPlayer() ? game.effects() : Collections.emptyList(); } catch (Throwable t) { list = Collections.emptyList(); }
+            if (list.isEmpty()) return;
+            box(g, width(g), height(g));
+            int yy = y + 3;
+            for (Game.Effect e : list) {
+                String t = time(e);
+                boolean ending = !e.infinite() && e.ticks() < 200 && (System.currentTimeMillis() / 300) % 2 == 0;
+                g.text(name(e), x + 4, yy, Theme.accent(), Theme.textShadow);
+                g.text(t, x + width(g) - 4 - g.width(t), yy, ending ? 0xFFFF7777 : 0xFFFFFFFF, Theme.textShadow);
+                yy += 11;
+            }
+        }
+    }
+
+    public static final class ItemCounter extends HudModule {
+        private static final String[] LABELS = {"Strzały", "Perły", "Złote jabłka", "Bloki", "Leczenie"};
+        private final Game.Slot[] cache = new Game.Slot[LABELS.length];
+        private int shown;
+
+        ItemCounter() { super("items", "Licznik przedmiotów", "Strzały, perły, złote jabłka, bloki i mikstury leczenia", false, 60, 184); }
+
+        private static boolean match(int i, String s) {
+            String id = s.substring(0, s.indexOf('|') < 0 ? s.length() : s.indexOf('|'));
+            String name = s.toLowerCase();
+            switch (i) {
+                case 0: return id.endsWith("arrow");
+                case 1: return id.equals("minecraft:ender_pearl");
+                case 2: return id.equals("minecraft:golden_apple") || id.equals("minecraft:enchanted_golden_apple");
+                default: return id.contains("potion") && (name.contains("heal") || name.contains("lecz"));
+            }
+        }
+
+        @Override public int width(Gfx g) { return 18 + g.width("0000") + 6; }
+
+        @Override public int height(Gfx g) { return Math.max(1, shown) * 18; }
+
+        @Override
+        public void render(Gfx g, Game game) {
+            if (!game.hasPlayer()) return;
+            shown = 0;
+            for (int i = 0; i < LABELS.length; i++) {
+                final int k = i;
+                try { cache[i] = game.countItems(s -> match(k, s), i == 3); } catch (Throwable t) { cache[i] = Game.Slot.EMPTY; }
+                if (!cache[i].empty()) shown++;
+            }
+            if (shown == 0) return;
+            box(g, width(g), height(g));
+            int row = 0;
+            for (Game.Slot s : cache) {
+                if (s.empty()) continue;
+                int sy = y + row * 18 + 1;
+                g.item(s.stack(), x + 1, sy);
+                g.text(Integer.toString(s.count()), x + 20, sy + 4, s.count() <= 3 ? 0xFFFF7777 : 0xFFFFFFFF, Theme.textShadow);
+                row++;
+            }
+        }
+    }
+
+    public static final class Direction extends HudModule {
+        private static final String[] NAMES = {"Południe", "Pd-Zach.", "Zachód", "Pn-Zach.", "Północ", "Pn-Wsch.", "Wschód", "Pd-Wsch."};
+        private String a = "", b = "";
+
+        Direction() { super("direction", "Kierunek i biom", "Strona świata, kąt i biom, w którym stoisz", false, 4, 240); }
+
+        @Override public int width(Gfx g) { return Math.max(g.width(a), g.width(b)) + 8; }
+
+        @Override public int height(Gfx g) { return b.isEmpty() ? 14 : 25; }
+
+        @Override
+        public void render(Gfx g, Game game) {
+            if (!game.hasPlayer()) return;
+            float yaw = ((game.playerYaw() % 360) + 360) % 360;
+            a = NAMES[Math.round(yaw / 45f) % 8] + " " + Math.round(yaw) + "°";
+            try { b = game.biome(); } catch (Throwable t) { b = ""; }
+            box(g, width(g), height(g));
+            g.text(a, x + 4, y + 3, Theme.accent(), Theme.textShadow);
+            if (!b.isEmpty()) g.text(b, x + 4, y + 14, 0xFFFFFFFF, Theme.textShadow);
         }
     }
 }
