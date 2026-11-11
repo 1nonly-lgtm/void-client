@@ -128,4 +128,7 @@ public interface Game {
 
     /** Czy działa zmiana koloru obramowania bloku. */
     boolean outlineSupported();
+
+    /** UUID graczy z listy Tab (do ikonki Void przy nicku). */
+    java.util.List<java.util.UUID> tabUuids();
 }

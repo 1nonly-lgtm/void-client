@@ -33,6 +33,7 @@ public final class VoidCore {
         Waypoints.tick(game);
         status();
         try { Screenshots.tick(game); } catch (Throwable ignored) {}
+        try { VoidNet.tick(game); } catch (Throwable ignored) {}
         if (!game.hasPlayer()) {
             Tps.reset();
             return;
