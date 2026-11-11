@@ -258,6 +258,9 @@ public final class GuiController {
         ICONS.put("screenshots", new int[]{0b01100, 0b11111, 0b10101, 0b10001, 0b11111});
         ICONS.put("shulker", new int[]{0b11111, 0b10001, 0b11111, 0b10001, 0b11111});
         ICONS.put("voidicon", new int[]{0b01110, 0b10001, 0b10101, 0b10001, 0b01110});
+        ICONS.put("armorbar", new int[]{0b11011, 0b11111, 0b11111, 0b01110, 0b00100});
+        ICONS.put("attack", new int[]{0b00001, 0b00010, 0b10100, 0b01000, 0b10100});
+        ICONS.put("scoreboard", new int[]{0b11111, 0b10001, 0b11101, 0b10001, 0b11111});
         ICONS.put("motionblur", new int[]{0b00111, 0b01110, 0b11100, 0b01110, 0b00111});
     }
 
@@ -960,6 +963,13 @@ public final class GuiController {
             boolean hover = h == dragging || (mx >= h.x && mx < h.x + w && my >= h.y && my < h.y + hh);
             float hv = anim("ed" + h.id, hover ? 1 : 0, 14f);
             if (hv > 0.02f) g.fill(h.x - 1, h.y - 1, h.x + w + 1, h.y + hh + 1, a(Theme.accent((int) (40 * hv))));
+            if (h == Modules.SCOREBOARD) { // ramka zastępcza – prawdziwy scoreboard rysuje gra
+                g.fill(h.x, h.y, h.x + w, h.y + hh, a(0x50000000));
+                g.fill(h.x, h.y, h.x + w, h.y + 10, a(0x70000000));
+                String sb = "Scoreboard";
+                text(g, sb, h.x + (w - g.width(sb)) / 2, h.y + 1, 0xFFFFFFFF, true);
+                for (int i = 0; i < 6; i++) g.fill(h.x + 4, h.y + 16 + i * 12, h.x + 4 + 40 + (i * 23) % 50, h.y + 22 + i * 12, a(0x40FFFFFF));
+            }
             roundOutline(g, h.x - 2, h.y - 2, h.x + w + 2, h.y + hh + 2, 3, a(Theme.accent((int) (hover ? 255 : 90 + 90 * pulse))));
             if (hover) text(g, h.name, h.x, Math.max(0, h.y - 12), Theme.accent(), true);
         }
