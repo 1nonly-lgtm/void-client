@@ -553,8 +553,8 @@ $('dropzone').onclick = () => toast('Złap plik .jar lub .zip w Eksploratorze i 
 // ───────── „Co nowego” po aktualizacji ─────────
 
 const WHATS_NEW = [
-  'Mocniejszy tryb FPS: 16 nowych modów optymalizacyjnych (Sodium Extra, EBE, Particle Core, C2ME, Krypton, ThreadTweak i więcej)',
-  'Tryb FPS raz ustawia grafikę pod wydajność: szybka grafika, bez chmur i cieni, minimalne cząsteczki, 8 chunków',
+  'Podgląd ekwipunku na ekranie – 27 slotów plecaka nad hotbarem (prawy Shift → HUD)',
+  'Mocniejszy tryb FPS: 16 nowych modów optymalizacyjnych i ustawienia grafiki pod wydajność',
   'Viewmodel i rozciągnięty obraz (prawy Shift → Widok)',
   'Nowy ekran łączenia z serwerem',
   'Przesuwany scoreboard, pasek zbroi i wskaźnik ataku (KRYT)'
