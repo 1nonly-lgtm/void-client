@@ -267,4 +267,25 @@ public final class MojangGame implements Game {
         ClientPacketListener c = mc().getConnection();
         return c == null ? java.util.List.of() : new java.util.ArrayList<>(c.getOnlinePlayerIds());
     }
+
+    @Override
+    public int armorPoints() {
+        LocalPlayer p = mc().player;
+        return p == null ? 0 : p.getArmorValue();
+    }
+
+    @Override
+    public float attackCooldown() {
+        LocalPlayer p = mc().player;
+        return p == null ? 0f : p.getAttackStrengthScale(0.5f);
+    }
+
+    @Override
+    public boolean critReady() {
+        LocalPlayer p = mc().player;
+        return p != null && !p.onGround() && p.getDeltaMovement().y < 0 && !p.onClimbable()
+                && !p.isInWater() && !p.isPassenger() && !p.isSprinting();
+    }
+
+    @Override public boolean scoreboardMovable() { return false; }
 }
