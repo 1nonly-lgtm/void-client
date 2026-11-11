@@ -45,6 +45,7 @@ public final class Modules {
     public static final Simple SCREENSHOTS = add(new Simple("screenshots", "Szybkie zrzuty", "Po F2 zrzut trafia do schowka – wklejasz go Ctrl+V", true));
     public static final Simple SHULKER = add(new Simple("shulker", "Podgląd shulkera", "Najedź na shulkera w ekwipunku, żeby zobaczyć co ma w środku", true));
     public static final MotionBlur MOTION_BLUR = add(new MotionBlur());
+    public static final Simple VIEWMODEL = add(new Simple("viewmodel", "Viewmodel", "Położenie, rozmiar i obrót przedmiotu w ręce (zakładka Widok)", false));
     public static final Simple VOID_ICON = add(new Simple("voidicon", "Ikonka Void przy nicku", "Logo Void przy graczach, którzy też używają Void Client", true));
 
     private Modules() {}
