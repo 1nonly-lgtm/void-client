@@ -53,6 +53,7 @@ $('minBtn').onclick = () => window.api.minimize();
 $('closeBtn').onclick = () => window.api.close();
 
 function renderAccount() {
+  if (typeof renderFriends === 'function' && $('friendsList')) setTimeout(() => renderFriends(), 0);
   if (S.account) {
     $('accName').textContent = S.account.name;
     $('accSub').textContent = 'Konto Microsoft';
@@ -552,11 +553,11 @@ $('dropzone').onclick = () => toast('Złap plik .jar lub .zip w Eksploratorze i 
 // ───────── „Co nowego” po aktualizacji ─────────
 
 const WHATS_NEW = [
-  'Własne nieba w grze (zakładka Niebo): Pustka, Gwiaździsta noc, Różowy zachód, Zorza, End i Mgławica – powoli się obracają',
-  'Nowe elementy HUD: efekty mikstur, licznik przedmiotów (strzały, perły, jabłka, bloki, leczenie), kierunek i biom',
-  'Własny celownik (kształt, kolor, rozmiar, kropka) i kolor ramki wskazanego bloku',
-  'Czat: godzina przy wiadomościach, łączenie powtórzeń w ×N i 1000 wiadomości historii',
-  'Szybkie zrzuty (F2 = od razu w schowku) i podgląd zawartości shulkera po najechaniu'
+  'Znajomi z Void Client: nowa zakładka w launcherze – dodajesz po nicku, widzisz kto jest online i kto gra',
+  'Powiadomienie w Windowsie, gdy znajomy odpali Minecrafta',
+  'Fioletowa ikonka Void przy nicku graczy, którzy też używają Void Client (lista Tab i nad głową)',
+  'Logi gry (logs/latest.log) zapisują się teraz w folderze profilu',
+  'W grze: nieba Void, nowy HUD, własny celownik, ulepszony czat, szybkie zrzuty i podgląd shulkera'
 ];
 
 function showWhatsNew(version) {
@@ -668,3 +669,100 @@ $('updateBtn').onclick = async () => {
   const later = cb => (window.requestIdleCallback ? window.requestIdleCallback(cb, { timeout: 600 }) : setTimeout(cb, 50));
   later(() => renderSkin().catch(e => console.warn('Skin', e)));
 })();
+
+// ───────── Znajomi ─────────
+
+let friendsData = { list: [], error: '' };
+
+function friendRow(f) {
+  const el = document.createElement('div');
+  el.className = 'friend' + (f.playing ? ' playing' : f.online ? ' online' : '');
+  const img = document.createElement('img');
+  img.alt = '';
+  img.loading = 'lazy';
+  img.src = 'https://mc-heads.net/avatar/' + encodeURIComponent(String(f.uuid).replace(/-/g, '')) + '/36';
+  const who = document.createElement('div');
+  who.className = 'who';
+  const b = document.createElement('b');
+  b.textContent = f.name;
+  const st = document.createElement('span');
+  st.innerHTML = '<i class="dot"></i>';
+  st.append(f.status === 'friend' ? (f.playing ? 'Gra w Minecrafta' : f.online ? 'Online w launcherze' : 'Offline')
+    : f.status === 'sent' ? 'Zaproszenie wysłane' : 'Chce dodać Cię do znajomych');
+  who.append(b, st);
+  el.append(img, who);
+  const btn = (label, cls, fn) => {
+    const x = document.createElement('button');
+    x.type = 'button';
+    x.textContent = label;
+    if (cls) x.className = cls;
+    x.onclick = async () => {
+      x.disabled = true;
+      try { await fn(); } catch (e) { toast(e.message, 'err'); x.disabled = false; }
+    };
+    el.append(x);
+  };
+  if (f.status === 'request') {
+    btn('Akceptuj', 'ok', async () => { await window.api.addFriend(f.name); toast('Dodano: ' + f.name, 'ok'); });
+    btn('Odrzuć', 'no', () => window.api.removeFriend(f.uuid));
+  } else {
+    btn(f.status === 'sent' ? 'Anuluj' : 'Usuń', 'no', () => window.api.removeFriend(f.uuid));
+  }
+  return el;
+}
+
+function renderFriends(d) {
+  if (d) friendsData = d;
+  const list = friendsData.list || [];
+  const box = $('friendsList');
+  box.textContent = '';
+  const logged = !!(S && S.account);
+  $('friendAdd').disabled = !logged;
+  const requests = list.filter(f => f.status === 'request');
+  const badge = $('friendsBadge');
+  badge.textContent = String(requests.length);
+  badge.classList.toggle('hidden', requests.length === 0);
+  const on = list.filter(f => f.status === 'friend' && f.online).length;
+  $('friendsOnline').innerHTML = logged && list.length ? `<b>${on}</b> online` : '';
+  if (!logged) {
+    box.innerHTML = '<div class="empty">Zaloguj się kontem Microsoft (prawy górny róg), żeby mieć znajomych z Void Client.</div>';
+    return;
+  }
+  if (friendsData.error) $('friendsHint').textContent = friendsData.error;
+  const groups = [
+    ['ZAPROSZENIA', requests],
+    ['ZNAJOMI', list.filter(f => f.status === 'friend')],
+    ['WYSŁANE', list.filter(f => f.status === 'sent')]
+  ];
+  let any = false;
+  for (const [title, items] of groups) {
+    if (!items.length) continue;
+    any = true;
+    const h = document.createElement('h3');
+    h.textContent = title;
+    box.append(h, ...items.map(friendRow));
+  }
+  if (!any) box.innerHTML = '<div class="empty">Nie masz jeszcze znajomych. Wpisz nick kogoś, kto gra na Void Client.</div>';
+}
+
+$('friendForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const name = $('friendName').value.trim();
+  if (!/^[A-Za-z0-9_]{3,16}$/.test(name)) { toast('Wpisz poprawny nick (3–16 znaków)', 'err'); return; }
+  $('friendAdd').disabled = true;
+  try {
+    const n = await window.api.addFriend(name);
+    $('friendName').value = '';
+    toast('Wysłano zaproszenie do ' + n, 'ok');
+  } catch (err) {
+    toast(err.message, 'err');
+  } finally {
+    $('friendAdd').disabled = false;
+  }
+});
+
+window.api.onFriends(renderFriends);
+window.api.friends().then(renderFriends).catch(() => {});
+document.querySelector('.nav[data-tab="friends"]').addEventListener('click', () => {
+  window.api.refreshFriends().then(renderFriends).catch(() => {});
+});
