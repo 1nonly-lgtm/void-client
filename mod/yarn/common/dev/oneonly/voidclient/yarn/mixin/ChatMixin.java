@@ -37,7 +37,7 @@ public abstract class ChatMixin {
     @ModifyConstant(method = {
             "addMessage(Lnet/minecraft/text/Text;Lnet/minecraft/network/message/MessageSignatureData;ILnet/minecraft/client/gui/hud/MessageIndicator;Z)V", // 1.20.1
             "addMessage(Lnet/minecraft/client/gui/hud/ChatHudLine;)V",                 // 1.20.2+
-            "addVisibleMessage(Lnet/minecraft/client/gui/hud/ChatHudLine;)V"},, constant = @Constant(intValue = 100), require = 0)
+            "addVisibleMessage(Lnet/minecraft/client/gui/hud/ChatHudLine;)V"}, constant = @Constant(intValue = 100), require = 0)
     private int voidclient$history(int vanilla) {
         return ChatTweaks.historyLimit(vanilla);
     }
