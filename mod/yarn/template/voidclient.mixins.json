@@ -15,7 +15,9 @@
     "HandledScreenAccessor",
     "TabNameMixin",
     "PlayerNameMixin",
-    "ScoreboardMixin"
+    "ScoreboardMixin",
+    "ViewmodelMixin",
+    "AspectMixin"
   ],
   "injectors": {
     "defaultRequire": 0
