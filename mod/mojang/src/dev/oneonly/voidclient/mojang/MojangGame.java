@@ -232,7 +232,21 @@ public final class MojangGame implements Game {
     @Override
     public void chatInfo(String text) {
         Minecraft m = mc();
-        if (m.gui != null) m.gui.getChat().addMessage(net.minecraft.network.chat.Component.literal(text));
+        if (m.gui == null) return;
+        // sygnatura addMessage zmienia się między wersjami – szukamy metody, której 1. parametr to Component
+        Object chat = m.gui.getChat();
+        net.minecraft.network.chat.Component c = net.minecraft.network.chat.Component.literal(text);
+        for (java.lang.reflect.Method mt : chat.getClass().getMethods()) {
+            Class<?>[] p = mt.getParameterTypes();
+            if (!mt.getName().equals("addMessage") || p.length == 0 || p[0] != net.minecraft.network.chat.Component.class) continue;
+            boolean prim = false;
+            for (int i = 1; i < p.length; i++) prim |= p[i].isPrimitive();
+            if (prim) continue;
+            Object[] args = new Object[p.length];
+            args[0] = c;
+            try { mt.invoke(chat, args); } catch (ReflectiveOperationException ignored) {}
+            return;
+        }
     }
 
     @Override
