@@ -31,6 +31,9 @@ public final class Config {
         Integer freelookKey;
         Integer zoomKey;
         Integer waypointKey;
+        String sky;
+        Integer crossShape, crossColor, crossSize, outlineColor;
+        Boolean crossDot, crossOutline;
         List<Waypoints.Point> waypoints = new ArrayList<>();
         Map<String, Entry> modules = new HashMap<>();
     }
@@ -61,6 +64,13 @@ public final class Config {
             if (d.freelookKey != null) Keybinds.freelook = d.freelookKey;
             if (d.zoomKey != null) Keybinds.zoom = d.zoomKey;
             if (d.waypointKey != null) Keybinds.waypoint = d.waypointKey;
+            if (d.sky != null && (d.sky.isEmpty() || Sky.find(d.sky) != null)) Sky.selected = d.sky;
+            if (d.crossShape != null) Look.shape = Math.floorMod(d.crossShape, Look.SHAPES.length);
+            if (d.crossColor != null) Look.color = Math.floorMod(d.crossColor, Look.COLOR_NAMES.length);
+            if (d.crossSize != null) Look.size = Math.max(2, Math.min(10, d.crossSize));
+            if (d.outlineColor != null) Look.outlineColor = Math.floorMod(d.outlineColor, Look.OUTLINE_NAMES.length);
+            if (d.crossDot != null) Look.dot = d.crossDot;
+            if (d.crossOutline != null) Look.outline = d.crossOutline;
             if (d.waypoints != null) {
                 Waypoints.ALL.clear();
                 for (Waypoints.Point p : d.waypoints) if (p != null && p.world != null) Waypoints.ALL.add(p);
@@ -92,10 +102,17 @@ public final class Config {
         d.freelookKey = Keybinds.freelook;
         d.zoomKey = Keybinds.zoom;
         d.waypointKey = Keybinds.waypoint;
+        d.sky = Sky.selected;
+        d.crossShape = Look.shape;
+        d.crossColor = Look.color;
+        d.crossSize = Look.size;
+        d.crossDot = Look.dot;
+        d.crossOutline = Look.outline;
+        d.outlineColor = Look.outlineColor;
         d.waypoints = new ArrayList<>(Waypoints.ALL);
         for (Module m : Modules.all()) {
             Entry e = new Entry();
-            e.enabled = m.isEnabled();
+            e.enabled = m.savedEnabled();
             if (m instanceof HudModule) {
                 e.x = ((HudModule) m).x;
                 e.y = ((HudModule) m).y;

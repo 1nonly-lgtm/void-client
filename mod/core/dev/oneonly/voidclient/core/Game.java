@@ -98,4 +98,34 @@ public interface Game {
 
     /** Identyfikator wymiaru (do przypisania waypointów do świata). */
     String dimension();
+    /** Efekt mikstury: nazwa (przetłumaczona), poziom od 0, czas w tickach. */
+    record Effect(String name, int amplifier, int ticks, boolean infinite) {}
+
+    java.util.List<Effect> effects();
+
+    /**
+     * Liczy przedmioty w ekwipunku. match dostaje "id|nazwa" (np. "minecraft:arrow|Strzała"),
+     * a blocks = true liczy wszystkie bloki. Zwraca pierwszy pasujący stos (ikona) i sumę sztuk.
+     */
+    Slot countItems(java.util.function.Predicate<String> match, boolean blocks);
+
+    /** Nazwa biomu pod graczem (przetłumaczona) albo "". */
+    String biome();
+
+    /** Folder gry (.minecraft profilu). */
+    Path gameDir();
+
+    boolean modLoaded(String id);
+
+    /** Włącza / wyłącza paczkę zasobów o danym id i przeładowuje zasoby. */
+    void reloadPack(String packId, boolean enabled);
+
+    /** Wiadomość widoczna tylko dla gracza (na czacie). */
+    void chatInfo(String text);
+
+    /** Zawartość przedmiotu-pojemnika (np. shulkera) – 27 slotów (puste = null) albo pusta lista. */
+    java.util.List<Object> containerItems(Object stack);
+
+    /** Czy działa zmiana koloru obramowania bloku. */
+    boolean outlineSupported();
 }

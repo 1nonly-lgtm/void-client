@@ -17,6 +17,7 @@ public final class VoidCore {
     public static void init(Game g) {
         game = g;
         Config.load(g.configDir());
+        Sky.init(g);
         LOG.info("Void Client załadowany – by: 1nonly $");
     }
 
@@ -31,6 +32,7 @@ public final class VoidCore {
         boolean addWp = Keybinds.pressed("waypoint", Keybinds.waypoint);
         Waypoints.tick(game);
         status();
+        try { Screenshots.tick(game); } catch (Throwable ignored) {}
         if (!game.hasPlayer()) {
             Tps.reset();
             return;
@@ -68,6 +70,16 @@ public final class VoidCore {
             }
         }
         if (Modules.WATERMARK.isEnabled() && !game.screenOpen()) Modules.Watermark.draw(g, screenH);
+        if (customCrosshair()) Look.drawCrosshair(g, screenW, screenH);
+    }
+
+    /** Czy zamiast celownika z gry rysujemy własny (mixin wtedy wyłącza ten z gry). */
+    public static boolean customCrosshair() {
+        try {
+            return game != null && Modules.CROSSHAIR.isEnabled() && game.hasPlayer() && game.perspective() == 0;
+        } catch (Throwable t) {
+            return false;
+        }
     }
 
     /** Klawisz AutoText wciśnięty (slot 0–5). */

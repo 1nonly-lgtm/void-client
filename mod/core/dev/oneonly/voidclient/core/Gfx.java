@@ -27,4 +27,10 @@ public interface Gfx {
         fill(x, y + 1, x + 1, y + h - 1, argb);
         fill(x + w - 1, y + 1, x + w, y + h - 1, argb);
     }
+
+    /** Tekstura z zasobów (np. "voidclient:textures/gui/sky/noc.png") rozciągnięta na w×h. */
+    default void image(String id, int x, int y, int w, int h, int texW, int texH) {}
+
+    /** Przedmiot z liczbą sztuk w rogu (jak w ekwipunku). */
+    default void itemWithCount(Object stack, int x, int y) { item(stack, x, y); }
 }
