@@ -131,4 +131,16 @@ public interface Game {
 
     /** UUID graczy z listy Tab (do ikonki Void przy nicku). */
     java.util.List<java.util.UUID> tabUuids();
+
+    /** Punkty pancerza (0–20, jak w grze). */
+    int armorPoints();
+
+    /** Naładowanie ataku 0–1 (1 = pełne obrażenia). */
+    float attackCooldown();
+
+    /** Czy następny cios będzie krytyczny (gracz spada, nie jest w wodzie, na drabinie ani w pojeździe). */
+    boolean critReady();
+
+    /** Czy da się przesuwać scoreboard (wersje 1.20–1.21.11). */
+    boolean scoreboardMovable();
 }

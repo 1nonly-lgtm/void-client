@@ -114,7 +114,8 @@ public final class Config {
             Entry e = new Entry();
             e.enabled = m.savedEnabled();
             if (m instanceof HudModule) {
-                e.x = ((HudModule) m).x;
+                HudModule hm = (HudModule) m;
+                e.x = hm.atAuto() ? HudModule.AUTO : hm.x;
                 e.y = ((HudModule) m).y;
             }
             d.modules.put(m.id, e);
