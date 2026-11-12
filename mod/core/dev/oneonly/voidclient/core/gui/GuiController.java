@@ -99,6 +99,12 @@ public final class GuiController {
     private String binding;
     /** Waypoint, którego nazwę edytujemy. */
     private Waypoints.Point editingWp;
+    /** Waypoint, którego współrzędne wpisujemy, i wpisywany tekst „x y z”. */
+    private Waypoints.Point editingXyz;
+    private String xyzBuf = "";
+    private boolean xyzBad;
+    /** Ustawiane przez klik w samo pole kordów – wtedy nie kończymy wpisywania. */
+    private boolean keepXyz;
 
     private HudModule dragging;
     private int dragDx, dragDy;
@@ -484,7 +490,7 @@ public final class GuiController {
 
         // stopka
         String tip = tab == Tab.AUTOTEXT ? "Kliknij pole i wpisz tekst. Klawisz: Sterowanie → Void Client."
-                : tab == Tab.WAYPOINTS ? "Kliknij nazwę, żeby ją zmienić · kolorowy kwadrat zmienia kolor"
+                : tab == Tab.WAYPOINTS ? "Klik w nazwę lub kordy – edycja · kwadrat – kolor"
                 : tab == Tab.SKY ? "Kliknij niebo, żeby je ustawić – gra przeładuje zasoby"
                 : tab == Tab.LOOK ? "Kliknij wartość, żeby ją zmienić – podgląd na górze"
                 : tab == Tab.VIEW ? "Kliknij wartość, żeby ją zmienić – zmiany widać od razu w grze"
@@ -799,6 +805,46 @@ public final class GuiController {
 
     // ───────────── Waypointy ─────────────
 
+    private void startXyz(Waypoints.Point p) {
+        finishWpEdit();
+        finishXyz();
+        editingXyz = p;
+        xyzBuf = p.x + " " + p.y + " " + p.z;
+        xyzBad = false;
+    }
+
+    /** Zapisuje wpisane kordy. „x y z” albo „x z” (wysokość bez zmian). Zwraca false, gdy tekst jest błędny. */
+    private boolean finishXyz() {
+        if (editingXyz == null) return true;
+        String[] parts = xyzBuf.trim().replace(',', ' ').replace(';', ' ').split("\\s+");
+        try {
+            if (parts.length == 3) {
+                editingXyz.x = parse(parts[0]);
+                editingXyz.y = parse(parts[1]);
+                editingXyz.z = parse(parts[2]);
+            } else if (parts.length == 2) {
+                editingXyz.x = parse(parts[0]);
+                editingXyz.z = parse(parts[1]);
+            } else {
+                xyzBad = true;
+                return false;
+            }
+        } catch (NumberFormatException e) {
+            xyzBad = true;
+            return false;
+        }
+        editingXyz = null;
+        xyzBad = false;
+        Config.save();
+        return true;
+    }
+
+    private static int parse(String s) {
+        double d = Double.parseDouble(s);
+        if (Double.isNaN(d) || Math.abs(d) > 30_000_000) throw new NumberFormatException();
+        return (int) Math.floor(d);
+    }
+
     private void finishWpEdit() {
         if (editingWp == null) return;
         if (editingWp.name == null || editingWp.name.trim().isEmpty()) editingWp.name = "Punkt";
@@ -818,17 +864,34 @@ public final class GuiController {
         // przycisk „Dodaj tutaj”
         String add = "+  Dodaj waypoint tutaj";
         String hint = "klawisz: " + Keybinds.name(Keybinds.waypoint);
-        boolean hov = mx >= x && mx < x + w && my >= y && my < y + h && my >= clipTop && my < clipBottom;
+        String typed = "#  Wpisz kordy";
+        int bw2 = g.width(typed) + 22;
+        int w1 = w - bw2 - 6;
+        boolean hov = mx >= x && mx < x + w1 && my >= y && my < y + h && my >= clipTop && my < clipBottom;
         float hv = anim("wpAdd", hov ? 1 : 0, 14f);
-        round(g, x, y, x + w, y + h, 6, a(lerpColor(0xFF6D28D9, 0xFF8B45F5, hv)));
+        round(g, x, y, x + w1, y + h, 6, a(lerpColor(0xFF6D28D9, 0xFF8B45F5, hv)));
         text(g, add, x + 10, y + 8, 0xFFFFFFFF, false);
-        text(g, hint, x + w - 10 - g.width(hint), y + 8, 0xFFE9D5FF, false);
+        if (g.width(add) + g.width(hint) + 30 < w1) text(g, hint, x + w1 - 10 - g.width(hint), y + 8, 0xFFE9D5FF, false);
+        int x2 = x + w1 + 6;
+        boolean hov2 = mx >= x2 && mx < x + w && my >= y && my < y + h && my >= clipTop && my < clipBottom;
+        float hv2 = anim("wpAdd2", hov2 ? 1 : 0, 14f);
+        round(g, x2, y, x + w, y + h, 6, a(lerpColor(CARD, CARD_HOVER, hv2)));
+        roundOutline(g, x2, y, x + w, y + h, 6, a(lerpColor(0x30FFFFFF, Theme.accent(255), hv2)));
+        text(g, typed, x2 + 11, y + 8, TEXT, false);
         if (y + h > clipTop && y < clipBottom) {
-            hits.add(new Hit(x, Math.max(y, clipTop), x + w, Math.min(y + h, clipBottom), () -> {
+            hits.add(new Hit(x, Math.max(y, clipTop), x + w1, Math.min(y + h, clipBottom), () -> {
                 finishWpEdit();
+                finishXyz();
                 editingWp = Waypoints.addHere(game);
                 if (!Modules.WAYPOINTS.isEnabled()) Modules.WAYPOINTS.setEnabled(true);
             }, "Zapisuje Twoją obecną pozycję – od razu możesz wpisać nazwę"));
+            hits.add(new Hit(x2, Math.max(y, clipTop), x + w, Math.min(y + h, clipBottom), () -> {
+                Waypoints.Point np = Waypoints.addHere(game);
+                if (np == null) return;
+                if (!Modules.WAYPOINTS.isEnabled()) Modules.WAYPOINTS.setEnabled(true);
+                startXyz(np);
+                xyzBuf = "";
+            }, "Nowy waypoint na podanych kordach – wpisz x y z (albo x z) i Enter, Ctrl+V wkleja"));
         }
 
         List<Waypoints.Point> list = Waypoints.here(game);
@@ -868,6 +931,7 @@ public final class GuiController {
             }
             if (visible) hits.add(new Hit(bx, yy + 3, bx + 18, yy + h - 3, () -> {
                 if (p == editingWp) editingWp = null;
+                if (p == editingXyz) editingXyz = null;
                 Waypoints.remove(p);
             }, "Usuń waypoint"));
             int ex = bx - 22;
@@ -880,10 +944,28 @@ public final class GuiController {
             }, p.visible ? "Ukryj znacznik" : "Pokaż znacznik"));
 
             // współrzędne i odległość
-            String info = p.x + " " + p.y + " " + p.z + "  ·  " + Waypoints.distance(game, p) + " m";
-            int iw = g.width(info);
+            boolean ex2 = p == editingXyz;
+            String dist = "  ·  " + Waypoints.distance(game, p) + " m";
+            String xyz = ex2 ? xyzBuf : p.x + " " + p.y + " " + p.z;
+            int fieldW = Math.max(g.width(xyz), ex2 ? g.width("-00000 000 -00000") : 0) + (ex2 ? 10 : 0);
+            int iw = fieldW + g.width(dist);
             int infoX = ex - 8 - iw;
-            text(g, info, infoX, yy + 8, MUTED, false, st);
+            if (ex2) {
+                round(g, infoX, yy + 4, infoX + fieldW, yy + h - 4, 4, a(0xFF0B0716, st));
+                roundOutline(g, infoX, yy + 4, infoX + fieldW, yy + h - 4, 4, a(xyzBad ? 0xFFF87171 : Theme.accent(255), st));
+                text(g, xyz, infoX + 5, yy + 8, xyzBad ? 0xFFFCA5A5 : TEXT, false, st);
+                if (blink) g.fill(infoX + 5 + g.width(xyz) + 1, yy + 6, infoX + 6 + g.width(xyz) + 1, yy + 17, a(TEXT));
+                text(g, dist, infoX + fieldW, yy + 8, MUTED, false, st);
+            } else {
+                boolean xh = visible && mx >= infoX - 2 && mx < infoX + fieldW + 2 && my >= yy && my < yy + h;
+                text(g, xyz, infoX, yy + 8, xh ? Theme.accent(255) : MUTED, false, st);
+                if (xh) g.fill(infoX, yy + 18, infoX + fieldW, yy + 19, a(Theme.accent(160), st));
+                text(g, dist, infoX + fieldW, yy + 8, MUTED, false, st);
+            }
+            if (visible) hits.add(new Hit(infoX - 2, Math.max(yy, clipTop), infoX + fieldW + 2, Math.min(yy + h, clipBottom), () -> {
+                if (p != editingXyz) startXyz(p);
+                keepXyz = true;
+            }, "Kliknij, żeby wpisać kordy: x y z albo x z (Enter – zapisz, Ctrl+V – wklej)"));
 
             // nazwa (klik = edycja)
             int nx = x + 26;
@@ -895,6 +977,7 @@ public final class GuiController {
             if (ed && blink) g.fill(nx + g.width(fit) + 1, yy + 6, nx + g.width(fit) + 2, yy + 17, a(TEXT));
             if (visible) hits.add(new Hit(nx - 2, Math.max(yy, clipTop), infoX - 4, Math.min(yy + h, clipBottom), () -> {
                 finishWpEdit();
+                finishXyz();
                 editingWp = p;
             }, "Kliknij, żeby zmienić nazwę (Enter – zapisz)"));
         }
@@ -1058,14 +1141,23 @@ public final class GuiController {
         int before = editing;
         editing = -1;
         Waypoints.Point wpBefore = editingWp;
+        Waypoints.Point xyzBefore = editingXyz;
         for (Hit h : new ArrayList<>(hits)) {
             if (h.contains(mx, my)) {
+                if (xyzBefore != null && editingXyz == xyzBefore) {
+                    // klik poza polem kordów: zapisz, a błędny tekst porzuć
+                    keepXyz = false;
+                    h.action.run();
+                    if (!keepXyz && editingXyz == xyzBefore && !finishXyz()) editingXyz = null;
+                    return true;
+                }
                 h.action.run();
                 return true;
             }
         }
         if (before >= 0) Config.save();
         if (wpBefore != null) { editingWp = wpBefore; finishWpEdit(); }
+        if (xyzBefore != null && !finishXyz()) editingXyz = null;
         return false;
     }
 
@@ -1113,6 +1205,7 @@ public final class GuiController {
     public boolean escape() {
         if (binding != null) { binding = null; return true; }
         if (editingWp != null) { finishWpEdit(); return true; }
+        if (editingXyz != null) { editingXyz = null; return true; }
         if (editHud) {
             editHud = false;
             dragging = null;
@@ -1127,12 +1220,21 @@ public final class GuiController {
     public void closed() {
         binding = null;
         finishWpEdit();
+        if (!finishXyz()) editingXyz = null;
         Config.save();
     }
 
     /** Wpisany znak (pole AutoText). */
     public boolean charTyped(int codepoint) {
         if (binding != null) return true;
+        if (editingXyz != null) {
+            char ch = codepoint < 128 ? (char) codepoint : 0;
+            if (((ch >= '0' && ch <= '9') || ch == '-' || ch == ' ' || ch == '.' || ch == ',') && xyzBuf.length() < 32) {
+                xyzBuf += ch;
+                xyzBad = false;
+            }
+            return true;
+        }
         if (editingWp != null) {
             if (codepoint < 32 || codepoint == 127) return true;
             String n = editingWp.name == null ? "" : editingWp.name;
@@ -1159,6 +1261,22 @@ public final class GuiController {
             if (key == 256) binding = null;                                 // Esc – anuluj
             else if (key == 259 || key == 261) setBinding(Keybinds.NONE);    // Backspace / Delete – usuń
             else setBinding(key);
+            return true;
+        }
+        if (editingXyz != null) {
+            if (key == 259) {
+                if (!xyzBuf.isEmpty()) xyzBuf = (modifiers & 2) != 0 ? "" : xyzBuf.substring(0, xyzBuf.length() - 1);
+                xyzBad = false;
+            } else if (key == 257 || key == 335) {
+                finishXyz();
+            } else if (key == 256) {
+                editingXyz = null;
+            } else if (key == 86 && (modifiers & 2) != 0) { // Ctrl+V – np. kordy skopiowane z F3 albo czatu
+                String clip;
+                try { clip = VoidCore.game().clipboard(); } catch (Throwable t) { clip = ""; }
+                String nums = clip == null ? "" : clip.replaceAll("[^0-9.\\-]+", " ").trim();
+                if (!nums.isEmpty()) { xyzBuf = nums.length() > 32 ? nums.substring(0, 32) : nums; xyzBad = false; }
+            }
             return true;
         }
         if (editingWp != null) {
