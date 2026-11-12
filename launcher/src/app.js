@@ -553,6 +553,7 @@ $('dropzone').onclick = () => toast('Złap plik .jar lub .zip w Eksploratorze i 
 // ───────── „Co nowego” po aktualizacji ─────────
 
 const WHATS_NEW = [
+  'Waypointy na własnych kordach – przycisk „Wpisz kordy” albo klik w kordy punktu (Ctrl+V wkleja z F3)',
   'Podgląd ekwipunku na ekranie – 27 slotów plecaka nad hotbarem (prawy Shift → HUD)',
   'Mocniejszy tryb FPS: 16 nowych modów optymalizacyjnych i ustawienia grafiki pod wydajność',
   'Viewmodel i rozciągnięty obraz (prawy Shift → Widok)',
