@@ -553,6 +553,7 @@ $('dropzone').onclick = () => toast('Złap plik .jar lub .zip w Eksploratorze i 
 // ───────── „Co nowego” po aktualizacji ─────────
 
 const WHATS_NEW = [
+  'Waypointy: kordy wpisujesz w osobnych polach X, Y i Z (Tab – następne pole, Enter – zapisz)',
   'Zoom ze scrollem – trzymając klawisz zoomu, kółkiem myszy przybliżasz i oddalasz (do 50×)',
   'Waypointy na własnych kordach – przycisk „Wpisz kordy” albo klik w kordy punktu (Ctrl+V wkleja z F3)',
   'Podgląd ekwipunku na ekranie – 27 slotów plecaka nad hotbarem (prawy Shift → HUD)',
