@@ -17,7 +17,8 @@
     "PlayerNameMixin",
     "ScoreboardMixin",
     "ViewmodelMixin",
-    "AspectMixin"
+    "AspectMixin",
+    "ScrollMixin"
   ],
   "injectors": {
     "defaultRequire": 0

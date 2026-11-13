@@ -87,7 +87,32 @@ public final class MojangGame implements Game {
 
     @Override public int fov() { return mc().options.fov().get(); }
 
-    @Override public void setFov(int value) { mc().options.fov().set(value); }
+    @Override public void setFov(int value) {
+        var opt = mc().options.fov();
+        if (value >= 30 && value <= 110) { opt.set(value); return; }
+        try {
+            forceOption(opt, opt.get(), value);
+        } catch (Throwable t) {
+            opt.set(Math.max(30, Math.min(110, value)));
+        }
+    }
+
+    /** Pole z wartością opcji FOV – gra pozwala ustawić 30–110, a zoom potrzebuje mniej. */
+    private static java.lang.reflect.Field fovField;
+
+    private static void forceOption(Object opt, Object current, int value) throws Exception {
+        if (fovField == null) {
+            for (Class<?> c = opt.getClass(); c != null && fovField == null; c = c.getSuperclass()) {
+                for (java.lang.reflect.Field f : c.getDeclaredFields()) {
+                    if (java.lang.reflect.Modifier.isStatic(f.getModifiers()) || f.getType() != Object.class) continue;
+                    f.setAccessible(true);
+                    if (f.get(opt) == current) { fovField = f; break; }
+                }
+            }
+        }
+        if (fovField == null) throw new IllegalStateException("brak pola FOV");
+        fovField.set(opt, Integer.valueOf(value));
+    }
 
     @Override public boolean smoothCamera() { return mc().options.smoothCamera; }
 

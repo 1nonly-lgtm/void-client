@@ -215,23 +215,87 @@ public final class Modules {
     }
 
     public static final class Zoom extends Module {
-        private Integer savedFov;
+        /** Przybliżenie po wciśnięciu klawisza i granice dla scrolla (krotność). */
+        private static final float START = 3f, MIN = 1.5f, MAX = 50f, STEP = 1.25f;
+        private boolean active;
+        private int savedFov;
         private boolean savedSmooth;
+        private float target = START, current = 1f;
+        private int lastFov = -1;
+        private long lastFrame, scrolledAt;
 
-        Zoom() { super("zoom", "Zoom", "Przybliżenie pod klawiszem (domyślnie C, zmienisz w Opcjach)", Category.GAME, true); }
+        Zoom() { super("zoom", "Zoom", "Przybliżenie pod klawiszem (domyślnie C) – scrollem przybliżasz i oddalasz", Category.GAME, true); }
 
+        /** Co tick: wciśnięcie / puszczenie klawisza. */
         public void update(Game g, boolean pressed) {
             boolean want = isEnabled() && pressed && !g.screenOpen();
-            if (want && savedFov == null) {
-                savedFov = g.fov();
-                savedSmooth = g.smoothCamera();
-                g.setFov(30);
+            if (want && !active) {
+                active = true;
+                if (current <= 1.001f) { // nowy zoom (nie w trakcie wygaszania poprzedniego)
+                    savedFov = g.fov();
+                    savedSmooth = g.smoothCamera();
+                }
+                target = START;
                 g.setSmoothCamera(true);
-            } else if (!want && savedFov != null) {
-                g.setFov(savedFov);
+            } else if (!want && active) {
+                active = false;
                 g.setSmoothCamera(savedSmooth);
-                savedFov = null;
             }
+            if (!active && current > 1.001f && g.screenOpen()) restore(g); // menu – od razu normalny widok
+        }
+
+        /** Scroll podczas zoomu. Zwraca true, gdy go zużyliśmy (wtedy pasek przedmiotów się nie przewija). */
+        public boolean scroll(double amount) {
+            if (!active || amount == 0) return false;
+            target = amount > 0 ? target * STEP : target / STEP;
+            target = Math.max(MIN, Math.min(MAX, target));
+            scrolledAt = System.currentTimeMillis();
+            return true;
+        }
+
+        public boolean zooming() { return active || current > 1.001f; }
+
+        /** Co klatkę: płynne przejście do docelowego przybliżenia. */
+        public void frame(Game g) {
+            if (!active && current <= 1.001f) { lastFrame = 0; return; }
+            long now = System.nanoTime();
+            float dt = lastFrame == 0 ? 0.016f : Math.min(0.1f, (now - lastFrame) / 1e9f);
+            lastFrame = now;
+            float goal = active ? target : 1f;
+            // interpolacja w skali logarytmicznej – każdy krok scrolla wygląda tak samo
+            float lc = (float) Math.log(current), lg = (float) Math.log(goal);
+            lc += (lg - lc) * Math.min(1f, dt * 14f);
+            current = (float) Math.exp(lc);
+            if (Math.abs(lc - lg) < 0.002f) current = goal;
+            if (!active && current <= 1.001f) { restore(g); return; }
+            int fov = Math.max(1, Math.round((float) Math.toDegrees(2 * Math.atan(Math.tan(Math.toRadians(savedFov) / 2) / current))));
+            if (fov != lastFov) { g.setFov(fov); lastFov = fov; }
+        }
+
+        /** Wyjście z gry – przywraca FOV i płynną kamerę od razu. */
+        public void reset(Game g) {
+            if (active) { active = false; g.setSmoothCamera(savedSmooth); }
+            if (current > 1.001f || lastFov != -1) restore(g);
+        }
+
+        private void restore(Game g) {
+            current = 1f;
+            lastFrame = 0;
+            if (lastFov != -1) { g.setFov(savedFov); lastFov = -1; }
+        }
+
+        /** Napis „Zoom 4.0×” przez chwilę po scrollu. */
+        public void hud(Gfx g, int sw, int sh) {
+            if (!active) return;
+            long since = System.currentTimeMillis() - scrolledAt;
+            if (since > 1200) return;
+            float a = since < 900 ? 1f : 1f - (since - 900) / 300f;
+            String t = "Zoom " + String.format(java.util.Locale.ROOT, "%.1f", target) + "×";
+            int w = g.width(t) + 12, x = (sw - w) / 2, y = sh / 2 + 22;
+            int alpha = (int) (a * 0xB0);
+            g.fill(x, y, x + w, y + 13, alpha << 24 | 0x100820);
+            g.fill(x, y + 12, x + (int) (w * Math.log(target / MIN) / Math.log(MAX / MIN)), y + 13, (int) (a * 255) << 24 | (Theme.accent() & 0xFFFFFF));
+            g.text(t, x + 6, y + 3, (int) (a * 255) << 24 | 0xFFFFFF, true);
         }
     }
 

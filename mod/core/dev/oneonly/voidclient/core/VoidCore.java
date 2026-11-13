@@ -28,6 +28,7 @@ public final class VoidCore {
         CpsTracker.poll(game.leftMouse(), game.rightMouse());
         boolean typing = game.screenOpen();
         Modules.ZOOM.update(game, !typing && Keybinds.isDown(Keybinds.zoom));
+        try { Modules.ZOOM.frame(game); } catch (Throwable ignored) {} // też z F1 (wtedy HUD się nie rysuje)
         Freelook.update(game, !typing && Keybinds.isDown(Keybinds.freelook));
         boolean addWp = Keybinds.pressed("waypoint", Keybinds.waypoint);
         Waypoints.tick(game);
@@ -61,6 +62,7 @@ public final class VoidCore {
     /** Rysowanie HUD (co klatkę). */
     public static void renderHud(Gfx g, int screenW, int screenH) {
         CpsTracker.poll(game.leftMouse(), game.rightMouse());
+        try { Modules.ZOOM.frame(game); } catch (Throwable ignored) {}
         if (game.hudHidden()) return;
         Waypoints.render(g, game, screenW, screenH);
         for (HudModule h : Modules.hud()) {
@@ -72,6 +74,15 @@ public final class VoidCore {
         }
         if (Modules.WATERMARK.isEnabled() && !game.screenOpen()) Modules.Watermark.draw(g, screenH);
         if (customCrosshair()) Look.drawCrosshair(g, screenW, screenH);
+        Modules.ZOOM.hud(g, screenW, screenH);
+    }
+
+    /** Scroll myszy w grze (bez otwartego ekranu). Zwraca wartość, którą ma dostać gra – 0, gdy zużył ją zoom. */
+    public static double scroll(double vertical) {
+        try {
+            if (game != null && !game.screenOpen() && Modules.ZOOM.scroll(vertical)) return 0;
+        } catch (Throwable ignored) {}
+        return vertical;
     }
 
     /** Czy zamiast celownika z gry rysujemy własny (mixin wtedy wyłącza ten z gry). */
@@ -90,6 +101,7 @@ public final class VoidCore {
 
     public static void shutdown() {
         Modules.ZOOM.update(game, false);
+        Modules.ZOOM.reset(game);
         Freelook.update(game, false);
         Config.save();
     }
