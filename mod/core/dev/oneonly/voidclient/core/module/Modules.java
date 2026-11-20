@@ -48,6 +48,7 @@ public final class Modules {
     public static final MotionBlur MOTION_BLUR = add(new MotionBlur());
     public static final Simple VIEWMODEL = add(new Simple("viewmodel", "Viewmodel", "Położenie, rozmiar i obrót przedmiotu w ręce (zakładka Widok)", false));
     public static final SpotifyHud SPOTIFY = add(new SpotifyHud());
+    public static final ReplayHud REPLAY = add(new ReplayHud());
     public static final TntTimer TNT = add(new TntTimer());
     public static final Mining MINING = add(new Mining());
     public static final Simple SATURATION = add(new Simple("saturation", "Nasycenie", "Złota obwódka na pasku głodu – ile jeszcze nie zgłodniejesz", true));
@@ -462,6 +463,28 @@ public final class Modules {
                 }
             }
             return false;
+        }
+    }
+
+    /** Replay: czerwona kropka REC i czas nagrania (ReplayMod z launchera). Przyciski w panelu ustawień modułu. */
+    public static final class ReplayHud extends HudModule {
+        ReplayHud() { super("replay", "Replay", "Nagrywaj i oglądaj powtórki (ReplayMod) – kropka REC na ekranie", true, 4, 4); }
+
+        @Override public int width(Gfx g) { return 64; }
+
+        @Override public int height(Gfx g) { return 14; }
+
+        @Override
+        public void render(Gfx g, Game game) {
+            int st = dev.oneonly.voidclient.core.Replay.state();
+            if (st == 0 || st == 1 && !game.screenOpen()) return;
+            g.fill(x, y, x + 64, y + 14, 0xB0100B1A);
+            boolean blink = st == 3 && (System.currentTimeMillis() / 600) % 2 == 0;
+            int dot = st == 3 ? (blink ? 0xFFEF4444 : 0xFF991B1B) : 0xFF8A82A0;
+            g.fill(x + 4, y + 4, x + 10, y + 10, dot);
+            long ms = dev.oneonly.voidclient.core.Replay.durationMs() / 1000;
+            String t = st == 0 ? "REPLAY" : st == 1 ? "STOP" : (st == 2 ? "PAUZA " : "REC ") + ms / 60 + ":" + (ms % 60 < 10 ? "0" : "") + ms % 60;
+            g.uiText(t, x + 14, y + 3, 0xFFFFFFFF, true);
         }
     }
 

@@ -18,6 +18,8 @@ public final class Keybinds {
     public static int zoom = GLFW.GLFW_KEY_C;
     public static int waypoint = GLFW.GLFW_KEY_B;
     public static int emote = 71; // G
+    /** Trzymany klawisz pokazuje kursor w grze (klikanie przycisków Spotify). Domyślnie brak. */
+    public static int cursor = NONE;
 
     private static final Map<String, Boolean> WAS_DOWN = new HashMap<>();
 

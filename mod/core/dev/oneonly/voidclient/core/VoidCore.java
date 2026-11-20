@@ -54,6 +54,10 @@ public final class VoidCore {
             dev.oneonly.voidclient.core.gui.GuiController.requestWaypointDialog(null);
             screenRequest = true;
         }
+        if (Keybinds.cursor != Keybinds.NONE && !typing && Keybinds.isDown(Keybinds.cursor) && Modules.SPOTIFY.isEnabled()) {
+            dev.oneonly.voidclient.core.gui.GuiController.requestCursor();
+            screenRequest = true;
+        }
         if (wheel && !typing) {
             dev.oneonly.voidclient.core.gui.GuiController.requestWheel();
             screenRequest = true;

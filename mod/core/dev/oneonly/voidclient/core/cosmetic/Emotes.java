@@ -28,8 +28,9 @@ public final class Emotes {
         public final String id;
         public final Data data;
         public final CosmeticModel prop;
-        final long start = System.currentTimeMillis();
-        Playing(String id, Data data) { this.id = id; this.data = data; this.prop = data.prop; }
+        final long start;
+        Playing(String id, Data data) { this(id, data, 0); }
+        Playing(String id, Data data, long ageMs) { this.id = id; this.data = data; this.prop = data.prop; this.start = System.currentTimeMillis() - ageMs; }
         public float time() { return 1f + (System.currentTimeMillis() - start) / 1000f; }
 
         /** Obroty i przesunięcie w tej chwili (21 liczb). */
@@ -72,16 +73,32 @@ public final class Emotes {
         return all;
     }
 
+    private static boolean self(UUID player) {
+        try { return player != null && player.equals(dev.oneonly.voidclient.core.VoidCore.game().selfUuid()); } catch (Throwable t) { return false; }
+    }
+
     public static void play(UUID player, String id) {
         if (player == null) return;
         Data d = id == null ? null : all().get(id);
-        if (d == null) { PLAYING.remove(player); return; }
         Playing cur = PLAYING.get(player);
-        if (cur != null && cur.id.equals(id)) { PLAYING.remove(player); return; } // drugi raz – stop
+        if (d == null || cur != null && cur.id.equals(id)) { stop(player); return; } // drugi raz – stop
         PLAYING.put(player, new Playing(id, d));
+        if (self(player)) dev.oneonly.voidclient.core.VoidNet.sendEmote(id);
     }
 
-    public static void stop(UUID player) { if (player != null) PLAYING.remove(player); }
+    public static void stop(UUID player) {
+        if (player != null && PLAYING.remove(player) != null && self(player)) dev.oneonly.voidclient.core.VoidNet.sendEmote(null);
+    }
+
+    /** Emotka innego gracza Void z serwera (null – nic nie gra). */
+    public static void setRemote(UUID player, String id, long ageMs) {
+        if (player == null || self(player)) return;
+        Data d = id == null ? null : all().get(id);
+        if (d == null || ageMs > 10 * 60_000) { PLAYING.remove(player); return; }
+        Playing cur = PLAYING.get(player);
+        if (cur != null && cur.id.equals(id)) return;
+        PLAYING.put(player, new Playing(id, d, ageMs));
+    }
 
     public static Playing playing(UUID player) { return player == null ? null : PLAYING.get(player); }
 
@@ -124,6 +141,6 @@ public final class Emotes {
     /** Wywoływane co tick: emotka bez ruchu kończy się, gdy gracz idzie. */
     public static void moved(UUID player) {
         Playing p = playing(player);
-        if (p != null && !p.data.move) PLAYING.remove(player);
+        if (p != null && !p.data.move) stop(player);
     }
 }

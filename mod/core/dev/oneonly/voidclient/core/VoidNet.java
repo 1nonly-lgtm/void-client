@@ -62,6 +62,14 @@ public final class VoidNet {
             List<UUID> ids;
             try { ids = g.tabUuids(); } catch (Throwable t) { return; }
             run(() -> users(ids));
+        } else if (now >= nextEmotes && !VOID.isEmpty()) {
+            // emotki innych graczy Void w pobliżu (co 2 s, tylko gdy ktoś z Void jest na serwerze)
+            nextEmotes = now + 2_000;
+            java.util.UUID self;
+            try { self = g.selfUuid(); } catch (Throwable t) { self = null; }
+            List<UUID> others = new java.util.ArrayList<>(VOID);
+            others.remove(self);
+            if (!others.isEmpty()) run(() -> emotes(others));
         } else if (now >= nextBeat) {
             nextBeat = now + 90_000;
             String token;
@@ -117,6 +125,41 @@ public final class VoidNet {
             }
         }
         for (UUID id : ids) if (!seen.contains(id)) Cosmetics.setRemote(id, null);
+    }
+
+    private static long nextEmotes;
+
+    private static void emotes(List<UUID> ids) {
+        JsonArray arr = new JsonArray();
+        for (UUID id : ids) arr.add(id.toString());
+        JsonObject body = new JsonObject();
+        body.add("p_uuids", arr);
+        String res = post("void_emote_get", body.toString());
+        if (res == null) return;
+        Set<UUID> seen = new java.util.HashSet<>();
+        for (var e : JsonParser.parseString(res).getAsJsonArray()) {
+            try {
+                JsonObject o = e.getAsJsonObject();
+                UUID id = UUID.fromString(o.get("uuid").getAsString());
+                dev.oneonly.voidclient.core.cosmetic.Emotes.setRemote(id, o.get("emote").getAsString(), o.get("age_ms").getAsLong());
+                seen.add(id);
+            } catch (Exception ignored) {
+            }
+        }
+        for (UUID id : ids) if (!seen.contains(id)) dev.oneonly.voidclient.core.cosmetic.Emotes.setRemote(id, null, 0);
+    }
+
+    /** Twoja emotka (albo null – koniec) → serwer, żeby widzieli ją inni gracze Void. */
+    public static void sendEmote(String emote) {
+        Game g = VoidCore.game();
+        String token;
+        try { token = g.accessToken(); } catch (Throwable t) { return; }
+        JsonObject body = new JsonObject();
+        body.addProperty("p_token", token);
+        body.addProperty("p_emote", emote);
+        Thread t = new Thread(() -> post("void_emote_set", body.toString()), "VoidNet-emote");
+        t.setDaemon(true);
+        t.start();
     }
 
     /** Kosmetyki zmienione w grze → konto (jak z launchera). */

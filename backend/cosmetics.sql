@@ -37,3 +37,41 @@ revoke all on function public.void_cosmetics_set(text, jsonb) from public;
 revoke all on function public.void_cosmetics_get(uuid[]) from public;
 grant execute on function public.void_cosmetics_set(text, jsonb) to anon, authenticated;
 grant execute on function public.void_cosmetics_get(uuid[]) to anon, authenticated;
+
+-- Emotki widoczne dla innych graczy Void: gra wysyła, co teraz grasz (null = koniec), inni pytają co 2 s.
+create table if not exists public.void_emotes (
+  uuid uuid primary key,
+  emote text,
+  started_at timestamptz not null default now()
+);
+alter table public.void_emotes enable row level security;
+
+create or replace function public.void_emote_set(p_token text, p_emote text)
+returns void
+language plpgsql security definer
+set search_path = public, extensions
+as $$
+declare me public.void_tokens;
+begin
+  me := public.void_whoami(p_token);
+  if p_emote is not null and p_emote !~ '^[a-z]{2,24}$' then
+    raise exception 'Zła emotka';
+  end if;
+  insert into public.void_emotes(uuid, emote, started_at) values (me.uuid, p_emote, now())
+    on conflict (uuid) do update set emote = excluded.emote, started_at = now();
+end $$;
+
+create or replace function public.void_emote_get(p_uuids uuid[])
+returns table(uuid uuid, emote text, age_ms bigint)
+language sql stable security definer
+set search_path = public
+as $$
+  select e.uuid, e.emote, (extract(epoch from (now() - e.started_at)) * 1000)::bigint
+  from public.void_emotes e
+  where e.uuid = any(p_uuids[1:200]) and e.emote is not null and e.started_at > now() - interval '10 minutes';
+$$;
+
+revoke all on function public.void_emote_set(text, text) from public;
+revoke all on function public.void_emote_get(uuid[]) from public;
+grant execute on function public.void_emote_set(text, text) to anon, authenticated;
+grant execute on function public.void_emote_get(uuid[]) to anon, authenticated;

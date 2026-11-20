@@ -350,6 +350,7 @@ public final class GuiController {
         ICONS.put("scoreboard", new int[]{0b11111, 0b10001, 0b11101, 0b10001, 0b11111});
         ICONS.put("spotify", new int[]{0b00111, 0b00101, 0b00100, 0b11100, 0b11100});
         ICONS.put("nametag", new int[]{0b11111, 0b10001, 0b11111, 0b00100, 0b01110});
+        ICONS.put("replay", new int[]{0b01110, 0b11111, 0b11011, 0b11111, 0b01110});
         ICONS.put("tntfuse", new int[]{0b00100, 0b01110, 0b11111, 0b11111, 0b01110});
         ICONS.put("mining", new int[]{0b11110, 0b00110, 0b01010, 0b10000, 0b10000});
         ICONS.put("saturation", new int[]{0b00110, 0b01111, 0b11111, 0b11110, 0b01100});
@@ -392,6 +393,10 @@ public final class GuiController {
         hits.clear();
         alpha = openProgress();
 
+        if (cursorOnly) {
+            if (!Keybinds.isDown(Keybinds.cursor)) { cursorOnly = false; requestClose(); }
+            return;
+        }
         if (wheelOnly) {
             renderWheel(g, mx, my);
             return;
@@ -711,6 +716,20 @@ public final class GuiController {
             }
             yy += 20;
         }
+        if (m == Modules.REPLAY) {
+            int st = dev.oneonly.voidclient.core.Replay.state();
+            String info = !dev.oneonly.voidclient.core.Replay.installed() ? "Włącz Replay w launcherze (Opcje)" : st == 0 ? "Wejdź na serwer albo do świata" : st == 3 ? "Nagrywa" : st == 2 ? "Pauza" : "Zatrzymane";
+            text(g, info, ix, yy + 2, st == 3 ? 0xFFF87171 : MUTED, false);
+            yy += 14;
+            if (st > 0) {
+                yy = settingButton(g, mx, my, ix, yy, iw, st == 1 ? "Nagrywaj" : "Zatrzymaj", dev.oneonly.voidclient.core.Replay::toggleRecording);
+                if (st >= 2) yy = settingButton(g, mx, my, ix, yy, iw, st == 2 ? "Wznów" : "Pauza", dev.oneonly.voidclient.core.Replay::togglePause);
+                if (st >= 2) yy = settingButton(g, mx, my, ix, yy, iw, "Dodaj znacznik", dev.oneonly.voidclient.core.Replay::addMarker);
+            }
+            if (dev.oneonly.voidclient.core.Replay.installed() && !VoidCore.game().hasPlayer())
+                yy = settingButton(g, mx, my, ix, yy, iw, "Otwórz powtórki", dev.oneonly.voidclient.core.Replay::openViewer);
+            yy += 4;
+        }
         if (m instanceof HudModule) {
             HudModule hm = (HudModule) m;
             yy = settingToggle(g, mx, my, ix, yy, iw, "Tło HUD", Theme.hudBackground, () -> Theme.hudBackground = !Theme.hudBackground);
@@ -941,6 +960,7 @@ public final class GuiController {
         row = bindRow(g, mx, my, x, y + (h + gap) * row, w, h, row, "Klawisz Zoom", "zoom", Keybinds.zoom, clipTop, clipBottom);
         row = bindRow(g, mx, my, x, y + (h + gap) * row, w, h, row, "Klawisz: dodaj waypoint", "waypoint", Keybinds.waypoint, clipTop, clipBottom);
         row = bindRow(g, mx, my, x, y + (h + gap) * row, w, h, row, "Klawisz: koło emotek", "emote", Keybinds.emote, clipTop, clipBottom);
+        row = bindRow(g, mx, my, x, y + (h + gap) * row, w, h, row, "Klawisz: kursor (Spotify)", "cursor", Keybinds.cursor, clipTop, clipBottom);
         optionRow(g, mx, my, x, y + (h + gap) * row, w, h, row++, "Kolor akcentu", Theme.accentName(),
                 () -> Theme.accentIndex = (Theme.accentIndex + 1) % Theme.ACCENTS.length, clipTop, clipBottom, null);
         optionRow(g, mx, my, x, y + (h + gap) * row, w, h, row++, "Tło elementów HUD", Theme.hudBackground ? "Włączone" : "Wyłączone",
@@ -987,6 +1007,7 @@ public final class GuiController {
         else if ("zoom".equals(binding)) Keybinds.zoom = code;
         else if ("waypoint".equals(binding)) Keybinds.waypoint = code;
         else if ("emote".equals(binding)) Keybinds.emote = code;
+        else if ("cursor".equals(binding)) Keybinds.cursor = code;
         binding = null;
         Config.save();
     }
@@ -1289,6 +1310,12 @@ public final class GuiController {
     }
 
     public GuiController() {
+        cursorOnly = false;
+        if (pendingCursor) {
+            pendingCursor = false;
+            cursorOnly = true;
+            return;
+        }
         if (pendingWheel) {
             pendingWheel = false;
             wheelOnly = true;
@@ -1633,6 +1660,11 @@ public final class GuiController {
 
     // ───────────── Koło emotek (G) ─────────────
 
+    private static boolean pendingCursor, cursorOnly;
+
+    /** Trzymany klawisz kursora: pusty ekran z kursorem, klik trafia w przyciski Spotify. */
+    public static void requestCursor() { pendingCursor = true; }
+
     private static boolean pendingWheel;
 
     public static void requestWheel() { pendingWheel = true; }
@@ -1765,6 +1797,7 @@ public final class GuiController {
     // ───────────── Wejście ─────────────
 
     public boolean mouseClicked(double mx, double my, int button) {
+        if (cursorOnly) { VoidCore.hudClick(mx, my, button); return true; }
         if (closingAt >= 0) return true;
         if (wheelOnly) {
             for (Hit h : new ArrayList<>(hits)) if (h.contains(mx, my)) {

@@ -31,7 +31,7 @@ public final class Config {
         Integer freelookKey;
         Integer zoomKey;
         Integer waypointKey;
-        Integer emoteKey;
+        Integer emoteKey, cursorKey;
         String sky;
         Integer crossShape, crossColor, crossSize, outlineColor;
         Boolean crossDot, crossOutline;
@@ -70,6 +70,7 @@ public final class Config {
             if (d.zoomKey != null) Keybinds.zoom = d.zoomKey;
             if (d.waypointKey != null) Keybinds.waypoint = d.waypointKey;
             if (d.emoteKey != null) Keybinds.emote = d.emoteKey;
+            if (d.cursorKey != null) Keybinds.cursor = d.cursorKey;
             if (d.sky != null && (d.sky.isEmpty() || Sky.find(d.sky) != null)) Sky.selected = d.sky;
             if (d.crossShape != null) Look.shape = Math.floorMod(d.crossShape, Look.SHAPES.length);
             if (d.crossColor != null) Look.color = Math.floorMod(d.crossColor, Look.COLOR_NAMES.length);
@@ -122,6 +123,7 @@ public final class Config {
         d.zoomKey = Keybinds.zoom;
         d.waypointKey = Keybinds.waypoint;
         d.emoteKey = Keybinds.emote;
+        d.cursorKey = Keybinds.cursor;
         d.sky = Sky.selected;
         d.crossShape = Look.shape;
         d.crossColor = Look.color;
