@@ -93,6 +93,15 @@ public final class Cosmetics {
         saveOwn();
     }
 
+    /** Pole koła emotek (0–23) – zapis do pliku i na konto. */
+    public static void setSlot(int i, String id) {
+        if (!ownLoaded) loadOwn(VoidCore.game());
+        String[] sl = slots.clone();
+        sl[i] = id;
+        slots = sl;
+        saveOwn();
+    }
+
     private static String[] defaultSlots() {
         String[] d = {"machanie", "taniec", "dab", "salto", "klaskanie", "facepalm", "gitara", "uklon",
                 "robot", "krecio", "pajacyki", "medytacja", "salut", "pompki", "zombie", "hura",

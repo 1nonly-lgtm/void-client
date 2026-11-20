@@ -17,6 +17,7 @@ public final class Keybinds {
     public static int freelook = GLFW.GLFW_KEY_LEFT_ALT;
     public static int zoom = GLFW.GLFW_KEY_C;
     public static int waypoint = GLFW.GLFW_KEY_B;
+    public static int emote = 71; // G
 
     private static final Map<String, Boolean> WAS_DOWN = new HashMap<>();
 

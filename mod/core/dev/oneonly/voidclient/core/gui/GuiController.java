@@ -2,6 +2,7 @@ package dev.oneonly.voidclient.core.gui;
 
 import dev.oneonly.voidclient.core.AutoText;
 import dev.oneonly.voidclient.core.Config;
+import dev.oneonly.voidclient.core.Cosmetics;
 import dev.oneonly.voidclient.core.Game;
 import dev.oneonly.voidclient.core.Gfx;
 import dev.oneonly.voidclient.core.Keybinds;
@@ -52,7 +53,7 @@ public final class GuiController {
     }
 
     /** Podzakładki „Wyglądu”. */
-    private static final String[] LOOK_SUBS = {"Moduły", "Niebo", "Celownik", "Widok"};
+    private static final String[] LOOK_SUBS = {"Moduły", "Kosmetyki", "Niebo", "Celownik", "Widok"};
     private static final java.util.Set<String> COMBAT_IDS = new java.util.HashSet<>(java.util.Arrays.asList(
             "cps", "keystrokes", "armor", "armorbar", "attack", "togglesprint", "effects", "items", "tntfuse", "mining"));
     private static final java.util.Set<String> LOOK_IDS = new java.util.HashSet<>(java.util.Arrays.asList(
@@ -390,6 +391,10 @@ public final class GuiController {
         hits.clear();
         alpha = openProgress();
 
+        if (wheelOnly) {
+            renderWheel(g, mx, my);
+            return;
+        }
         if (dialogOnly) {
             if (dialog) renderDialog(g, mx, my);
             return;
@@ -539,9 +544,10 @@ public final class GuiController {
             case AUTOTEXT: contentH = renderAutoText(g, mx, my, cx, top - sc, cw, top, top + ch); break;
             case WAYPOINTS: contentH = renderWaypoints(g, mx, my, cx, top - sc, cw, top, top + ch); break;
             case LOOK:
-                if (lookSub == 1) contentH = renderSky(g, mx, my, cx, top - sc, cw, top, top + ch);
-                else if (lookSub == 2) contentH = renderLook(g, mx, my, cx, top - sc, cw, top, top + ch);
-                else if (lookSub == 3) contentH = renderView(g, mx, my, cx, top - sc, cw, top, top + ch);
+                if (lookSub == 1) contentH = renderCosmetics(g, mx, my, cx, top - sc, cw, top, top + ch);
+                else if (lookSub == 2) contentH = renderSky(g, mx, my, cx, top - sc, cw, top, top + ch);
+                else if (lookSub == 3) contentH = renderLook(g, mx, my, cx, top - sc, cw, top, top + ch);
+                else if (lookSub == 4) contentH = renderView(g, mx, my, cx, top - sc, cw, top, top + ch);
                 else contentH = renderModules(g, mx, my, cx, top - sc, cw, top, top + ch, tab);
                 break;
             default: contentH = renderModules(g, mx, my, cx, top - sc, cw, top, top + ch, tab);
@@ -561,8 +567,9 @@ public final class GuiController {
         // ── podpowiedź pod panelem ──
         String tip = tab == Tab.AUTOTEXT ? "Kliknij pole i wpisz tekst. Klawisz: Sterowanie → Void Client."
                 : tab == Tab.WAYPOINTS ? "Kliknij waypoint, żeby go edytować · B w grze – nowy waypoint"
-                : tab == Tab.LOOK && lookSub == 1 ? "Kliknij niebo, żeby je ustawić – gra przeładuje zasoby"
-                : tab == Tab.LOOK && lookSub >= 2 ? "Kliknij wartość, żeby ją zmienić – zmiany widać od razu"
+                : tab == Tab.LOOK && lookSub == 1 ? "Kliknij, żeby założyć albo zdjąć – zapisuje się na koncie (F5 – zobacz siebie)"
+                : tab == Tab.LOOK && lookSub == 2 ? "Kliknij niebo, żeby je ustawić – gra przeładuje zasoby"
+                : tab == Tab.LOOK && lookSub >= 3 ? "Kliknij wartość, żeby ją zmienić – zmiany widać od razu"
                 : tab == Tab.OPTIONS ? "Kliknij klawisz, a potem wciśnij nowy (Esc – anuluj, Backspace – usuń)"
                 : "Klik – włącz/wyłącz · prawy klik – ustawienia modułu · pisz, aby szukać";
         if (binding != null) tip = "Wciśnij klawisz albo przycisk myszy… (Esc – anuluj, Backspace – usuń)";
@@ -761,8 +768,8 @@ public final class GuiController {
         } else {
             Runnable open = null;
             String label = "Otwórz ustawienia";
-            if (m == Modules.CROSSHAIR || m == Modules.OUTLINE) open = () -> { switchTab(Tab.LOOK); lookSub = 2; };
-            else if (m == Modules.VIEWMODEL) open = () -> { switchTab(Tab.LOOK); lookSub = 3; };
+            if (m == Modules.CROSSHAIR || m == Modules.OUTLINE) open = () -> { switchTab(Tab.LOOK); lookSub = 3; };
+            else if (m == Modules.VIEWMODEL) open = () -> { switchTab(Tab.LOOK); lookSub = 4; };
             else if (m == Modules.WAYPOINTS) open = () -> switchTab(Tab.WAYPOINTS);
             else if (m == Modules.AUTOTEXT) open = () -> switchTab(Tab.AUTOTEXT);
             else if (m == Modules.ZOOM || m == Modules.FREELOOK) { open = () -> switchTab(Tab.OPTIONS); label = "Zmień klawisz"; }
@@ -932,6 +939,7 @@ public final class GuiController {
         row = bindRow(g, mx, my, x, y + (h + gap) * row, w, h, row, "Klawisz Freelook (rozglądanie)", "freelook", Keybinds.freelook, clipTop, clipBottom);
         row = bindRow(g, mx, my, x, y + (h + gap) * row, w, h, row, "Klawisz Zoom", "zoom", Keybinds.zoom, clipTop, clipBottom);
         row = bindRow(g, mx, my, x, y + (h + gap) * row, w, h, row, "Klawisz: dodaj waypoint", "waypoint", Keybinds.waypoint, clipTop, clipBottom);
+        row = bindRow(g, mx, my, x, y + (h + gap) * row, w, h, row, "Klawisz: koło emotek", "emote", Keybinds.emote, clipTop, clipBottom);
         optionRow(g, mx, my, x, y + (h + gap) * row, w, h, row++, "Kolor akcentu", Theme.accentName(),
                 () -> Theme.accentIndex = (Theme.accentIndex + 1) % Theme.ACCENTS.length, clipTop, clipBottom, null);
         optionRow(g, mx, my, x, y + (h + gap) * row, w, h, row++, "Tło elementów HUD", Theme.hudBackground ? "Włączone" : "Wyłączone",
@@ -977,6 +985,7 @@ public final class GuiController {
         if ("freelook".equals(binding)) Keybinds.freelook = code;
         else if ("zoom".equals(binding)) Keybinds.zoom = code;
         else if ("waypoint".equals(binding)) Keybinds.waypoint = code;
+        else if ("emote".equals(binding)) Keybinds.emote = code;
         binding = null;
         Config.save();
     }
@@ -1279,6 +1288,12 @@ public final class GuiController {
     }
 
     public GuiController() {
+        if (pendingWheel) {
+            pendingWheel = false;
+            wheelOnly = true;
+            wheelAt = System.currentTimeMillis();
+            return;
+        }
         if (pendingDialog) {
             pendingDialog = false;
             dialogOnly = true;
@@ -1561,6 +1576,143 @@ public final class GuiController {
         return true;
     }
 
+    // ───────────── Kosmetyki w grze (Wygląd → Kosmetyki) ─────────────
+
+    private static int cosCat;
+
+    private int renderCosmetics(Gfx g, int mx, int my, int x, int y, int w, int clipTop, int clipBottom) {
+        String[] cats = dev.oneonly.voidclient.core.cosmetic.CosmeticNames.CATS;
+        String[] labels = dev.oneonly.voidclient.core.cosmetic.CosmeticNames.LABELS;
+        int px = x;
+        for (int i = 0; i < cats.length; i++) {
+            final int idx = i;
+            int pw = tw(g, labels[i]) + 12;
+            if (px + pw > x + w) { px = x; y += 18; }
+            boolean on = i == cosCat;
+            round(g, px, y, px + pw, y + 14, 5, a(on ? Theme.accent(200) : 0x10FFFFFF));
+            text(g, labels[i], px + 6, y + 3, on ? 0xFFFFFFFF : MUTED, false);
+            if (y + 14 > clipTop && y < clipBottom) hits.add(new Hit(px, Math.max(y, clipTop), px + pw, Math.min(y + 14, clipBottom), () -> { cosCat = idx; tabChangedAt = System.currentTimeMillis(); }, null));
+            px += pw + 4;
+        }
+        int top = y + 20;
+        String cat = cats[cosCat];
+        boolean emote = "emote".equals(cat);
+        java.util.List<String[]> items = dev.oneonly.voidclient.core.cosmetic.CosmeticNames.list(cat);
+        String worn = emote ? null : "cape".equals(cat) ? Cosmetics.ownCape() : Cosmetics.ownWorn(java.util.Arrays.asList(Cosmetics.CATS3D).indexOf(cat));
+        int cellW = 62, cellH = 74, gap = 6;
+        int cols = Math.max(1, (w + gap) / (cellW + gap));
+        cellW = (w - gap * (cols - 1)) / cols;
+        for (int i = 0; i < items.size(); i++) {
+            String id = items.get(i)[0], name = items.get(i)[1];
+            float st = stagger(i);
+            int cx = x + (i % cols) * (cellW + gap), cy = top + (i / cols) * (cellH + gap) + (int) ((1 - st) * 6);
+            if (cy + cellH < clipTop || cy > clipBottom) continue;
+            boolean on = id.equals(worn);
+            boolean hover = mx >= cx && mx < cx + cellW && my >= cy && my < cy + cellH && my >= clipTop && my < clipBottom;
+            float hv = anim("ci" + cat + i, hover ? 1 : 0, 14f);
+            round(g, cx, cy, cx + cellW, cy + cellH, 7, a(lerpColor(lerpColor(CARD, CARD_HOVER, hv), lerpColor(CARD, deep(), 0.3f), on ? 1 : 0), st));
+            roundOutline(g, cx, cy, cx + cellW, cy + cellH, 7, a(on ? Theme.accent(230) : lerpColor(LINE, Theme.accent(120), hv), st));
+            if (st > 0.6f && !emote) g.image("voidclient:textures/cosmetics/thumb/" + cat + "_" + id + ".png", cx + (cellW - 44) / 2, cy + 4, 44, 51, 64, 74);
+            if (emote) {
+                int k = java.util.Arrays.asList(Cosmetics.slots).indexOf(id);
+                text(g, k >= 0 ? "pole " + (k + 1) : "", cx + 6, cy + 6, Theme.accent(), false, st);
+                icon(g, new int[]{0b00100, 0b01110, 0b00100, 0b01010, 0b10001}, cx + cellW / 2 - 7, cy + 22, 3, a(lerpColor(MUTED, 0xFFFFFFFF, hv), st));
+            }
+            String nm = ellipsis(g, name, cellW - 8);
+            text(g, nm, cx + (cellW - tw(g, nm)) / 2, cy + cellH - 14, on ? 0xFFFFFFFF : TEXT, false, st);
+            if (on) { round(g, cx + cellW - 14, cy + 4, cx + cellW - 4, cy + 14, 5, a(Theme.accent(255), st)); }
+            hits.add(new Hit(cx, Math.max(cy, clipTop), cx + cellW, Math.min(cy + cellH, clipBottom), () -> {
+                if (emote) { dev.oneonly.voidclient.core.cosmetic.Emotes.play(VoidCore.game().selfUuid(), id); requestClose(); return; }
+                Cosmetics.setOwn(cat, id.equals(worn) ? null : id);
+            }, emote ? name + " – kliknij, żeby zagrać (zobacz siebie w F5)" : name + (on ? " – kliknij, żeby zdjąć" : " – kliknij, żeby założyć")));
+        }
+        int rows = (items.size() + cols - 1) / cols;
+        return top + rows * (cellH + gap) - y + 20;
+    }
+
+    // ───────────── Koło emotek (G) ─────────────
+
+    private static boolean pendingWheel;
+
+    public static void requestWheel() { pendingWheel = true; }
+
+    private boolean wheelOnly;
+    private int wheelPage, wheelHover = -1, pickSlot = -1;
+    private long wheelAt;
+
+    private void renderWheel(Gfx g, int mx, int my) {
+        hits.clear();
+        float k = easeOut(clamp01((System.currentTimeMillis() - wheelAt) / 200f));
+        g.fill(0, 0, width, height, a(0x66000000, k));
+        int cx = width / 2, cy = height / 2;
+        if (pickSlot >= 0) { renderPick(g, mx, my, k); return; }
+        String[] slots = Cosmetics.slots;
+        float dx = mx - cx, dy = my - cy;
+        double dist = Math.sqrt(dx * dx + dy * dy);
+        wheelHover = -1;
+        if (dist > 26) {
+            double ang = Math.atan2(dy, dx) + Math.PI / 2 + Math.PI / 8;
+            ang = (ang % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+            wheelHover = (int) (ang / (Math.PI / 4)) % 8;
+        }
+        float rad = 84 * (0.7f + 0.3f * k);
+        for (int i = 0; i < 8; i++) {
+            final int slot = wheelPage * 8 + i;
+            String id = slots[slot];
+            double am = -Math.PI / 2 + i * Math.PI / 4;
+            boolean on = i == wheelHover;
+            float hv = anim("wh" + i, on ? 1 : 0, 16f);
+            int bw = 74, bh = 30;
+            int bx = (int) (cx + Math.cos(am) * (rad + hv * 6)) - bw / 2, by = (int) (cy + Math.sin(am) * (rad + hv * 6)) - bh / 2;
+            round(g, bx - 1, by - 1, bx + bw + 1, by + bh + 1, 9, a(on ? Theme.accent(220) : 0x22FFFFFF, k));
+            round(g, bx, by, bx + bw, by + bh, 8, a(lerpColor(0xF0120E1C, lerpColor(0xF0120E1C, deep(), 0.6f), hv), k));
+            String nm = id == null ? "puste" : ellipsis(g, dev.oneonly.voidclient.core.cosmetic.CosmeticNames.name("emote", id), bw - 10);
+            text(g, nm, bx + (bw - tw(g, nm)) / 2, by + 7, id == null ? DIM : 0xFFFFFFFF, false, k);
+            String num = String.valueOf(slot + 1);
+            text(g, num, bx + (bw - tw(g, num)) / 2, by + 18, on ? Theme.accent() : DIM, false, k);
+            hits.add(new Hit(bx, by, bx + bw, by + bh, () -> playSlot(slot), null).right(() -> pickSlot = slot));
+        }
+        // środek
+        round(g, cx - 34, cy - 20, cx + 34, cy + 20, 14, a(0xF0120E1C, k));
+        roundOutline(g, cx - 34, cy - 20, cx + 34, cy + 20, 14, a(Theme.accent(120), k));
+        String hov = wheelHover >= 0 && slots[wheelPage * 8 + wheelHover] != null ? dev.oneonly.voidclient.core.cosmetic.CosmeticNames.name("emote", slots[wheelPage * 8 + wheelHover]) : "Emotki";
+        hov = ellipsis(g, hov, 62);
+        bold(g, hov, cx - bw(g, hov) / 2, cy - 10, TEXT, k);
+        String page = "strona " + (wheelPage + 1) + "/3";
+        text(g, page, cx - tw(g, page) / 2, cy + 3, DIM, false, k);
+        String tip = "Klik – zagraj · prawy klik – zmień pole · scroll – strona · " + Keybinds.name(Keybinds.emote) + " / Esc – zamknij";
+        tip = ellipsis(g, tip, width - 20);
+        int tw2 = tw(g, tip) + 16;
+        round(g, (width - tw2) / 2, cy + 130, (width + tw2) / 2, cy + 145, 5, a(0xC0100B1A, k));
+        text(g, tip, (width - tw2) / 2 + 8, cy + 134, MUTED, false, k);
+    }
+
+    private void renderPick(Gfx g, int mx, int my, float k) {
+        java.util.List<String[]> all = dev.oneonly.voidclient.core.cosmetic.CosmeticNames.list("emote");
+        int cols = 6, cw = Math.min(86, (width - 40) / cols), ch = 16, gap = 3;
+        int rows = (all.size() + 1 + cols - 1) / cols;
+        int w = cols * (cw + gap) - gap, h = rows * (ch + gap) - gap;
+        int x0 = (width - w) / 2, y0 = Math.max(24, (height - h) / 2);
+        String title = "Pole " + (pickSlot + 1) + ": wybierz emotkę";
+        bold(g, title, (width - bw(g, title)) / 2, y0 - 16, TEXT, k);
+        for (int i = 0; i <= all.size(); i++) {
+            String id = i < all.size() ? all.get(i)[0] : null;
+            String nm = i < all.size() ? all.get(i)[1] : "— puste —";
+            int x = x0 + (i % cols) * (cw + gap), y = y0 + (i / cols) * (ch + gap);
+            boolean hov = mx >= x && mx < x + cw && my >= y && my < y + ch;
+            round(g, x, y, x + cw, y + ch, 4, a(hov ? Theme.accent(150) : 0xE0120E1C, k));
+            text(g, ellipsis(g, nm, cw - 8), x + 4, y + 4, TEXT, false, k);
+            hits.add(new Hit(x, y, x + cw, y + ch, () -> { Cosmetics.setSlot(pickSlot, id); pickSlot = -1; }, null));
+        }
+    }
+
+    private void playSlot(int slot) {
+        String id = Cosmetics.slots[slot];
+        if (id == null) { pickSlot = slot; return; }
+        dev.oneonly.voidclient.core.cosmetic.Emotes.play(VoidCore.game().selfUuid(), id);
+        requestClose();
+    }
+
     // ───────────── Edytor HUD ─────────────
 
     private void renderEditor(Gfx g, int mx, int my) {
@@ -1613,6 +1765,15 @@ public final class GuiController {
 
     public boolean mouseClicked(double mx, double my, int button) {
         if (closingAt >= 0) return true;
+        if (wheelOnly) {
+            for (Hit h : new ArrayList<>(hits)) if (h.contains(mx, my)) {
+                if (button == 1 && h.right != null) h.right.run();
+                else if (button == 0) h.action.run();
+                return true;
+            }
+            if (pickSlot >= 0) pickSlot = -1;
+            return true;
+        }
         if (dialog) {
             if (button != 0) return true;
             for (Hit h : new ArrayList<>(hits)) if (h.contains(mx, my)) { h.action.run(); return true; }
@@ -1700,6 +1861,7 @@ public final class GuiController {
     }
 
     public boolean mouseScrolled(double vertical) {
+        if (wheelOnly) { if (pickSlot < 0) wheelPage = Math.floorMod(wheelPage + (vertical < 0 ? 1 : -1), 3); return true; }
         if (editHud || dialog) return dialog;
         scroll = (int) Math.max(0, Math.min(maxScroll, scroll - vertical * 20));
         return true;
@@ -1710,6 +1872,7 @@ public final class GuiController {
      * Zawsze obsłużone – ekran zamyka się sam po animacji (closeFinished).
      */
     public boolean escape() {
+        if (wheelOnly && pickSlot >= 0) { pickSlot = -1; return true; }
         if (dialog) { closeDialog(); return true; }
         if (binding != null) { binding = null; return true; }
         if (editingWp != null) { finishWpEdit(); return true; }
@@ -1734,6 +1897,7 @@ public final class GuiController {
 
     /** Wpisany znak (pole AutoText). */
     public boolean charTyped(int codepoint) {
+        if (wheelOnly) return true;
         if (dialog) return dialogChar(codepoint);
         if (binding != null) return true;
         if (editingXyz != null) {
@@ -1779,6 +1943,11 @@ public final class GuiController {
 
     /** Klawisze specjalne podczas wpisywania. Zwraca true, jeśli menu je obsłużyło. */
     public boolean keyPressed(int key, int modifiers) {
+        if (wheelOnly) {
+            if (key == Keybinds.emote && pickSlot < 0) { requestClose(); return true; }
+            if (key >= 49 && key <= 56 && pickSlot < 0) { playSlot(wheelPage * 8 + (key - 49)); return true; }
+            return false;
+        }
         if (dialog) return dialogKey(key, modifiers);
         if (binding != null) {
             if (key == 256) binding = null;                                 // Esc – anuluj

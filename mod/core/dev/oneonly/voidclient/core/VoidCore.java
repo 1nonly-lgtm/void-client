@@ -40,6 +40,7 @@ public final class VoidCore {
         try { Modules.ZOOM.frame(game); } catch (Throwable ignored) {} // też z F1 (wtedy HUD się nie rysuje)
         Freelook.update(game, !typing && Keybinds.isDown(Keybinds.freelook));
         boolean addWp = Keybinds.pressed("waypoint", Keybinds.waypoint);
+        boolean wheel = Keybinds.pressed("emote", Keybinds.emote);
         Waypoints.tick(game);
         status();
         try { Screenshots.tick(game); } catch (Throwable ignored) {}
@@ -52,6 +53,16 @@ public final class VoidCore {
             // B otwiera okno nowego waypointu (nazwa, kordy, kolor, styl) zamiast zapisywać od razu
             dev.oneonly.voidclient.core.gui.GuiController.requestWaypointDialog(null);
             screenRequest = true;
+        }
+        if (wheel && !typing) {
+            dev.oneonly.voidclient.core.gui.GuiController.requestWheel();
+            screenRequest = true;
+        }
+        // emotka bez ruchu kończy się, gdy idziesz albo skaczesz
+        try {
+            if (game.key(Game.Key.FORWARD) || game.key(Game.Key.BACK) || game.key(Game.Key.LEFT) || game.key(Game.Key.RIGHT) || game.key(Game.Key.JUMP))
+                dev.oneonly.voidclient.core.cosmetic.Emotes.moved(game.selfUuid());
+        } catch (Throwable ignored) {
         }
         for (Module m : Modules.all()) {
             if (m.isEnabled()) m.onTick(game);
