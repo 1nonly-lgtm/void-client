@@ -2,6 +2,7 @@ name: Strona Void Client
 
 on:
   push:
+    branches: [main]
     paths:
       - 'website/**'
   workflow_dispatch:
