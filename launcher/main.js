@@ -5,7 +5,8 @@ const path = require('path');
 if (!app.requestSingleInstanceLock()) app.exit(0);
 
 app.commandLine.appendSwitch('disable-features', 'HardwareMediaKeyHandling,MediaSessionService,SpareRendererForSitePerProcess');
-app.setAppUserModelId('dev.oneonly.voidclient');
+const BETA = require('./package.json').voidBeta === true; // wersja testowa 2.0 – osobna instalacja i osobne aktualizacje
+app.setAppUserModelId(BETA ? 'dev.oneonly.voidclient.beta' : 'dev.oneonly.voidclient');
 
 const settings = require('./lib/settings');
 
@@ -248,6 +249,7 @@ function setupUpdates() {
     return;
   }
   autoUpdater.autoDownload = true;
+  if (BETA) { autoUpdater.allowPrerelease = true; autoUpdater.channel = 'beta'; } // beta bierze tylko wydania testowe
   // Bez cichej instalacji przy zamykaniu – na części komputerów Windows prosi wtedy o zgodę
   // i cicha instalacja po cichu się wysypuje. Instalator uruchamiamy sami (niżej).
   autoUpdater.autoInstallOnAppQuit = false;

@@ -29,6 +29,18 @@ public final class Sky {
             new Def("zorza", "Zorza polarna", "Zielono-fioletowe kurtyny światła", 0xFF04101C, 0xFF1C6E5A),
             new Def("end", "Niebo Endu", "Mroczne smugi i fiolet", 0xFF0A040E, 0xFF3A1650),
             new Def("mglawica", "Mgławica", "Niebiesko-różowe obłoki gazu", 0xFF080818, 0xFF4A2A7A),
+            new Def("planeta", "Planeta", "Gazowy olbrzym z pierścieniami", 0xFF03020A, 0xFF1A1030),
+            new Def("synthwave", "Synthwave", "Słońce w paski i neonowa siatka", 0xFF14042A, 0xFFFF3CAA),
+            new Def("krwawy", "Krwawy księżyc", "Czerwona noc z wielkim księżycem", 0xFF0E0204, 0xFF6E0E12),
+            new Def("galaktyka", "Galaktyka", "Spiralna galaktyka nad głową", 0xFF020208, 0xFF2A2A5A),
+            new Def("swit", "Złoty świt", "Słońce nad morzem chmur", 0xFF283C78, 0xFFFFBE6E),
+            new Def("burza", "Burza", "Ciężkie chmury i błyskawica", 0xFF0E0E16, 0xFF2E2C3E),
+            new Def("meteory", "Deszcz meteorytów", "Spadające gwiazdy z ogonami", 0xFF04040C, 0xFF140E22),
+            new Def("pierscien", "Pierścień planety", "Świecący pierścień przez całe niebo", 0xFF03030A, 0xFF120E28),
+            new Def("dwa_slonca", "Dwa słońca", "Zachód nad pustynią obcej planety", 0xFF28205A, 0xFFFFAA5A),
+            new Def("podwodne", "Pod wodą", "Promienie światła i bąbelki", 0xFF0A4E78, 0xFF04203C),
+            new Def("cukrowa", "Wata cukrowa", "Różowe chmury na pastelowym niebie", 0xFF7AAAFA, 0xFFFFBEDC),
+            new Def("noir", "Noir", "Czarno-biała noc z księżycem", 0xFF060608, 0xFF28282A),
     };
 
     public static final String PACK = "VoidClient-Niebo";

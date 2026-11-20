@@ -1,6 +1,6 @@
 {
   "name": "void-client",
-  "productName": "Void Client",
+  "productName": "Void Client Beta",
   "version": "1.0.0",
   "description": "Void Client – launcher Minecraft by 1nonly",
   "author": "1nonly",
@@ -21,9 +21,10 @@
     "electron": "^33.2.1",
     "electron-builder": "^25.1.8"
   },
+  "voidBeta": true,
   "build": {
-    "appId": "dev.oneonly.voidclient",
-    "productName": "Void Client",
+    "appId": "dev.oneonly.voidclient.beta",
+    "productName": "Void Client Beta",
     "directories": {
       "output": "dist",
       "buildResources": "build"
@@ -55,7 +56,7 @@
       "target": [
         "nsis"
       ],
-      "artifactName": "VoidClient-Setup.${ext}"
+      "artifactName": "VoidClient-Beta-Setup.${ext}"
     },
     "nsis": {
       "oneClick": true,

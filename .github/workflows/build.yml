@@ -17,7 +17,7 @@ jobs:
       - name: Nieba Void
         shell: pwsh
         working-directory: tools/sky
-        timeout-minutes: 12
+        timeout-minutes: 30
         run: |
           $ok = $false
           foreach ($i in 1..3) {
@@ -86,7 +86,10 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Numer wersji
         working-directory: launcher
-        run: npm version 1.0.${{ github.run_number }} --no-git-tag-version
+        shell: bash
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/v2" ]; then npm version 2.0.0-beta.${{ github.run_number }} --no-git-tag-version
+          else npm version 1.0.${{ github.run_number }} --no-git-tag-version; fi
       - name: Budowanie instalatora
         working-directory: launcher
         shell: bash
@@ -114,6 +117,22 @@ jobs:
             launcher/dist/VoidClient-Setup.exe.blockmap
             launcher/dist/latest.yml
             launcher/resources/mods/*.jar
+
+      # 4b) Wersja testowa 2.0 (gałąź v2) – wydanie „pre-release”: nie trafia do zwykłych graczy
+      #     ani na stronę; aktualizuje się tylko launcher Void Client Beta.
+      - name: Publikacja wersji testowej
+        if: github.ref == 'refs/heads/v2'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v2.0.0-beta.${{ github.run_number }}
+          name: Void Client 2.0 Beta ${{ github.run_number }} (tylko do testów)
+          prerelease: true
+          make_latest: false
+          body: Wersja testowa 2.0 – nie dla graczy. Zwykły launcher jej nie pobiera.
+          files: |
+            launcher/dist/VoidClient-Beta-Setup.exe
+            launcher/dist/VoidClient-Beta-Setup.exe.blockmap
+            launcher/dist/*.yml
 
       - name: Podsumowanie
         if: always()

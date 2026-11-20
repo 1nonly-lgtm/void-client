@@ -5,7 +5,8 @@ import os, sys
 from PIL import Image
 from cube import build
 
-NAMES = ['pustka', 'noc', 'zachod', 'zorza', 'end', 'mglawica']
+NAMES = ['pustka', 'noc', 'zachod', 'zorza', 'end', 'mglawica', 'krwawy', 'planeta', 'burza', 'swit', 'synthwave', 'galaktyka',
+         'dwa_slonca', 'meteory', 'podwodne', 'cukrowa', 'pierscien', 'noir']
 out = sys.argv[1]
 os.makedirs(os.path.join(out, 'sky'), exist_ok=True)
 os.makedirs(os.path.join(out, 'gui', 'sky'), exist_ok=True)
