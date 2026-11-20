@@ -21,6 +21,9 @@ public final class Waypoints {
         public int color;
         public boolean visible = true;
         public String world;
+        /** Wygląd znacznika: 0 – słup światła, 1 – diament, 2 – kropka. */
+        public int style = 1;
+        public boolean showDistance = true;
 
         public Point() {}
 
@@ -72,6 +75,19 @@ public final class Waypoints {
         Config.save();
         return p;
     }
+
+    /** Nowy punkt na podanych kordach (okno waypointu). */
+    public static Point add(Game g, String name, int x, int y, int z, int color, int style, boolean showDistance) {
+        if (!g.hasPlayer()) return null;
+        Point p = new Point(name, x, y, z, color, worldKey(g));
+        p.style = style;
+        p.showDistance = showDistance;
+        ALL.add(p);
+        Config.save();
+        return p;
+    }
+
+    public static final String[] STYLES = {"Słup światła", "Diament", "Kropka"};
 
     public static void remove(Point p) {
         ALL.remove(p);
@@ -152,27 +168,47 @@ public final class Waypoints {
         int c = p.argb();
         int glow = (c & 0x00FFFFFF) | 0x50000000;
         float pulse = 0.5f + 0.5f * (float) Math.sin(now / 300.0 + p.x);
-        // świecący romb
         int s = 5;
-        for (int i = -s - 2; i <= s + 2; i++) {
-            int half = s + 2 - Math.abs(i);
-            g.fill(x - half, y + i, x + half + 1, y + i + 1, (int) (0x30 + 0x30 * pulse) << 24 | (c & 0x00FFFFFF));
+        if (p.style == 0) {
+            // słup światła: świecąca kolumna od znacznika w górę ekranu
+            int top = Math.max(0, y - 400);
+            g.gradient(x - 3, top, x + 4, y, c & 0x00FFFFFF, (int) (0x30 + 0x20 * pulse) << 24 | (c & 0x00FFFFFF));
+            g.gradient(x - 1, top, x + 2, y, c & 0x00FFFFFF, (int) (0xA0 + 0x40 * pulse) << 24 | (c & 0x00FFFFFF));
+            g.fill(x - 2, y - 2, x + 3, y + 3, c);
+            g.fill(x - 1, y - 1, x + 2, y + 2, 0xFFFFFFFF);
+        } else if (p.style == 2) {
+            // kropka
+            for (int i = -4; i <= 4; i++) {
+                int half = (int) Math.round(Math.sqrt(16 - i * i));
+                g.fill(x - half, y + i, x + half + 1, y + i + 1, (int) (0x40 + 0x30 * pulse) << 24 | (c & 0x00FFFFFF));
+            }
+            for (int i = -2; i <= 2; i++) {
+                int half = (int) Math.round(Math.sqrt(5 - i * i));
+                g.fill(x - half, y + i, x + half + 1, y + i + 1, c);
+            }
+            s = 2;
+        } else {
+            // świecący romb
+            for (int i = -s - 2; i <= s + 2; i++) {
+                int half = s + 2 - Math.abs(i);
+                g.fill(x - half, y + i, x + half + 1, y + i + 1, (int) (0x30 + 0x30 * pulse) << 24 | (c & 0x00FFFFFF));
+            }
+            for (int i = -s; i <= s; i++) {
+                int half = s - Math.abs(i);
+                g.fill(x - half, y + i, x + half + 1, y + i + 1, i < 0 ? c : darker(c));
+            }
+            g.fill(x - 1, y - 1, x + 2, y + 2, 0xFFFFFFFF);
+            g.fill(x, y + s + 2, x + 1, y + s + 14, glow);
         }
-        for (int i = -s; i <= s; i++) {
-            int half = s - Math.abs(i);
-            g.fill(x - half, y + i, x + half + 1, y + i + 1, i < 0 ? c : darker(c));
-        }
-        g.fill(x - 1, y - 1, x + 2, y + 2, 0xFFFFFFFF);
-        // pionowa linia w dół jak promień
-        g.fill(x, y + s + 2, x + 1, y + s + 14, glow);
 
-        String label = p.name + "  " + dist + " m";
+        String d = p.showDistance ? dist + " m" : "";
+        String label = d.isEmpty() ? p.name : p.name + "  " + d;
         int tw = g.width(label);
         int lx = Math.max(2, Math.min(screenW - tw - 10, x - tw / 2 - 4)), ly = Math.max(2, y - s - 16);
         g.fill(lx, ly, lx + tw + 8, ly + 12, 0xB0100820);
         g.fill(lx, ly + 11, lx + tw + 8, ly + 12, c);
         g.text(p.name, lx + 4, ly + 2, 0xFFFFFFFF, true);
-        g.text(dist + " m", lx + 4 + g.width(p.name + "  "), ly + 2, c, true);
+        if (!d.isEmpty()) g.text(d, lx + 4 + g.width(p.name + "  "), ly + 2, c, true);
     }
 
     private static int darker(int c) {

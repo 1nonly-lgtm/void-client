@@ -39,6 +39,7 @@ public class VoidClientMod implements ClientModInitializer {
                 while (autoKeys[i].wasPressed()) VoidCore.autoText(i);
             }
             VoidCore.tick(); // Zoom, Freelook i Waypoint – klawisze ustawiane w menu Void Client
+            if (VoidCore.takeScreenRequest() && client.currentScreen == null) client.setScreen(new VoidScreen()); // np. okno waypointu pod B
         });
 
         ClientLifecycleEvents.CLIENT_STOPPING.register(client -> VoidCore.shutdown());

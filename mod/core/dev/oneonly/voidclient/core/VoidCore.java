@@ -23,6 +23,15 @@ public final class VoidCore {
 
     public static Game game() { return game; }
 
+    private static volatile boolean screenRequest;
+
+    /** Adapter wersji gry pyta co tick, czy otworzyć ekran Void Client (np. okno waypointu). */
+    public static boolean takeScreenRequest() {
+        boolean r = screenRequest;
+        screenRequest = false;
+        return r;
+    }
+
     /** Koniec ticka gry (20/s). Klawisze Void Client czytamy sami – ustawia się je w naszym menu. */
     public static void tick() {
         CpsTracker.poll(game.leftMouse(), game.rightMouse());
@@ -39,7 +48,11 @@ public final class VoidCore {
             Tps.reset();
             return;
         }
-        if (addWp && !typing && Modules.WAYPOINTS.isEnabled()) Waypoints.addHere(game);
+        if (addWp && !typing && Modules.WAYPOINTS.isEnabled()) {
+            // B otwiera okno nowego waypointu (nazwa, kordy, kolor, styl) zamiast zapisywać od razu
+            dev.oneonly.voidclient.core.gui.GuiController.requestWaypointDialog(null);
+            screenRequest = true;
+        }
         for (Module m : Modules.all()) {
             if (m.isEnabled()) m.onTick(game);
         }
