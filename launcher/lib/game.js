@@ -57,6 +57,18 @@ const JVM_FLAGS = [
   '-XX:MaxTenuringThreshold=1'
 ];
 
+/** Flagi JVM: G1 (domyślnie) albo ZGC generacyjny na Javie 21+ („Płynność bez przycięć”). */
+function jvmArgs(s, vjson) {
+  if (!s.jvmFlags) return [];
+  const major = Number(vjson && vjson.javaVersion && vjson.javaVersion.majorVersion) || 8;
+  if (s.smoothGC !== false && major >= 21) {
+    const z = ['-XX:+UseZGC', '-XX:+AlwaysPreTouch', '-XX:+DisableExplicitGC', '-XX:+PerfDisableSharedMem'];
+    if (major < 24) z.splice(1, 0, '-XX:+ZGenerational'); // od Javy 24 ZGC jest zawsze generacyjny
+    return z;
+  }
+  return JVM_FLAGS;
+}
+
 const instanceDir = id => path.join(ROOT, 'instances', id.replace(/[^a-z0-9_-]/gi, '_'));
 
 // ───────── Wersje ─────────
@@ -201,8 +213,12 @@ const FPS_OPTIONS = {
   entityDistanceScaling: '0.75'
 };
 
-function applyFpsPreset(dir) {
-  const marker = path.join(dir, '.void-fps-preset');
+const MAX_OPTIONS = { ...FPS_OPTIONS, renderDistance: '6', simulationDistance: '5', entityDistanceScaling: '0.5', maxFps: '260' };
+
+function applyFpsPreset(dir, preset = 'balanced') {
+  if (preset === 'quality') return;
+  const FPS_OPTIONS_ = preset === 'max' ? MAX_OPTIONS : FPS_OPTIONS;
+  const marker = path.join(dir, preset === 'max' ? '.void-fps-preset-max' : '.void-fps-preset');
   if (fs.existsSync(marker)) return;
   try {
     const file = path.join(dir, 'options.txt');
@@ -212,10 +228,10 @@ function applyFpsPreset(dir) {
     const seen = new Set();
     const out = lines.map(l => {
       const k = l.slice(0, l.indexOf(':'));
-      if (k in FPS_OPTIONS) { seen.add(k); return k + ':' + FPS_OPTIONS[k]; }
+      if (k in FPS_OPTIONS_) { seen.add(k); return k + ':' + FPS_OPTIONS_[k]; }
       return l;
     });
-    for (const [k, v] of Object.entries(FPS_OPTIONS)) if (!seen.has(k)) out.push(k + ':' + v);
+    for (const [k, v] of Object.entries(FPS_OPTIONS_)) if (!seen.has(k)) out.push(k + ':' + v);
     fs.writeFileSync(file, out.join('\n') + '\n');
     fs.writeFileSync(marker, new Date().toISOString());
   } catch (e) {
@@ -234,6 +250,13 @@ async function launch(profile, s, emit, onLine) {
 
   const dir = instanceDir(profile.id);
   fs.mkdirSync(dir, { recursive: true });
+  // kosmetyki i koło emotek – mod Void Client czyta je przy starcie (config/void-cosmetics.json)
+  try {
+    fs.mkdirSync(path.join(dir, 'config'), { recursive: true });
+    fs.writeFileSync(path.join(dir, 'config', 'void-cosmetics.json'), JSON.stringify({
+      cosmetics: s.cosmetics || {}, emoteSlots: s.emoteSlots || [], spotify: s.spotify !== false, hud60: s.hud60 !== false
+    }, null, 2));
+  } catch (e) { console.warn('Kosmetyki:', e.message); }
 
   let custom;
   if (profile.loader === 'fabric') {
@@ -245,10 +268,16 @@ async function launch(profile, s, emit, onLine) {
     const sky = mc === '1.21.10' ? 'horizon-port' : 'nuit';
     const pack = profile.optimize ? modrinth.FPS_PACK.slice() : withVoid ? ['fabric-api'] : [];
     if (withVoid) pack.push(sky);
+    // Replay (Opcje → Replay): prawdziwy ReplayMod z Modrinth, wyłączenie go usuwa
+    if (s.replay) pack.push('replaymod');
+    else {
+      const idx = modrinth.readIndex(dir);
+      for (const [id, v] of Object.entries(idx)) if (v.slug === 'replaymod' && !v.skip) await modrinth.remove(id, dir).catch(() => {});
+    }
     if (pack.length) await modrinth.ensurePack(pack, { mc, loader: 'fabric', instanceDir: dir, onStep: text => emit({ text }) });
   }
 
-  if (profile.optimize) applyFpsPreset(dir);
+  if (profile.optimize) applyFpsPreset(dir, s.perfPreset);
 
   const { Client } = require('minecraft-launcher-core');
   const launcher = new Client();
@@ -267,7 +296,7 @@ async function launch(profile, s, emit, onLine) {
     version: { number: mc, type: 'release', ...(custom ? { custom } : {}) },
     memory: { max: ram + 'G', min: Math.min(2, ram) + 'G' },
     javaPath,
-    customArgs: s.jvmFlags ? JVM_FLAGS : [],
+    customArgs: jvmArgs(s, vjson),
     window: s.windowMode === 'full' ? { fullscreen: true } : { width: 1280, height: 720 },
     overrides: {
       gameDirectory: dir,

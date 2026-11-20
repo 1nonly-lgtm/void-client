@@ -22,6 +22,15 @@ const DEFAULTS = {
   discord: true,
   discordServer: true, // adres serwera w statusie
   discordFps: true, // FPS w statusie (wysyła mod Void Client)
+  // 2.0
+  perfPreset: 'balanced', // quality | balanced | max
+  highPriority: true, // wyższy priorytet procesu gry
+  smoothGC: true, // ZGC na Javie 21+ (płynność bez przycięć)
+  hud60: true, // HUD rysowany w 60 kl./s (mod Void)
+  spotify: true, // moduł Spotify w grze
+  replay: false, // ReplayMod z Modrinth
+  cosmetics: { cape: null, wings: null, hat: null, pet: null, fx: null }, // zapis kosmetyków
+  emoteSlots: [], // 24 sloty koła emotek (3 strony × 8)
   account: null // { name, uuid, refresh }
 };
 

@@ -38,14 +38,27 @@ const fmt = n => (n >= 1e6 ? (n / 1e6).toFixed(1).replace('.0', '') + ' mln' : n
 
 // ───────── Zakładki ─────────
 
+function goTab(tab) {
+  const navs = [...document.querySelectorAll('.side .nav')];
+  const b = navs.find(n => n.dataset.tab === tab);
+  if (!b) return;
+  navs.forEach(n => n.classList.toggle('active', n === b));
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.id === 'tab-' + tab));
+  $('ind').style.transform = `translateY(${b.offsetTop - navs[0].offsetTop}px)`;
+  $('vtitle').textContent = b.dataset.title || '';
+  document.body.dataset.view = tab;
+  if (tab === 'mods' && !modsLoaded) { modsLoaded = true; runSearch(); }
+  if (tab === 'cosmetics') b.querySelector('.nav-new')?.remove();
+}
 document.querySelector('.side').addEventListener('click', e => {
   const b = e.target.closest('.nav');
-  if (!b) return;
-  document.querySelectorAll('.nav').forEach(n => n.classList.toggle('active', n === b));
-  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.id === 'tab-' + b.dataset.tab));
-  if (b.dataset.tab === 'mods' && !modsLoaded) { modsLoaded = true; runSearch(); }
-  if (viewer) viewer.renderPaused = b.dataset.tab !== 'play';
+  if (b) goTab(b.dataset.tab);
 });
+document.addEventListener('click', e => {
+  const g = e.target.closest('[data-goto]');
+  if (g) { goTab(g.dataset.goto); if (g.dataset.goto === 'friends') window.api.refreshFriends().then(renderFriends).catch(() => {}); }
+});
+window.addEventListener('resize', () => goTab(document.body.dataset.view || 'play'));
 
 // ───────── Pasek tytułu i konto ─────────
 
@@ -54,10 +67,14 @@ $('closeBtn').onclick = () => window.api.close();
 
 function renderAccount() {
   if (typeof renderFriends === 'function' && $('friendsList')) setTimeout(() => renderFriends(), 0);
+  const head = $('accHead');
   if (S.account) {
     $('accName').textContent = S.account.name;
     $('accSub').textContent = 'Konto Microsoft';
+    head.src = 'https://mc-heads.net/avatar/' + encodeURIComponent(String(S.account.uuid || S.account.name).replace(/-/g, '')) + '/64';
+    head.hidden = false;
   } else {
+    head.hidden = true;
     $('accName').textContent = 'Zaloguj się';
     $('accSub').textContent = 'Konto Microsoft';
   }
@@ -190,7 +207,9 @@ $('pdDelete').onclick = () => {
 // ───────── Granie ─────────
 
 function setPhase(phase) {
-  playAnim(phase === 'loading' ? 'RunningAnimation' : currentAnim);
+  window.voidCosmo?.setWalking(phase === 'loading');
+  document.body.dataset.phase = phase;
+  $('readyText').textContent = phase === 'loading' ? 'Uruchamianie…' : phase === 'running' ? 'Grasz teraz' : `Wszystko gotowe · ${mcLabel(profile())}`;
   $('idleBox').classList.toggle('hidden', phase !== 'idle');
   $('loadBox').classList.toggle('hidden', phase !== 'loading');
   $('runBox').classList.toggle('hidden', phase !== 'running');
@@ -207,6 +226,7 @@ function setPhase(phase) {
 $('playBtn').onclick = async () => {
   if (running) return;
   $('errBox').classList.add('hidden');
+  $('crashBox').classList.add('hidden');
   if (!S.account) { toast('Najpierw zaloguj się kontem Microsoft (prawy górny róg)', 'err'); $('accountBtn').focus(); return; }
   running = true;
   try { const r = $('playBtn').getBoundingClientRect(); window.voidFx?.boom(r.left + r.width / 2, r.top + r.height / 2, 1); window.voidSfx?.play(); } catch {}
@@ -241,7 +261,8 @@ window.api.onState(d => {
     running = false;
     gameSince = 0;
     setPhase('idle');
-    if (d.code && d.code !== 0) {
+    if (d.crash) showCrash(d.crash, d.profileId);
+    else if (d.code && d.code !== 0) {
       $('errBox').textContent = `Gra zamknęła się z błędem (kod ${d.code}). Jeśli to się powtarza, usuń ostatnio dodany mod.`;
       $('errBox').classList.remove('hidden');
     }
@@ -263,41 +284,62 @@ setInterval(() => {
   if (gameSince) $('runTime').textContent = t;
 }, 1000);
 
-// ───────── Skin 3D (skinview3d) ─────────
+// ───────── Pomocnik przy crashu ─────────
 
-const SKIN_LIB = '../node_modules/skinview3d/bundles/skinview3d.bundle.js';
-let viewer = null;
-let skinLib = null;
-let currentAnim = 'IdleAnimation';
+let crashFile = null, crashProfile = null;
+function showCrash(c, profileId) {
+  crashFile = c.file || null;
+  crashProfile = profileId || S.selectedProfile;
+  $('crashTitle').textContent = c.title;
+  $('crashText').textContent = c.text;
+  $('crashFix').classList.toggle('hidden', !crashFile);
+  $('crashBox').classList.remove('hidden');
+  window.voidSfx?.error();
+}
+$('crashClose').onclick = () => $('crashBox').classList.add('hidden');
+$('crashFix').onclick = async () => {
+  if (!crashFile) return;
+  try {
+    const f = await window.api.disableMod(crashProfile, crashFile);
+    toast(`Wyłączono ${f} – plik jest w mods/wyłączone`, 'ok');
+    $('crashBox').classList.add('hidden');
+    if (crashProfile !== S.selectedProfile) { await save({ selectedProfile: crashProfile }); renderProfiles(); }
+    $('playBtn').click();
+  } catch (e) { toast(e.message, 'err'); }
+};
 
-function loadSkinLib() {
-  if (window.skinview3d) return Promise.resolve(true);
-  if (!skinLib) {
-    skinLib = new Promise(resolve => {
-      const el = document.createElement('script');
-      el.src = SKIN_LIB;
-      el.onload = () => resolve(!!window.skinview3d);
-      el.onerror = () => resolve(false);
-      document.head.appendChild(el);
-    });
+// ───────── Postać 3D i kosmetyki (three.js, ładowane po starcie) ─────────
+
+let cosmoLib = null;
+function loadScript(src) {
+  return new Promise(resolve => {
+    const el = document.createElement('script');
+    el.src = src;
+    el.onload = () => resolve(true);
+    el.onerror = () => resolve(false);
+    document.head.appendChild(el);
+  });
+}
+function loadCosmo() {
+  if (!cosmoLib) {
+    cosmoLib = (async () => {
+      window.__voidCosmoInit = {
+        cosmetics: S.cosmetics, slots: S.emoteSlots,
+        onChange: ({ cosmetics, slots }) => {
+          clearTimeout(loadCosmo.t);
+          loadCosmo.t = setTimeout(() => save({ cosmetics, emoteSlots: slots }), 300);
+          $('wornSum').textContent = window.voidCosmo?.summary() || 'bez kosmetyków';
+        }
+      };
+      if (!(await loadScript('three.min.js')) || !window.THREE) return false;
+      try {
+        const ok = await loadScript('cosm.js');
+        return ok && !!window.voidCosmo;
+      } catch (e) { console.warn('Kosmetyki', e); return false; }
+    })();
   }
-  return skinLib;
+  return cosmoLib;
 }
-
-function playAnim(name) {
-  if (!viewer || !window.skinview3d) return;
-  const Anim = window.skinview3d[name] || window.skinview3d.IdleAnimation;
-  viewer.animation = Anim ? new Anim() : null;
-  if (viewer.animation && name === 'RunningAnimation') viewer.animation.speed = 0.8;
-}
-
-$('skinAnims').addEventListener('click', e => {
-  const b = e.target.closest('button[data-anim]');
-  if (!b) return;
-  currentAnim = b.dataset.anim;
-  document.querySelectorAll('#skinAnims button').forEach(x => x.classList.toggle('on', x === b));
-  if (!running) playAnim(currentAnim);
-});
 
 $('skinLogin').onclick = () => $('accountBtn').click();
 
@@ -308,7 +350,7 @@ $('skinChange').onclick = async () => {
   try {
     const data = await window.api.changeSkin($('skinModel').value === 'slim');
     if (data) {
-      await showSkin(data, await loadSkinLib());
+      window.voidCosmo?.setSkin(data);
       toast('Skin zmieniony! W grze zobaczysz go po ponownym wejściu na serwer.', 'ok');
     }
   } catch (e) {
@@ -318,58 +360,19 @@ $('skinChange').onclick = async () => {
   btn.textContent = 'Zmień skin';
 };
 
-/** Zapasowy podgląd 2D (gdy WebGL niedostępny): sama głowa z warstwą. */
-function drawFace(src) {
-  const c = $('skinCanvas');
-  const ctx = c.getContext('2d');
-  if (!ctx || !src) return;
-  const img = new Image();
-  img.onload = () => {
-    ctx.clearRect(0, 0, c.width, c.height);
-    ctx.imageSmoothingEnabled = false;
-    const size = 120;
-    const x = (c.width - size) / 2;
-    const y = (c.height - size) / 2;
-    ctx.drawImage(img, 8, 8, 8, 8, x, y, size, size);
-    ctx.drawImage(img, 40, 8, 8, 8, x - 6, y - 6, size + 12, size + 12);
-  };
-  img.src = src;
-}
-
 async function renderSkin() {
   const logged = !!(S && S.account);
-  $('skinName').textContent = logged ? S.account.name : '–';
+  $('skinName').textContent = logged ? S.account.name : 'Gracz';
   $('skinEmpty').classList.toggle('hidden', logged);
-  $('skinAnims').classList.toggle('hidden', !logged);
   $('skinActions').classList.toggle('hidden', !logged);
-  if (!logged) {
-    if (viewer) { try { viewer.dispose(); } catch { /* ignore */ } viewer = null; }
-    return;
-  }
-  const [data, libOk] = await Promise.all([window.api.skin().catch(() => null), loadSkinLib()]);
+  const ok = await loadCosmo();
+  if (!ok) { document.body.classList.add('no3d'); return; }
+  $('wornSum').textContent = window.voidCosmo.summary() || 'bez kosmetyków';
+  if (!logged) { window.voidCosmo.setSkin(null); return; }
+  const data = await window.api.skin().catch(() => null);
   if (!S.account) return;
   if (data) $('skinModel').value = data.slim ? 'slim' : 'classic';
-  await showSkin(data, libOk);
-}
-
-async function showSkin(data, libOk) {
-  if (!libOk) { drawFace(data && data.skin); return; }
-  try {
-    if (!viewer) {
-      viewer = new window.skinview3d.SkinViewer({ canvas: $('skinCanvas'), width: 292, height: 236 });
-      viewer.fov = 40;
-      viewer.zoom = 0.82;
-      if (viewer.controls) { viewer.controls.enableZoom = false; viewer.controls.enablePan = false; }
-    }
-    if (data && data.skin) await viewer.loadSkin(data.skin, { model: data.slim ? 'slim' : 'default' });
-    else toast('Masz domyślny skin – po zmianie skina na minecraft.net pojawi się tutaj');
-    if (data && data.cape) await viewer.loadCape(data.cape);
-    else viewer.loadCape(null);
-    playAnim(running ? 'RunningAnimation' : currentAnim);
-  } catch (e) {
-    console.warn('Podgląd 3D niedostępny', e);
-    drawFace(data && data.skin);
-  }
+  window.voidCosmo.setSkin(data);
 }
 
 // ───────── Mody (Modrinth) ─────────
@@ -553,14 +556,14 @@ $('dropzone').onclick = () => toast('Złap plik .jar lub .zip w Eksploratorze i 
 // ───────── „Co nowego” po aktualizacji ─────────
 
 const WHATS_NEW = [
-  'Waypointy: kordy wpisujesz w osobnych polach X, Y i Z (Tab – następne pole, Enter – zapisz)',
-  'Zoom ze scrollem – trzymając klawisz zoomu, kółkiem myszy przybliżasz i oddalasz (do 50×)',
-  'Waypointy na własnych kordach – przycisk „Wpisz kordy” albo klik w kordy punktu (Ctrl+V wkleja z F3)',
-  'Podgląd ekwipunku na ekranie – 27 slotów plecaka nad hotbarem (prawy Shift → HUD)',
-  'Mocniejszy tryb FPS: 16 nowych modów optymalizacyjnych i ustawienia grafiki pod wydajność',
-  'Viewmodel i rozciągnięty obraz (prawy Shift → Widok)',
-  'Nowy ekran łączenia z serwerem',
-  'Przesuwany scoreboard, pasek zbroi i wskaźnik ataku (KRYT)'
+  'Void Client 2.0 (wersja testowa): zupełnie nowy wygląd launchera – pasek z ikonami, animowane tło, nowe karty i przyciski',
+  'Kosmetyki: 36 animowanych peleryn, 39 skrzydeł (14 w pełnym 3D), czapki, zwierzaki, efekty i 64 emotki – zapisują się same',
+  'Koło emotek: ustawiasz w Kosmetyki → Emotki (kliknij pole, potem emotkę albo przeciągnij)',
+  'Twoja postać 3D z prawdziwym skinem i założonymi kosmetykami',
+  'Pomocnik przy crashu: mówi, który mod wysypał grę, i wyłącza go jednym kliknięciem',
+  'Opcje: tryb wydajności (Jakość / Zrównoważony / Maks. FPS), wyższy priorytet gry, płynność bez przycięć (ZGC)',
+  'Replay: przełącznik w Opcjach instaluje ReplayMod',
+  '12 nowych nieb w grze'
 ];
 
 function showWhatsNew(version) {
@@ -659,6 +662,7 @@ $('updateBtn').onclick = async () => {
 
 (async () => {
   S = await window.api.getSettings();
+  window.api.beta?.().then(b => { if (b) { $('betaChip').classList.remove('hidden'); document.body.classList.add('is-beta'); } }).catch(() => {});
   window.api.version().then(v => {
   $('versionChip').textContent = 'v' + v;
   $('aboutVer').textContent = v;
@@ -668,6 +672,7 @@ $('updateBtn').onclick = async () => {
   renderProfiles();
   renderSettings();
   setPhase('idle');
+  requestAnimationFrame(() => goTab('play'));
   // Skin ładuje się po pokazaniu okna – nie spowalnia startu.
   const later = cb => (window.requestIdleCallback ? window.requestIdleCallback(cb, { timeout: 600 }) : setTimeout(cb, 50));
   later(() => renderSkin().catch(e => console.warn('Skin', e)));
@@ -726,6 +731,7 @@ function renderFriends(d) {
   badge.textContent = String(requests.length);
   badge.classList.toggle('hidden', requests.length === 0);
   const on = list.filter(f => f.status === 'friend' && f.online).length;
+  renderHomeFriends(list, logged);
   $('friendsOnline').innerHTML = logged && list.length ? `<b>${on}</b> online` : '';
   if (!logged) {
     box.innerHTML = '<div class="empty">Zaloguj się kontem Microsoft (prawy górny róg), żeby mieć znajomych z Void Client.</div>';
@@ -748,6 +754,32 @@ function renderFriends(d) {
   if (!any) box.innerHTML = '<div class="empty">Nie masz jeszcze znajomych. Wpisz nick kogoś, kto gra na Void Client.</div>';
 }
 
+function renderHomeFriends(list, logged) {
+  const box = $('homeFriends');
+  const fr = list.filter(f => f.status === 'friend').sort((a, b) => (b.playing - a.playing) || (b.online - a.online)).slice(0, 5);
+  const on = fr.filter(f => f.online).length;
+  $('homeOnline').textContent = logged && list.length ? `${on} online` : '';
+  box.textContent = '';
+  if (!logged || !fr.length) {
+    box.innerHTML = `<div class="none">${logged ? 'Dodaj znajomych w zakładce Znajomi' : 'Zaloguj się, żeby widzieć znajomych'}</div>`;
+    return;
+  }
+  for (const f of fr) {
+    const row = document.createElement('div');
+    row.className = 'fi' + (f.playing ? ' playing' : f.online ? ' online' : '');
+    const img = document.createElement('img');
+    img.alt = ''; img.loading = 'lazy';
+    img.src = 'https://mc-heads.net/avatar/' + encodeURIComponent(String(f.uuid).replace(/-/g, '')) + '/32';
+    const who = document.createElement('div');
+    const b = document.createElement('b'); b.textContent = f.name;
+    const sm = document.createElement('small'); sm.textContent = f.playing ? 'gra w Minecrafta' : f.online ? 'w launcherze' : 'offline';
+    who.append(b, sm);
+    const dot = document.createElement('span'); dot.className = 'dot';
+    row.append(img, who, dot);
+    box.append(row);
+  }
+}
+
 $('friendForm').addEventListener('submit', async e => {
   e.preventDefault();
   const name = $('friendName').value.trim();
@@ -768,4 +800,31 @@ window.api.onFriends(renderFriends);
 window.api.friends().then(renderFriends).catch(() => {});
 document.querySelector('.nav[data-tab="friends"]').addEventListener('click', () => {
   window.api.refreshFriends().then(renderFriends).catch(() => {});
+});
+
+// ───────── Dopieszczenie: światło za kursorem, przechylenie kart, fala po kliknięciu ─────────
+
+document.addEventListener('pointermove', e => {
+  if (!document.body.classList.contains('anim')) return;
+  const el = e.target.closest('.profile, .nw, .opt, .it, .perf, .mod, .friend, .fr');
+  if (!el) return;
+  const r = el.getBoundingClientRect();
+  const x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+  el.style.setProperty('--mx', x * 100 + '%');
+  el.style.setProperty('--my', y * 100 + '%');
+  if (el.classList.contains('it')) { el.style.setProperty('--ry', ((x - .5) * 14) + 'deg'); el.style.setProperty('--rx', ((.5 - y) * 14) + 'deg'); }
+}, { passive: true });
+
+document.addEventListener('pointerdown', e => {
+  if (!document.body.classList.contains('anim')) return;
+  const b = e.target.closest('.play, .ghost, .vbtn, .ct, .seg button, .btn-primary, .primary, .profile, .mod button');
+  if (!b || b.disabled) return;
+  const r = b.getBoundingClientRect(), s = Math.max(r.width, r.height);
+  const d = document.createElement('span');
+  d.className = 'rip';
+  d.style.width = d.style.height = s + 'px';
+  d.style.left = (e.clientX - r.left - s / 2) + 'px';
+  d.style.top = (e.clientY - r.top - s / 2) + 'px';
+  b.appendChild(d);
+  setTimeout(() => d.remove(), 650);
 });

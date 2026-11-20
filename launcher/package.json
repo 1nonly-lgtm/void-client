@@ -14,8 +14,7 @@
     "@xhayper/discord-rpc": "^1.2.1",
     "electron-updater": "^6.3.9",
     "minecraft-launcher-core": "^3.18.2",
-    "msmc": "^5.0.5",
-    "skinview3d": "^3.4.1"
+    "msmc": "^5.0.5"
   },
   "devDependencies": {
     "electron": "^33.2.1",

@@ -212,7 +212,7 @@ ipcMain.handle('game:launch', async (_, profileId) => {
   });
 
   // Wyższy priorytet procesu gry w Windows = mniej przycięć, gdy w tle coś działa.
-  try {
+  if (s.highPriority !== false) try {
     const os = require('os');
     os.setPriority(proc.pid, os.constants.priority.PRIORITY_ABOVE_NORMAL);
   } catch { /* brak uprawnień – gra działa normalnie */ }
@@ -225,9 +225,14 @@ ipcMain.handle('game:launch', async (_, profileId) => {
   if (s.afterLaunch === 'hide') hideToTray();
   else if (s.afterLaunch === 'close') setTimeout(() => app.quit(), 1500);
 
+  const launchedAt = Date.now();
   proc.on('close', code => {
     running = null;
-    send('game:state', { state: 'closed', code });
+    let crash = null;
+    if (code && code !== 0) {
+      try { crash = lazy('crash').analyze(lazy('game').instanceDir(profile.id), launchedAt); } catch (e) { console.warn('Crash:', e.message); }
+    }
+    send('game:state', { state: 'closed', code, crash, profileId: profile.id });
     discordUpdate();
     setTimeout(friendsTick, 1000);
     if (settings.get().afterLaunch === 'hide') showWindow();
@@ -303,6 +308,8 @@ ipcMain.handle('update:install', () => {
 });
 
 ipcMain.handle('app:version', () => app.getVersion());
+ipcMain.handle('app:beta', () => BETA);
+ipcMain.handle('crash:disable', (_, { profileId, file }) => lazy('crash').disable(lazy('game').instanceDir(profileById(profileId).id), file));
 
 // ───────── Start ─────────
 
