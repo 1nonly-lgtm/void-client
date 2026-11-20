@@ -349,6 +349,7 @@ public final class GuiController {
         ICONS.put("attack", new int[]{0b00001, 0b00010, 0b10100, 0b01000, 0b10100});
         ICONS.put("scoreboard", new int[]{0b11111, 0b10001, 0b11101, 0b10001, 0b11111});
         ICONS.put("spotify", new int[]{0b00111, 0b00101, 0b00100, 0b11100, 0b11100});
+        ICONS.put("nametag", new int[]{0b11111, 0b10001, 0b11111, 0b00100, 0b01110});
         ICONS.put("tntfuse", new int[]{0b00100, 0b01110, 0b11111, 0b11111, 0b01110});
         ICONS.put("mining", new int[]{0b11110, 0b00110, 0b01010, 0b10000, 0b10000});
         ICONS.put("saturation", new int[]{0b00110, 0b01111, 0b11111, 0b11110, 0b01100});

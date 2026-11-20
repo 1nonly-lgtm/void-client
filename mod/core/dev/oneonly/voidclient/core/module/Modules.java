@@ -51,6 +51,7 @@ public final class Modules {
     public static final TntTimer TNT = add(new TntTimer());
     public static final Mining MINING = add(new Mining());
     public static final Simple SATURATION = add(new Simple("saturation", "Nasycenie", "Złota obwódka na pasku głodu – ile jeszcze nie zgłodniejesz", true));
+    public static final Simple NAMETAG = add(new Simple("nametag", "Własny nick nad głową", "Twój nick widoczny w F5 – z gradientem w kolorze akcentu", true));
     public static final Simple VOID_ICON = add(new Simple("voidicon", "Ikonka Void przy nicku", "Logo Void przy graczach, którzy też używają Void Client", true));
 
     private Modules() {}

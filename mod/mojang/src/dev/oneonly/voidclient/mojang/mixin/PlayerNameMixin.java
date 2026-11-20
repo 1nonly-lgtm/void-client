@@ -15,8 +15,20 @@ public abstract class PlayerNameMixin {
     @Inject(method = "getDisplayName", at = @At("RETURN"), cancellable = true, require = 0)
     private void voidclient$icon(CallbackInfoReturnable<Component> cir) {
         try {
-            if (VoidNet.isVoid(((Player) (Object) this).getUUID())) {
-                cir.setReturnValue(Component.literal(VoidNet.ICON + " ").withStyle(ChatFormatting.WHITE).append(cir.getReturnValue()));
+            java.util.UUID id = ((Player) (Object) this).getUUID();
+            Component name = cir.getReturnValue();
+            if (dev.oneonly.voidclient.core.Nametag.gradientFor(id)) {
+                String s = name.getString();
+                net.minecraft.network.chat.MutableComponent g = Component.literal("");
+                for (int i = 0; i < s.length(); i++) {
+                    final int c = dev.oneonly.voidclient.core.Nametag.color(i, s.length());
+                    g.append(Component.literal(String.valueOf(s.charAt(i))).withStyle(st -> st.withColor(c)));
+                }
+                name = g;
+                cir.setReturnValue(name);
+            }
+            if (VoidNet.isVoid(id)) {
+                cir.setReturnValue(Component.literal(VoidNet.ICON + " ").withStyle(ChatFormatting.WHITE).append(name));
             }
         } catch (Throwable ignored) {
             // zostaje zwykły nick

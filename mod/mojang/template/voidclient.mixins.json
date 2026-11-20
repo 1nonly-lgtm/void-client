@@ -18,7 +18,8 @@
     "ScrollMixin",
     "CapeMixin",
     "EmoteModelMixin",
-    "EmoteBodyMixin"
+    "EmoteBodyMixin",
+    "NametagMixin"
   ],
   "injectors": {
     "defaultRequire": 0
