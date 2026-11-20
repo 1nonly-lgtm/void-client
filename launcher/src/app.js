@@ -629,6 +629,20 @@ document.querySelectorAll('.switch').forEach(sw => sw.addEventListener('click', 
 }));
 
 
+$('importBtn').onclick = async () => {
+  const btn = $('importBtn');
+  btn.disabled = true;
+  btn.textContent = 'Przenoszenie…';
+  try {
+    const r = await window.api.importStable();
+    S = r.settings;
+    renderAccount(); renderProfiles(); renderSettings(); renderSkin().catch(() => {});
+    toast(`Przeniesiono ustawienia launchera i ${r.copied} z ${r.profiles} profili gry (opcje, Void Client, światy, serwery)`, 'ok');
+  } catch (e) { toast(e.message, 'err'); }
+  btn.disabled = false;
+  btn.textContent = 'Przenieś ustawienia ze zwykłego launchera';
+};
+
 $('folderBtn').onclick = () => window.api.openFolder(profile().id);
 
 // ───────── Aktualizacje ─────────
@@ -662,7 +676,7 @@ $('updateBtn').onclick = async () => {
 
 (async () => {
   S = await window.api.getSettings();
-  window.api.beta?.().then(b => { if (b) { $('betaChip').classList.remove('hidden'); document.body.classList.add('is-beta'); } }).catch(() => {});
+  window.api.beta?.().then(b => { if (b) { $('betaChip').classList.remove('hidden'); $('importBtn').classList.remove('hidden'); document.body.classList.add('is-beta'); } }).catch(() => {});
   window.api.version().then(v => {
   $('versionChip').textContent = 'v' + v;
   $('aboutVer').textContent = v;

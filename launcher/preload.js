@@ -40,5 +40,6 @@ contextBridge.exposeInMainWorld('api', {
   removeFriend: uuid => call('friends:remove', uuid),
   disableMod: (profileId, file) => call('crash:disable', { profileId, file }),
   beta: () => call('app:beta'),
+  importStable: () => call('import:stable'),
   onFriends: cb => ipcRenderer.on('friends:update', (_, d) => cb(d))
 });

@@ -309,6 +309,13 @@ ipcMain.handle('update:install', () => {
 
 ipcMain.handle('app:version', () => app.getVersion());
 ipcMain.handle('app:beta', () => BETA);
+ipcMain.handle('import:stable', () => {
+  if (running) throw new Error('Zamknij grę przed przenoszeniem ustawień');
+  const ids = settings.importStableNow();
+  const game = lazy('game');
+  const copied = ids.filter(id => game.importStableInstance(id, game.instanceDir(id), true)).length;
+  return { profiles: ids.length, copied, settings: settings.publicView() };
+});
 ipcMain.handle('crash:disable', (_, { profileId, file }) => lazy('crash').disable(lazy('game').instanceDir(profileById(profileId).id), file));
 
 // ───────── Start ─────────

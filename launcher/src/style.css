@@ -366,7 +366,7 @@ input[type=range] { -webkit-appearance: none; appearance: none; flex: 1; height:
 input[type=range]::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: linear-gradient(90deg, #8b5cf6 var(--pct, 20%), #2a2340 var(--pct, 20%)); }
 input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; margin-top: -6px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 4px rgba(139, 92, 246, .4); transition: transform .15s; }
 input[type=range]:hover::-webkit-slider-thumb { transform: scale(1.15); }
-.actions { display: flex; gap: 10px; align-items: center; margin-top: 14px; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 14px; }
 
 /* ───────── przyciski ───────── */
 .ghost { position: relative; overflow: hidden; height: 38px; padding: 0 16px; border-radius: 10px; font-size: 12.5px; font-weight: 600; color: #ede9fe; background: rgba(139, 92, 246, .16); border: 1px solid rgba(167, 139, 250, .4); transition: .2s; }

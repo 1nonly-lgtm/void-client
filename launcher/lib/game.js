@@ -69,6 +69,18 @@ function jvmArgs(s, vjson) {
   return JVM_FLAGS;
 }
 
+/** Wersja testowa: przy pierwszym starcie profilu kopiuje folder gry ze zwykłego launchera
+ *  (ustawienia gry, Void Client, światy, serwery, mody, shadery) – bez logów i raportów. */
+function importStableInstance(id, dir, force = false) {
+  if (require('../package.json').voidBeta !== true || (!force && fs.existsSync(dir))) return false;
+  const old = path.join(app.getPath('appData'), '.voidclient', 'instances', id.replace(/[^a-z0-9_-]/gi, '_'));
+  if (!fs.existsSync(old)) return false;
+  try {
+    fs.cpSync(old, dir, { recursive: true, force: true, filter: src => !/[\\/](logs|crash-reports)([\\/]|$)/.test(path.relative(old, src) ? '/' + path.relative(old, src) : '') });
+    return true;
+  } catch (e) { console.warn('Import profilu:', e.message); return false; }
+}
+
 const instanceDir = id => path.join(ROOT, 'instances', id.replace(/[^a-z0-9_-]/gi, '_'));
 
 // ───────── Wersje ─────────
@@ -249,6 +261,7 @@ async function launch(profile, s, emit, onLine) {
   const javaPath = await ensureJava((vjson.javaVersion && vjson.javaVersion.component) || 'jre-legacy', emit);
 
   const dir = instanceDir(profile.id);
+  importStableInstance(profile.id, dir);
   fs.mkdirSync(dir, { recursive: true });
   // kosmetyki i koło emotek – mod Void Client czyta je przy starcie (config/void-cosmetics.json)
   try {
@@ -309,4 +322,4 @@ async function launch(profile, s, emit, onLine) {
   return { proc, mc };
 }
 
-module.exports = { ROOT, instanceDir, listVersions, launch, voidBuildFor };
+module.exports = { ROOT, instanceDir, listVersions, launch, voidBuildFor, importStableInstance };

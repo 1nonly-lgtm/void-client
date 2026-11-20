@@ -37,7 +37,21 @@ const DEFAULTS = {
 let data = null;
 let timer = null;
 
+/** Wersja testowa przy pierwszym starcie bierze ustawienia (i konto) ze zwykłego launchera. */
+function importFromStable() {
+  if (require('../package.json').voidBeta !== true || fs.existsSync(FILE)) return;
+  try {
+    const old = path.join(app.getPath('appData'), 'Void Client', 'settings.json');
+    if (!fs.existsSync(old)) return;
+    fs.mkdirSync(path.dirname(FILE), { recursive: true });
+    fs.copyFileSync(old, FILE);
+    const skins = path.join(app.getPath('appData'), 'Void Client', 'skins');
+    if (fs.existsSync(skins)) fs.cpSync(skins, path.join(app.getPath('userData'), 'skins'), { recursive: true });
+  } catch (e) { console.warn('Import ustawień:', e.message); }
+}
+
 function load() {
+  importFromStable();
   try {
     data = { ...structuredClone(DEFAULTS), ...JSON.parse(fs.readFileSync(FILE, 'utf8')) };
   } catch {
@@ -93,4 +107,18 @@ function saveNow() {
 
 app.on('before-quit', saveNow);
 
-module.exports = { get, publicView, update, setAccount, saveNow };
+/** Ręczny import ze zwykłego launchera (Opcje → „Przenieś ustawienia”). Nowe opcje 2.0 i kosmetyki zostają. */
+function importStableNow() {
+  const old = path.join(app.getPath('appData'), 'Void Client', 'settings.json');
+  if (!fs.existsSync(old)) throw new Error('Nie znaleziono ustawień zwykłego launchera Void Client na tym komputerze');
+  const o = JSON.parse(fs.readFileSync(old, 'utf8'));
+  const d = get();
+  const keep = { cosmetics: d.cosmetics, emoteSlots: d.emoteSlots, perfPreset: d.perfPreset, highPriority: d.highPriority, smoothGC: d.smoothGC, hud60: d.hud60, spotify: d.spotify, replay: d.replay };
+  for (const [k, v] of Object.entries(o)) if (k in DEFAULTS) d[k] = v;
+  Object.assign(d, keep);
+  if (!Array.isArray(d.profiles) || !d.profiles.length) d.profiles = structuredClone(DEFAULT_PROFILES);
+  saveNow();
+  return d.profiles.map(p => p.id);
+}
+
+module.exports = { get, publicView, update, setAccount, saveNow, importStableNow };
