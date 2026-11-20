@@ -6,7 +6,7 @@ if (!app.requestSingleInstanceLock()) app.exit(0);
 
 app.commandLine.appendSwitch('disable-features', 'HardwareMediaKeyHandling,MediaSessionService,SpareRendererForSitePerProcess');
 const BETA = require('./package.json').voidBeta === true; // wersja testowa 2.0 – osobna instalacja i osobne aktualizacje
-app.setAppUserModelId(BETA ? 'dev.oneonly.voidclient.beta' : 'dev.oneonly.voidclient');
+app.setAppUserModelId(BETA ? 'dev.oneonly.voidclient.testowa' : 'dev.oneonly.voidclient');
 
 const settings = require('./lib/settings');
 

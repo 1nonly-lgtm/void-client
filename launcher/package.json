@@ -1,5 +1,5 @@
 {
-  "name": "void-client",
+  "name": "void-client-beta",
   "productName": "Void Client Beta",
   "version": "1.0.0",
   "description": "Void Client – launcher Minecraft by 1nonly",
@@ -22,7 +22,7 @@
   },
   "voidBeta": true,
   "build": {
-    "appId": "dev.oneonly.voidclient.beta",
+    "appId": "dev.oneonly.voidclient.testowa",
     "productName": "Void Client Beta",
     "directories": {
       "output": "dist",
