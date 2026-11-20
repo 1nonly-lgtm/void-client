@@ -218,6 +218,7 @@ ipcMain.handle('game:launch', async (_, profileId) => {
   } catch { /* brak uprawnień – gra działa normalnie */ }
 
   running = { proc, profile, mc, since: Date.now(), status: {} };
+  if (settings.get().spotify !== false) try { lazy('media').start(); } catch (e) { console.warn('Spotify:', e.message); }
   send('game:state', { state: 'running', since: running.since });
   discordUpdate();
   setTimeout(friendsTick, 1000);
@@ -228,6 +229,7 @@ ipcMain.handle('game:launch', async (_, profileId) => {
   const launchedAt = Date.now();
   proc.on('close', code => {
     running = null;
+    try { lazy('media').stop(); } catch { /* ignore */ }
     let crash = null;
     if (code && code !== 0) {
       try { crash = lazy('crash').analyze(lazy('game').instanceDir(profile.id), launchedAt); } catch (e) { console.warn('Crash:', e.message); }

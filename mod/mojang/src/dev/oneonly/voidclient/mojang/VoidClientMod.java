@@ -54,6 +54,7 @@ public class VoidClientMod implements ClientModInitializer {
 
         // Łączenie z serwerem i wczytywanie świata – tło Void Client, przyciski rysujemy na nowo na wierzchu
         ScreenEvents.AFTER_INIT.register((client, screen, sw, sh) -> {
+            try { ScreenHooks.clicks(screen); } catch (Throwable ignored) {}
             if (screen instanceof TitleScreen) {
                 // menu główne: unoszące się iskry, spadające gwiazdy i poświata przycisku pod kursorem
                 ScreenEvents.afterExtract(screen).register((s, graphics, mx, my, delta) -> {

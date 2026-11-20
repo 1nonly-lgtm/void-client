@@ -95,6 +95,12 @@ public final class VoidCore {
         Modules.ZOOM.hud(g, screenW, screenH);
     }
 
+    /** Klik myszką na otwartym ekranie (czat, ekwipunek) – przyciski Spotify w HUD. True = klik zużyty. */
+    public static boolean hudClick(double mx, double my, int button) {
+        if (button != 0 || game == null || !game.hasPlayer() || game.hudHidden()) return false;
+        try { return Modules.SPOTIFY.click(mx, my); } catch (Throwable t) { return false; }
+    }
+
     /** Scroll myszy w grze (bez otwartego ekranu). Zwraca wartość, którą ma dostać gra – 0, gdy zużył ją zoom. */
     public static double scroll(double vertical) {
         try {

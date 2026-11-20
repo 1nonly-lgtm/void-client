@@ -47,6 +47,7 @@ public final class Modules {
     public static final Simple SHULKER = add(new Simple("shulker", "Podgląd shulkera", "Najedź na shulkera w ekwipunku, żeby zobaczyć co ma w środku", true));
     public static final MotionBlur MOTION_BLUR = add(new MotionBlur());
     public static final Simple VIEWMODEL = add(new Simple("viewmodel", "Viewmodel", "Położenie, rozmiar i obrót przedmiotu w ręce (zakładka Widok)", false));
+    public static final SpotifyHud SPOTIFY = add(new SpotifyHud());
     public static final TntTimer TNT = add(new TntTimer());
     public static final Mining MINING = add(new Mining());
     public static final Simple SATURATION = add(new Simple("saturation", "Nasycenie", "Złota obwódka na pasku głodu – ile jeszcze nie zgłodniejesz", true));
@@ -340,6 +341,129 @@ public final class Modules {
     // ───────────── nowe ─────────────
 
     /** Moduł bez własnej logiki – sprawdzany w innych miejscach (czat, celownik, zrzuty). */
+    /** Spotify: okładka, tytuł, wykonawca, postęp i przyciski klikane myszką (przy otwartym czacie / ekwipunku). */
+    public static final class SpotifyHud extends HudModule {
+        public static final String[] STYLES = {"Karta", "Pasek", "Mini"};
+        public int style = 0;
+        /** Prostokąty przycisków: poprzedni, pauza/graj, następny – {x1, y1, x2, y2}. */
+        public final int[][] buttons = new int[3][4];
+
+        SpotifyHud() { super("spotify", "Spotify", "Co teraz gra: okładka, tytuł i przyciski – klikasz myszką przy otwartym czacie", true, 4, 140); }
+
+        @Override public int width(Gfx g) { return style == 0 ? 160 : style == 1 ? 210 : 130; }
+
+        @Override public int height(Gfx g) { return style == 0 ? 46 : style == 1 ? 18 : 22; }
+
+        @Override
+        public void render(Gfx g, Game game) {
+            dev.oneonly.voidclient.core.Spotify.ensure();
+            boolean on = dev.oneonly.voidclient.core.Spotify.present;
+            int w = width(g), h = height(g);
+            for (int[] b : buttons) b[2] = b[0]; // brak przycisków, dopóki się nie narysują
+            if (!on && !game.screenOpen()) return;
+            g.fill(x, y, x + w, y + h, 0xC0100B1A);
+            g.fill(x, y, x + w, y + 1, 0x30FFFFFF);
+            String t = on ? dev.oneonly.voidclient.core.Spotify.title : "Nic nie gra";
+            String a = on ? dev.oneonly.voidclient.core.Spotify.artist : "Włącz muzykę – launcher Void musi działać";
+            double p = dev.oneonly.voidclient.core.Spotify.position(), d = dev.oneonly.voidclient.core.Spotify.duration();
+            float frac = d > 0 ? (float) Math.min(1, p / d) : 0;
+            int green = 0xFF1ED760;
+            if (style == 0) {
+                cover(g, x + 5, y + 5, 36);
+                int tx = x + 47, tw = w - 52;
+                note(g, tx, y + 6, green);
+                g.uiText(g.uiTrim(t, tw - 9, true), tx + 8, y + 5, 0xFFFFFFFF, true);
+                g.uiText(g.uiTrim(a, tw, false), tx, y + 15, 0xFFB3ABC9, false);
+                int by = y + 26;
+                button(g, 0, tx, by, on);
+                button(g, 1, tx + 15, by, on);
+                button(g, 2, tx + 30, by, on);
+                if (on) {
+                    String time = dev.oneonly.voidclient.core.Spotify.time(p) + " / " + dev.oneonly.voidclient.core.Spotify.time(d);
+                    g.uiText(time, x + w - 5 - g.uiWidth(time, false), by + 2, 0xFF8A82A0, false);
+                }
+                g.fill(x + 5, y + h - 3, x + w - 5, y + h - 2, 0x30FFFFFF);
+                g.fill(x + 5, y + h - 3, x + 5 + (int) ((w - 10) * frac), y + h - 2, green);
+            } else if (style == 1) {
+                cover(g, x + 3, y + 3, 12);
+                int bx = x + w - 45;
+                String line = on ? t + "  ·  " + a : t;
+                g.uiText(g.uiTrim(line, bx - x - 24, false), x + 19, y + 5, 0xFFFFFFFF, false);
+                button(g, 0, bx, y + 3, on);
+                button(g, 1, bx + 15, y + 3, on);
+                button(g, 2, bx + 30, y + 3, on);
+                g.fill(x, y + h - 1, x + (int) (w * frac), y + h, green);
+            } else {
+                cover(g, x + 3, y + 3, 16);
+                note(g, x + 23, y + 4, green);
+                g.uiText(g.uiTrim(t, w - 36, true), x + 31, y + 3, 0xFFFFFFFF, true);
+                g.uiText(g.uiTrim(a, w - 28, false), x + 23, y + 12, 0xFFB3ABC9, false);
+                g.fill(x + 23, y + h - 2, x + 23 + (int) ((w - 26) * frac), y + h - 1, green);
+            }
+        }
+
+        private void cover(Gfx g, int cx, int cy, int size) {
+            int[] c = dev.oneonly.voidclient.core.Spotify.cover;
+            if (c == null) {
+                g.gradient(cx, cy, cx + size, cy + size, 0xFF2E1065, 0xFF0F0A1A);
+                note(g, cx + size / 2 - 3, cy + size / 2 - 4, 0xFF1ED760);
+                return;
+            }
+            for (int py = 0; py < size; py++) {
+                int sy = py * 32 / size;
+                int run = 0, runCol = c[sy * 32];
+                for (int px = 0; px <= size; px++) {
+                    int col = px < size ? c[sy * 32 + px * 32 / size] : 0;
+                    if (px < size && col == runCol) { run++; continue; }
+                    g.fill(cx + px - run, cy + py, cx + px, cy + py + 1, runCol);
+                    runCol = col;
+                    run = 1;
+                }
+            }
+        }
+
+        /** Mała zielona nutka (zamiast logo). */
+        private static void note(Gfx g, int nx, int ny, int col) {
+            g.fill(nx + 4, ny, nx + 5, ny + 6, col);
+            g.fill(nx + 5, ny, nx + 7, ny + 1, col);
+            g.fill(nx + 6, ny + 1, nx + 7, ny + 2, col);
+            g.fill(nx + 2, ny + 5, nx + 5, ny + 8, col);
+        }
+
+        private void button(Gfx g, int i, int bx, int by, boolean on) {
+            int col = on ? 0xFFFFFFFF : 0xFF6F6787;
+            g.fill(bx, by, bx + 12, by + 12, 0x22FFFFFF);
+            int cx = bx + 6, cy = by + 6;
+            if (i == 1 && on && dev.oneonly.voidclient.core.Spotify.playing) {
+                g.fill(cx - 3, cy - 3, cx - 1, cy + 4, col);
+                g.fill(cx + 1, cy - 3, cx + 3, cy + 4, col);
+            } else if (i == 1) {
+                for (int r = -3; r <= 3; r++) g.fill(cx - 2, cy + r, cx - 2 + 5 - Math.abs(r), cy + r + 1, col);
+            } else if (i == 2) {
+                for (int r = -3; r <= 3; r++) g.fill(cx - 3, cy + r, cx - 3 + 4 - Math.abs(r), cy + r + 1, col);
+                g.fill(cx + 2, cy - 3, cx + 4, cy + 4, col);
+            } else {
+                g.fill(cx - 4, cy - 3, cx - 2, cy + 4, col);
+                for (int r = -3; r <= 3; r++) g.fill(cx + 3 - (4 - Math.abs(r)), cy + r, cx + 3, cy + r + 1, col);
+            }
+            buttons[i][0] = bx; buttons[i][1] = by; buttons[i][2] = bx + 12; buttons[i][3] = by + 12;
+        }
+
+        /** Klik myszką (przy otwartym czacie / ekwipunku). True – obsłużony. */
+        public boolean click(double mx, double my) {
+            if (!isEnabled() || !dev.oneonly.voidclient.core.Spotify.present) return false;
+            String[] cmd = {"prev", "toggle", "next"};
+            for (int i = 0; i < 3; i++) {
+                int[] b = buttons[i];
+                if (b[2] > b[0] && mx >= b[0] && mx < b[2] && my >= b[1] && my < b[3]) {
+                    dev.oneonly.voidclient.core.Spotify.command(cmd[i]);
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
     public static final class TntTimer extends Module {
         public boolean radius = false;
         TntTimer() { super("tntfuse", "Licznik TNT", "Za ile sekund wybuchnie zapalone TNT – kolor od zielonego do czerwonego", Category.GAME, true); }

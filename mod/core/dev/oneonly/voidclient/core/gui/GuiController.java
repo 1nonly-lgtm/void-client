@@ -347,6 +347,7 @@ public final class GuiController {
         ICONS.put("armorbar", new int[]{0b11011, 0b11111, 0b11111, 0b01110, 0b00100});
         ICONS.put("attack", new int[]{0b00001, 0b00010, 0b10100, 0b01000, 0b10100});
         ICONS.put("scoreboard", new int[]{0b11111, 0b10001, 0b11101, 0b10001, 0b11111});
+        ICONS.put("spotify", new int[]{0b00111, 0b00101, 0b00100, 0b11100, 0b11100});
         ICONS.put("tntfuse", new int[]{0b00100, 0b01110, 0b11111, 0b11111, 0b01110});
         ICONS.put("mining", new int[]{0b11110, 0b00110, 0b01010, 0b10000, 0b10000});
         ICONS.put("saturation", new int[]{0b00110, 0b01111, 0b11111, 0b11110, 0b01100});
@@ -686,6 +687,22 @@ public final class GuiController {
         yy += 6;
         yy = settingToggle(g, mx, my, ix, yy, iw, "Włączony", m.isEnabled(), () -> { if (m.available()) m.toggle(); });
 
+        if (m == Modules.SPOTIFY) {
+            text(g, "Wygląd", ix, yy + 2, MUTED, false);
+            yy += 12;
+            int pxl = ix;
+            for (int i = 0; i < Modules.SpotifyHud.STYLES.length; i++) {
+                final int idx = i;
+                String lbl = Modules.SpotifyHud.STYLES[i];
+                int pw = tw(g, lbl) + 12;
+                boolean on = Modules.SPOTIFY.style == i;
+                round(g, pxl, yy, pxl + pw, yy + 14, 5, a(on ? 0xFFF3F0FA : 0x10FFFFFF));
+                text(g, lbl, pxl + 6, yy + 3, on ? 0xFF120E1C : MUTED, false);
+                hits.add(new Hit(pxl, yy, pxl + pw, yy + 14, () -> { Modules.SPOTIFY.style = idx; Config.save(); }, null));
+                pxl += pw + 4;
+            }
+            yy += 20;
+        }
         if (m instanceof HudModule) {
             HudModule hm = (HudModule) m;
             yy = settingToggle(g, mx, my, ix, yy, iw, "Tło HUD", Theme.hudBackground, () -> Theme.hudBackground = !Theme.hudBackground);

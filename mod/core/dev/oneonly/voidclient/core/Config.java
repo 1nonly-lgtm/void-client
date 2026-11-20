@@ -37,6 +37,7 @@ public final class Config {
         Float vmX, vmY, vmZ, vmScale;
         Integer vmRotX, vmRotY, vmRotZ, aspect;
         Boolean tntRadius, miningTime, miningBar, miningAbove;
+        Integer spotifyStyle;
         List<Waypoints.Point> waypoints = new ArrayList<>();
         Map<String, Entry> modules = new HashMap<>();
     }
@@ -83,6 +84,7 @@ public final class Config {
             if (d.vmRotZ != null) View.rotZ = d.vmRotZ;
             if (d.aspect != null) View.aspect = Math.floorMod(d.aspect, View.ASPECTS.length);
             if (d.tntRadius != null) Modules.TNT.radius = d.tntRadius;
+            if (d.spotifyStyle != null) Modules.SPOTIFY.style = Math.floorMod(d.spotifyStyle, 3);
             if (d.miningTime != null) Modules.MINING.time = d.miningTime;
             if (d.miningBar != null) Modules.MINING.bar = d.miningBar;
             if (d.miningAbove != null) Modules.MINING.aboveBlock = d.miningAbove;
@@ -128,6 +130,7 @@ public final class Config {
         d.vmRotX = View.rotX; d.vmRotY = View.rotY; d.vmRotZ = View.rotZ;
         d.aspect = View.aspect;
         d.tntRadius = Modules.TNT.radius;
+        d.spotifyStyle = Modules.SPOTIFY.style;
         d.miningTime = Modules.MINING.time;
         d.miningBar = Modules.MINING.bar;
         d.miningAbove = Modules.MINING.aboveBlock;
