@@ -31,13 +31,12 @@ public final class GuiController {
     private enum Tab {
         ALL("Wszystkie", "Wszystkie moduły", new int[]{0b11011, 0b11011, 0b00000, 0b11011, 0b11011}),
         HUD("HUD", "Elementy na ekranie", new int[]{0b11111, 0b10001, 0b10001, 0b11111, 0b00100}),
-        GAME("Gra", "Dodatki do rozgrywki", new int[]{0b00001, 0b00010, 0b10100, 0b01000, 0b10100}),
-        AUTOTEXT("AutoText", "Wiadomości pod klawiszami", new int[]{0b11111, 0b10001, 0b11111, 0b01000, 0b10000}),
+        COMBAT("Walka", "PvP i informacje w walce", new int[]{0b00001, 0b00010, 0b10100, 0b01000, 0b10100}),
+        GAME("Gra", "Dodatki do rozgrywki", new int[]{0b01110, 0b10101, 0b10111, 0b10001, 0b01110}),
+        LOOK("Wygląd", "Niebo, celownik, widok i efekty", new int[]{0b00100, 0b01110, 0b11111, 0b01110, 0b00100}),
         WAYPOINTS("Waypointy", "Znaczniki w świecie", new int[]{0b01110, 0b11011, 0b01110, 0b00100, 0b00100}),
-        SKY("Niebo", "Własne nieba Void", new int[]{0b00100, 0b01110, 0b11111, 0b01110, 0b00100}),
-        LOOK("Celownik", "Celownik i ramka bloku", new int[]{0b00100, 0b00100, 0b11011, 0b00100, 0b00100}),
-        VIEW("Widok", "Viewmodel i proporcje obrazu", new int[]{0b00011, 0b00110, 0b01100, 0b11000, 0b10000}),
-        OPTIONS("Opcje", "Wygląd, FPS i skin", new int[]{0b10101, 0b01110, 0b11011, 0b01110, 0b10101});
+        AUTOTEXT("AutoText", "Wiadomości pod klawiszami", new int[]{0b11111, 0b10001, 0b11111, 0b01000, 0b10000}),
+        OPTIONS("Ustawienia", "Klawisze, kolory, FPS i skin", new int[]{0b10101, 0b01110, 0b11011, 0b01110, 0b10101});
 
         final String label;
         final String subtitle;
@@ -48,16 +47,45 @@ public final class GuiController {
             this.subtitle = subtitle;
             this.icon = icon;
         }
+
+        boolean modules() { return this == ALL || this == HUD || this == COMBAT || this == GAME; }
+    }
+
+    /** Podzakładki „Wyglądu”. */
+    private static final String[] LOOK_SUBS = {"Moduły", "Niebo", "Celownik", "Widok"};
+    private static final java.util.Set<String> COMBAT_IDS = new java.util.HashSet<>(java.util.Arrays.asList(
+            "cps", "keystrokes", "armor", "armorbar", "attack", "togglesprint", "effects", "items", "tntfuse", "mining"));
+    private static final java.util.Set<String> LOOK_IDS = new java.util.HashSet<>(java.util.Arrays.asList(
+            "crosshair", "outline", "motionblur", "fullbright", "viewmodel", "voidicon", "watermark", "nametag", "itemphysics"));
+
+    private static boolean inTab(Module m, Tab t) {
+        switch (t) {
+            case ALL: return true;
+            case HUD: return m.category == Module.Category.HUD && !COMBAT_IDS.contains(m.id) && !LOOK_IDS.contains(m.id);
+            case COMBAT: return COMBAT_IDS.contains(m.id);
+            case GAME: return m.category == Module.Category.GAME && !COMBAT_IDS.contains(m.id) && !LOOK_IDS.contains(m.id);
+            case LOOK: return LOOK_IDS.contains(m.id);
+            default: return false;
+        }
+    }
+
+    private static List<Module> modulesOf(Tab t) {
+        List<Module> out = new ArrayList<>();
+        for (Module m : Modules.all()) if (inTab(m, t)) out.add(m);
+        return out;
     }
 
     private static final class Hit {
         final int x1, y1, x2, y2;
         final Runnable action;
         final String tooltip;
+        Runnable right;
 
         Hit(int x1, int y1, int x2, int y2, Runnable action, String tooltip) {
             this.x1 = x1; this.y1 = y1; this.x2 = x2; this.y2 = y2; this.action = action; this.tooltip = tooltip;
         }
+
+        Hit right(Runnable r) { this.right = r; return this; }
 
         boolean contains(double mx, double my) { return mx >= x1 && mx < x2 && my >= y1 && my < y2; }
     }
@@ -65,17 +93,18 @@ public final class GuiController {
     private static Tab lastTab = Tab.ALL;
 
     // Wymiary w pikselach GUI (gra mnoży je przez skalę interfejsu).
-    private static final int PW = 470;
-    private static final int PH = 280;
+    private static final int PW = 620;
+    private static final int PH = 320;
 
-    // Kolory z launchera (#120a22, #f3e8ff, #b9a6d6, #7c3aed…)
-    private static final int PANEL = 0xF5120A22;
-    private static final int SIDEBAR = 0xFF0A0614;
-    private static final int CARD = 0xFF170D2E;
-    private static final int CARD_HOVER = 0xFF221442;
-    private static final int TEXT = 0xFFF3E8FF;
-    private static final int MUTED = 0xFFB9A6D6;
-    private static final int DIM = 0xFF7A6A99;
+    // Kolory jak w launcherze 2.0 (prawie czarny fiolet, jeden akcent)
+    private static final int PANEL = 0xF60E0A17;
+    private static final int SIDEBAR = 0xFF0A0711;
+    private static final int CARD = 0xFF15111F;
+    private static final int CARD_HOVER = 0xFF1C1629;
+    private static final int LINE = 0x14FFFFFF;
+    private static final int TEXT = 0xFFF3F0FA;
+    private static final int MUTED = 0xFFA59DBB;
+    private static final int DIM = 0xFF6F6787;
 
     private final List<Hit> hits = new ArrayList<>();
     private final Map<String, Float> anims = new HashMap<>();
@@ -89,6 +118,11 @@ public final class GuiController {
     private float alpha = 1f;
     private int scroll;
     private int maxScroll;
+    /** Filtr kart: 0 – wszystkie, 1 – włączone, 2 – wyłączone. */
+    private int filter;
+    private static int lookSub;
+    /** Moduł pokazany w panelu ustawień po prawej. */
+    private static Module selected;
     private int width = 1;
     private int height = 1;
     private Gfx lastGfx;
@@ -202,29 +236,65 @@ public final class GuiController {
         g.fill(x2 - 1, y1 + r, x2, y2 - r, c);
     }
 
+    // Cały tekst menu idzie gładką czcionką (Inter) – gra bez niej rysuje zwykłą.
     private void text(Gfx g, String s, int x, int y, int c, boolean shadow) {
         int col = a(c);
         if ((col >>> 24) < 0x10) return; // gra pokazuje zbyt przezroczysty tekst jako pełny – pomijamy
-        g.text(s, x, y, col, shadow);
+        g.uiText(s, x, y, col, false);
     }
 
     private void text(Gfx g, String s, int x, int y, int c, boolean shadow, float extra) {
         int col = a(c, extra);
         if ((col >>> 24) < 0x10) return;
-        g.text(s, x, y, col, shadow);
+        g.uiText(s, x, y, col, false);
     }
 
-    /** Nagłówek jak w launcherze: wielkie litery z fioletowym cieniem. */
+    private void bold(Gfx g, String s, int x, int y, int c) {
+        int col = a(c);
+        if ((col >>> 24) < 0x10) return;
+        g.uiText(s, x, y, col, true);
+    }
+
+    private void bold(Gfx g, String s, int x, int y, int c, float extra) {
+        int col = a(c, extra);
+        if ((col >>> 24) < 0x10) return;
+        g.uiText(s, x, y, col, true);
+    }
+
+    private static int tw(Gfx g, String s) { return g.uiWidth(s, false); }
+
+    private static int bw(Gfx g, String s) { return g.uiWidth(s, true); }
+
+    private static String cut(Gfx g, String s, int w) { return g.uiTrim(s, w, false); }
+
+    /** Nagłówek sekcji. */
     private void title(Gfx g, String s, int x, int y) {
-        text(g, s, x + 1, y + 1, 0xFF4C1D95, false);
-        text(g, s, x, y, TEXT, false);
+        bold(g, s, x, y, TEXT);
     }
 
     /** Przycina tekst do szerokości i dodaje „…”, jeśli coś ucięto. */
     private static String ellipsis(Gfx g, String s, int w) {
-        if (g.width(s) <= w) return s;
-        String t = g.trim(s, Math.max(0, w - g.width("…")));
+        if (tw(g, s) <= w) return s;
+        String t = cut(g, s, Math.max(0, w - tw(g, "…")));
         return t.trim() + "…";
+    }
+
+    /** Dzieli opis na linie mieszczące się w szerokości. */
+    private static List<String> wrap(Gfx g, String s, int w, int maxLines) {
+        List<String> out = new ArrayList<>();
+        String[] words = s.split(" ");
+        StringBuilder line = new StringBuilder();
+        for (String word : words) {
+            String test = line.length() == 0 ? word : line + " " + word;
+            if (tw(g, test) <= w) { line.setLength(0); line.append(test); continue; }
+            if (line.length() > 0) out.add(line.toString());
+            line.setLength(0);
+            line.append(word);
+            if (out.size() == maxLines) break;
+        }
+        if (line.length() > 0 && out.size() < maxLines) out.add(line.toString());
+        if (out.size() == maxLines && out.size() > 0) out.set(maxLines - 1, ellipsis(g, out.get(maxLines - 1), w));
+        return out;
     }
 
     private void icon(Gfx g, int[] rows, int x, int y, int scale, int c) {
@@ -237,9 +307,10 @@ public final class GuiController {
 
     /** Przełącznik jak w launcherze: zaokrąglony tor i okrągła gałka. */
     private void toggle(Gfx g, int x, int y, float on, float extra) {
-        round(g, x, y, x + 22, y + 12, 6, a(lerpColor(0xFF3A2D55, 0xFF7C3AED, on), extra));
-        int kx = x + 2 + (int) (on * 10);
-        round(g, kx, y + 2, kx + 8, y + 10, 4, a(0xFFFFFFFF, extra));
+        if (on > 0.02f) round(g, x - 2, y - 2, x + 22, y + 14, 8, a(Theme.accent((int) (50 * on)), extra));
+        round(g, x, y, x + 20, y + 12, 6, a(lerpColor(0xFF2A2340, deep(), on), extra));
+        int kx = x + 2 + (int) (on * 8);
+        round(g, kx, y + 2, kx + 8, y + 10, 4, a(lerpColor(0xFF8A82A0, 0xFFFFFFFF, on), extra));
     }
 
     /** Pikselowe ikony modułów 5×5. */
@@ -281,36 +352,25 @@ public final class GuiController {
 
     private static final int[] TILE_COLORS = {0xFFC084FC, 0xFFE9D5FF, 0xFFD946EF, 0xFFA78BFA, 0xFFF0ABFC, 0xFF8B5CF6, 0xFFDDD6FE};
 
-    // ───────────── Tło jak w launcherze ─────────────
+    // ───────────── Tło ─────────────
+
+    private static int deep() { return lerpColor(Theme.accent(), 0xFF5B21B6, 0.45f); }
 
     private void background(Gfx g) {
-        g.gradient(0, 0, width, height, a(0xC81A0838), a(0xEE05020F));
+        g.gradient(0, 0, width, height, a(0xB80A0614), a(0xE6040209));
         long t = System.currentTimeMillis();
-        // orbita (wirujący łuk w prawym górnym rogu)
-        double cxo = width * 0.80, cyo = -height * 0.12, rad = height * 0.78;
-        double base = t / 2600.0;
-        for (int i = 0; i < 70; i++) {
-            double ang = base + i * 0.018;
-            int x = (int) (cxo + Math.cos(ang) * rad);
-            int y = (int) (cyo + Math.sin(ang) * rad);
-            g.fill(x, y, x + 2, y + 2, a(Theme.accent((int) (10 + 150 * (i / 70f)))));
+        // delikatna zorza u góry
+        for (int i = 0; i < 3; i++) {
+            int y0 = (int) (height * 0.12 + i * 10 + Math.sin(t / 3000.0 + i) * 6);
+            g.gradient(0, y0, width, y0 + 26, a(Theme.accent(0)), a(Theme.accent(10 - i * 3)));
+            g.gradient(0, y0 + 26, width, y0 + 52, a(Theme.accent(10 - i * 3)), a(Theme.accent(0)));
         }
-        for (int i = 0; i < 90; i++) {
-            double ang = -base * 0.6 + i * 0.07;
-            int x = (int) (cxo + Math.cos(ang) * rad * 0.82);
-            int y = (int) (cyo + Math.sin(ang) * rad * 0.82);
-            g.fill(x, y, x + 1, y + 1, a(Theme.accent(40)));
-        }
-        // unoszące się cząsteczki
-        for (int i = 0; i < 18; i++) {
-            float speed = 18 + (i * 7) % 15;
-            float y = height + 10 - ((t / 1000f * speed + i * 53) % (height + 20));
-            int x = (int) (width * (((i * 61 + 17) % 100) / 100f));
-            int size = 1 + (i % 3 == 0 ? 1 : 0);
-            float fade = Math.min(1f, (height - y) / 60f) * Math.min(1f, y / 80f);
-            if (fade <= 0) continue;
-            int col = i % 4 == 0 ? 0xFFD946EF : (i % 3 == 0 ? 0xFFE9D5FF : Theme.accent());
-            g.fill(x, (int) y, x + size, (int) y + size, a(col, 0.8f * fade));
+        // gwiazdy
+        for (int i = 0; i < 60; i++) {
+            int sx = (int) (((i * 9301 + 49297) % 233280) / 233280f * width);
+            int sy = (int) (((i * 4271 + 1013) % 100000) / 100000f * height);
+            float tw = 0.3f + 0.7f * (0.5f + 0.5f * (float) Math.sin(t / 900.0 + i * 1.7));
+            g.fill(sx, sy, sx + 1, sy + 1, a(i % 4 == 0 ? 0xFFF0ABFC : 0xFFE9D5FF, 0.45f * tw));
         }
     }
 
@@ -333,153 +393,148 @@ public final class GuiController {
             background(g);
             renderPanel(g, mx, my);
         }
-        if (alpha > 0.1f && editHud) {
-            text(g, "by: ", 6, h - 12, 0xFFB9A6D6, true);
-            text(g, "1nonly $", 6 + g.width("by: "), h - 12, Theme.accent(), true);
-        }
     }
 
     /** Wymiary panelu – dopasowane do okna (małe okno / duża skala GUI). */
-    private int panelW() { return Math.max(300, Math.min(PW, width - 16)); }
-    private int panelH() { return Math.max(200, Math.min(PH, height - 30)); }
+    private int panelW() { return Math.max(320, Math.min(PW, width - 20)); }
+    private int panelH() { return Math.max(210, Math.min(PH, height - 46)); }
 
-    private static final int SIDE_W = 104;
+    private static final int SIDE_W = 112;
+    private static final int RIGHT_W = 150;
+
+    private boolean showRight() { return panelW() >= 540 && tab.modules() || panelW() >= 540 && tab == Tab.LOOK && lookSub == 0; }
 
     private void renderPanel(Gfx g, int mx, int my) {
         int pw = panelW(), ph = panelH();
         int px = (width - pw) / 2;
-        int py = (height - ph) / 2 + (int) ((1f - alpha) * 14);
+        int py = (height - ph) / 2 - 6 + (int) ((1f - alpha) * 14);
         long nowMs = System.currentTimeMillis();
-        float pulse = 0.5f + 0.5f * (float) Math.sin(nowMs / 420.0);
 
-        // ── panel: poświata, szklane tło z gradientem, gwiazdy, świecąca linia u góry (jak w launcherze) ──
-        round(g, px - 7, py - 7, px + pw + 7, py + ph + 7, 14, a(Theme.accent((int) (6 + 8 * pulse))));
-        round(g, px - 4, py - 4, px + pw + 4, py + ph + 4, 12, a(Theme.accent((int) (14 + 10 * pulse))));
-        round(g, px - 1, py - 1, px + pw + 1, py + ph + 1, 10, a(Theme.accent(70)));
-        round(g, px, py, px + pw, py + ph, 9, a(0xF6120A22));
-        g.gradient(px + 3, py + 3, px + pw - 3, py + ph - 3, a(0x40221048), a(0x00000000));
-        for (int i = 0; i < 34; i++) {
-            int sx = px + 6 + (int) (((i * 97 + 31) % 1000) / 1000f * (pw - 12));
-            int sy = py + 6 + (int) (((i * 57 + 11) % 1000) / 1000f * (ph - 12));
-            float tw = 0.3f + 0.7f * (0.5f + 0.5f * (float) Math.sin(nowMs / 700.0 + i * 1.9));
-            g.fill(sx, sy, sx + 1, sy + 1, a(i % 3 == 0 ? 0xFFF0ABFC : 0xFFE9D5FF, 0.35f * tw));
-        }
-        // linia u góry: jasna w środku, gaśnie na boki
-        int lineW = pw - 40;
-        for (int i = 0; i < lineW; i += 2) {
-            float t = 1f - Math.abs(i / (float) lineW * 2f - 1f);
-            g.fill(px + 20 + i, py, px + 22 + i, py + 1, a(Theme.accent((int) (230 * t))));
-        }
+        // ── szklany panel ──
+        round(g, px - 6, py - 6, px + pw + 6, py + ph + 6, 16, a(0x22000000));
+        round(g, px - 1, py - 1, px + pw + 1, py + ph + 1, 12, a(0x1CFFFFFF));
+        round(g, px, py, px + pw, py + ph, 11, a(PANEL));
+        g.gradient(px + 4, py + 1, px + pw - 4, py + 40, a(0x10FFFFFF), a(0x00FFFFFF));
 
-        // ── pasek boczny (jak menu w launcherze) ──
-        int sbx = px + 6, sby = py + 6, sbw = SIDE_W - 6, sbh = ph - 12;
-        round(g, sbx, sby, sbx + sbw, sby + sbh, 7, a(0xC00A0614));
-        g.fill(sbx + sbw, sby + 10, sbx + sbw + 1, sby + sbh - 10, a(Theme.accent(50)));
+        // ── pasek boczny ──
+        int sbx = px, sbw = SIDE_W;
+        round(g, sbx + 1, py + 1, sbx + sbw, py + ph - 1, 10, a(SIDEBAR));
+        g.fill(sbx + sbw - 1, py + 1, sbx + sbw, py + ph - 1, a(LINE));
 
-        // logo z pulsującą aureolą + nazwa
-        int lx = sbx + 8, ly = sby + 9;
-        round(g, lx - 3, ly - 3, lx + 25, ly + 25, 14, a(Theme.accent((int) (40 + 70 * pulse))));
-        if (alpha > 0.55f) g.logo(lx, ly, 22);
-        text(g, "VOID", lx + 30, ly + 3, TEXT, true);
-        text(g, "CLIENT", lx + 30, ly + 13, Theme.accent(), false);
+        // logo + nazwa
+        int lx = sbx + 12, ly = py + 13;
+        float pulse = 0.5f + 0.5f * (float) Math.sin(nowMs / 520.0);
+        round(g, lx - 2, ly - 2, lx + 20, ly + 20, 7, a(Theme.accent((int) (40 + 50 * pulse))));
+        if (alpha > 0.55f) g.logo(lx, ly, 18);
+        bold(g, "VOID", lx + 25, ly + 1, TEXT);
+        text(g, "Client 2.0", lx + 25, ly + 11, DIM, false);
 
-        // zakładki pionowo, z płynnie przesuwanym podświetleniem
+        // zakładki z przesuwanym podświetleniem
         Tab[] tabs = Tab.values();
-        int rowH = 20, rowGap = 3, listY = ly + 36;
+        int rowH = 20, rowGap = 2, listY = ly + 32;
         float iy = anim("sideY", listY + tab.ordinal() * (rowH + rowGap), 16f);
-        round(g, sbx + 5, (int) iy, sbx + sbw - 5, (int) iy + rowH, 6, a(Theme.accent(70)));
-        g.gradient(sbx + 6, (int) iy + 1, sbx + sbw - 6, (int) iy + rowH / 2, a(0x26FFFFFF), a(0x00FFFFFF));
-        round(g, sbx + 1, (int) iy + 4, sbx + 4, (int) iy + rowH - 4, 1, a(Theme.accent(255)));
-        round(g, sbx, (int) iy + 2, sbx + 6, (int) iy + rowH - 2, 3, a(Theme.accent(60)));
+        round(g, sbx + 7, (int) iy, sbx + sbw - 8, (int) iy + rowH, 6, a(Theme.accent(36)));
+        round(g, sbx + 7, (int) iy + 5, sbx + 9, (int) iy + rowH - 5, 1, a(Theme.accent(255)));
         for (int i = 0; i < tabs.length; i++) {
             Tab t = tabs[i];
             int ry = listY + i * (rowH + rowGap);
-            boolean hover = mx >= sbx + 5 && mx < sbx + sbw - 5 && my >= ry && my < ry + rowH;
+            boolean hover = mx >= sbx + 7 && mx < sbx + sbw - 8 && my >= ry && my < ry + rowH;
             float hv = anim("side" + i, hover && t != tab ? 1 : 0, 14f);
-            if (hv > 0.01f) round(g, sbx + 5, ry, sbx + sbw - 5, ry + rowH, 6, a(0x16FFFFFF, hv));
+            if (hv > 0.01f) round(g, sbx + 7, ry, sbx + sbw - 8, ry + rowH, 6, a(0x12FFFFFF, hv));
             boolean act = t == tab;
-            int ix = sbx + 12 + (int) (hv * 2);
-            icon(g, t.icon, ix, ry + 7, 1, a(act ? 0xFFFFFFFF : lerpColor(MUTED, TEXT, hv)));
-            text(g, t.label, ix + 10, ry + 6, act ? 0xFFFFFFFF : lerpColor(MUTED, TEXT, hv), false);
-            hits.add(new Hit(sbx + 5, ry, sbx + sbw - 5, ry + rowH, () -> switchTab(t), t.subtitle));
+            int col = act ? 0xFFFFFFFF : lerpColor(MUTED, TEXT, hv);
+            int ix = sbx + 15 + (int) (hv * 1.5f);
+            icon(g, t.icon, ix, ry + 7, 1, a(act ? Theme.accent() : col));
+            text(g, t.label, ix + 11, ry + 6, col, false);
+            String cnt = t.modules() || t == Tab.LOOK ? String.valueOf(modulesOf(t).size())
+                    : t == Tab.WAYPOINTS && VoidCore.game().hasPlayer() ? String.valueOf(Waypoints.here(VoidCore.game()).size()) : "";
+            if (!cnt.isEmpty()) text(g, cnt, sbx + sbw - 15 - tw(g, cnt), ry + 6, act ? MUTED : DIM, false);
+            hits.add(new Hit(sbx + 7, ry, sbx + sbw - 8, ry + rowH, () -> switchTab(t), t.subtitle));
         }
-        // stopka paska: podpis jak w launcherze
-        if (listY + tabs.length * (rowH + rowGap) < sby + sbh - 16) {
-            text(g, "by:", sbx + 9, sby + sbh - 13, DIM, false);
-            text(g, "1nonly $", sbx + 9 + g.width("by: "), sby + sbh - 13, Theme.accent(), false);
+        // karta na dole paska
+        int cardY = py + ph - 34;
+        if (listY + tabs.length * (rowH + rowGap) < cardY - 4) {
+            round(g, sbx + 7, cardY, sbx + sbw - 8, py + ph - 8, 7, a(0xFF15101F));
+            text(g, "by: 1nonly $", sbx + 14, cardY + 5, TEXT, false);
+            text(g, "Prawy Shift – menu", sbx + 14, cardY + 15, DIM, false);
         }
 
-        // ── nagłówek: tytuł zakładki, wyszukiwarka, Edytuj HUD, zamknij ──
-        int mxL = px + SIDE_W + 8, mxR = px + pw - 10;
-        int ty = py + 10;
-        title(g, tab.label.toUpperCase(), mxL, ty + 1);
-        text(g, tab.subtitle, mxL, ty + 12, DIM, false);
+        // ── środek ──
+        boolean right = showRight();
+        int cx = px + sbw + 12;
+        int cxR = px + pw - (right ? RIGHT_W + 12 : 12);
+        int cw = cxR - cx;
+        int ty = py + 12;
 
-        int cxb = mxR - 20, cyb = ty;
-        boolean cHover = mx >= cxb && mx < cxb + 20 && my >= cyb && my < cyb + 20;
-        float chv = anim("closeBtn", cHover ? 1 : 0, 14f);
-        round(g, cxb, cyb, cxb + 20, cyb + 20, 6, a(lerpColor(0x14FFFFFF, 0xFFB42318, chv)));
-        for (int i = 0; i < 7; i++) {
-            g.fill(cxb + 7 + i, cyb + 7 + i, cxb + 8 + i, cyb + 8 + i, a(TEXT));
-            g.fill(cxb + 13 - i, cyb + 7 + i, cxb + 14 - i, cyb + 8 + i, a(TEXT));
-        }
-        hits.add(new Hit(cxb, cyb, cxb + 20, cyb + 20, this::requestClose, "Zamknij menu"));
+        String head = tab.label;
+        bold(g, head, cx, ty + 2, TEXT);
+        String chip = chipText();
+        if (!chip.isEmpty()) text(g, chip, cx + bw(g, head) + 8, ty + 3, DIM, false);
 
-        String el = "Edytuj HUD";
-        int bw = g.width(el) + 18, bx = cxb - 6 - bw;
-        boolean bHover = mx >= bx && mx < bx + bw && my >= ty && my < ty + 20;
-        float bhv = anim("editBtn", bHover ? 1 : 0, 14f);
-        if (bhv > 0.01f) round(g, bx - 2, ty - 2, bx + bw + 2, ty + 22, 8, a(Theme.accent((int) (70 * bhv))));
-        round(g, bx, ty, bx + bw, ty + 20, 6, a(lerpColor(0xFF7C3AED, 0xFF9F67FF, bhv)));
-        g.gradient(bx + 2, ty + 1, bx + bw - 2, ty + 9, a(0x30FFFFFF), a(0x00FFFFFF));
-        text(g, el, bx + 9, ty + 6, 0xFFFFFFFF, false);
-        hits.add(new Hit(bx, ty, bx + bw, ty + 20, () -> { editHud = true; editing = -1; }, "Przeciągaj elementy HUD myszką – przyciągają się do środka i krawędzi"));
-
-        int titleW = Math.max(g.width(tab.label.toUpperCase()) + 2, g.width(tab.subtitle));
-        int sx = Math.max(mxL + titleW + 10, mxL + 70), sw = bx - 8 - sx;
-        boolean searchable = tab == Tab.ALL || tab == Tab.HUD || tab == Tab.GAME;
-        if (sw > 60) {
+        // wyszukiwarka (moduły)
+        boolean searchable = tab.modules() || (tab == Tab.LOOK && lookSub == 0);
+        int sw = Math.min(130, cw - bw(g, head) - tw(g, chip) - 24);
+        if (sw > 60 && searchable) {
+            int sx = cxR - sw;
             boolean focus = !search.isEmpty();
-            if (focus) round(g, sx - 2, ty - 2, sx + sw + 2, ty + 22, 9, a(Theme.accent(40)));
-            round(g, sx, ty, sx + sw, ty + 20, 7, a(0xFF0B0617));
-            roundOutline(g, sx, ty, sx + sw, ty + 20, 7, a(focus ? Theme.accent(200) : 0x1FFFFFFF));
-            icon(g, new int[]{0b11100, 0b10100, 0b11100, 0b00010, 0b00001}, sx + 7, ty + 7, 1, a(focus ? Theme.accent() : MUTED));
+            round(g, sx, ty - 2, cxR, ty + 15, 6, a(0xFF0B0814));
+            roundOutline(g, sx, ty - 2, cxR, ty + 15, 6, a(focus ? Theme.accent(200) : LINE));
+            icon(g, new int[]{0b11100, 0b10100, 0b11100, 0b00010, 0b00001}, sx + 6, ty + 4, 1, a(focus ? Theme.accent() : DIM));
             boolean blink = (nowMs / 500) % 2 == 0;
             if (search.isEmpty()) {
-                text(g, g.trim(searchable ? "Szukaj modułu…" : "Szukaj w modułach…", sw - 24), sx + 17, ty + 6, DIM, false);
+                text(g, ellipsis(g, "Szukaj modułu…", sw - 22), sx + 15, ty + 3, DIM, false);
             } else {
                 String fit = search;
-                while (g.width(fit) > sw - 30 && fit.length() > 1) fit = fit.substring(1);
-                text(g, fit, sx + 17, ty + 6, TEXT, false);
-                if (blink) g.fill(sx + 18 + g.width(fit), ty + 5, sx + 19 + g.width(fit), ty + 15, a(TEXT));
+                while (tw(g, fit) > sw - 26 && fit.length() > 1) fit = fit.substring(1);
+                text(g, fit, sx + 15, ty + 3, TEXT, false);
+                if (blink) g.fill(sx + 16 + tw(g, fit), ty + 1, sx + 17 + tw(g, fit), ty + 12, a(TEXT));
             }
-            hits.add(new Hit(sx, ty, sx + sw, ty + 20, () -> { if (!searchable) switchTab(Tab.ALL); }, "Zacznij pisać, żeby wyszukać moduł"));
+            hits.add(new Hit(sx, ty - 2, cxR, ty + 15, () -> { if (!searchable) switchTab(Tab.ALL); }, "Zacznij pisać, żeby wyszukać moduł"));
         }
 
-        // licznik pod nagłówkiem
-        int cx = mxL, cw = mxR - mxL;
-        int lineY = ty + 26;
-        g.fill(cx, lineY, cx + cw, lineY + 1, a(0x12FFFFFF));
-        String chip = chipText();
-        if (!chip.isEmpty()) {
-            int cwid = g.width(chip) + 12;
-            round(g, cx + cw - cwid, lineY - 5, cx + cw, lineY + 6, 5, a(0xFF1D1235));
-            text(g, chip, cx + cw - cwid + 6, lineY - 3, MUTED, false);
+        // pigułki: filtr kart albo podzakładki Wyglądu
+        int pyl = ty + 22;
+        String[] pills = tab.modules() ? new String[]{"Wszystkie", "Włączone", "Wyłączone"} : tab == Tab.LOOK ? LOOK_SUBS : null;
+        int top;
+        if (pills != null) {
+            int pxl = cx;
+            int cur = tab == Tab.LOOK ? lookSub : filter;
+            for (int i = 0; i < pills.length; i++) {
+                final int idx = i;
+                int pwid = tw(g, pills[i]) + 14;
+                boolean on = i == cur;
+                boolean hov = mx >= pxl && mx < pxl + pwid && my >= pyl && my < pyl + 15;
+                float hv = anim("pill" + i, hov && !on ? 1 : 0, 14f);
+                round(g, pxl, pyl, pxl + pwid, pyl + 15, 5, a(on ? 0xFFF3F0FA : lerpColor(0x0DFFFFFF, 0x1CFFFFFF, hv)));
+                if (!on) roundOutline(g, pxl, pyl, pxl + pwid, pyl + 15, 5, a(LINE));
+                text(g, pills[i], pxl + 7, pyl + 4, on ? 0xFF120E1C : MUTED, false);
+                hits.add(new Hit(pxl, pyl, pxl + pwid, pyl + 15, () -> {
+                    if (tab == Tab.LOOK) { lookSub = idx; scroll = 0; anims.put("scroll", 0f); tabChangedAt = System.currentTimeMillis(); }
+                    else { filter = idx; tabChangedAt = System.currentTimeMillis(); }
+                }, null));
+                pxl += pwid + 4;
+            }
+            top = pyl + 22;
+        } else {
+            g.fill(cx, ty + 20, cxR, ty + 21, a(LINE));
+            top = ty + 27;
         }
 
         // ── treść ──
-        int top = lineY + 9;
-        int ch = py + ph - 20 - top;
+        int ch = py + ph - 10 - top;
         int sc = (int) anim("scroll", scroll, 18f);
-        g.scissor(cx - 3, top, cx + cw + 3, top + ch);
+        g.scissor(cx - 3, top, cxR + 3, top + ch);
         int contentH;
         switch (tab) {
             case OPTIONS: contentH = renderOptions(g, mx, my, cx, top - sc, cw, top, top + ch); break;
             case AUTOTEXT: contentH = renderAutoText(g, mx, my, cx, top - sc, cw, top, top + ch); break;
             case WAYPOINTS: contentH = renderWaypoints(g, mx, my, cx, top - sc, cw, top, top + ch); break;
-            case SKY: contentH = renderSky(g, mx, my, cx, top - sc, cw, top, top + ch); break;
-            case LOOK: contentH = renderLook(g, mx, my, cx, top - sc, cw, top, top + ch); break;
-            case VIEW: contentH = renderView(g, mx, my, cx, top - sc, cw, top, top + ch); break;
+            case LOOK:
+                if (lookSub == 1) contentH = renderSky(g, mx, my, cx, top - sc, cw, top, top + ch);
+                else if (lookSub == 2) contentH = renderLook(g, mx, my, cx, top - sc, cw, top, top + ch);
+                else if (lookSub == 3) contentH = renderView(g, mx, my, cx, top - sc, cw, top, top + ch);
+                else contentH = renderModules(g, mx, my, cx, top - sc, cw, top, top + ch, tab);
+                break;
             default: contentH = renderModules(g, mx, my, cx, top - sc, cw, top, top + ch, tab);
         }
         g.noScissor();
@@ -487,34 +542,36 @@ public final class GuiController {
         if (maxScroll > 0) {
             int barH = Math.max(16, ch * ch / Math.max(1, contentH));
             int barY = top + (int) ((ch - barH) * (sc / (float) maxScroll));
-            round(g, cx + cw + 4, top, cx + cw + 7, top + ch, 1, a(0x10FFFFFF));
-            round(g, cx + cw + 4, barY, cx + cw + 7, barY + barH, 1, a(Theme.accent(170)));
+            round(g, cxR + 4, barY, cxR + 6, barY + barH, 1, a(Theme.accent(120)));
         }
-        // miękkie wygaszenie treści przy dolnej krawędzi
-        g.gradient(cx - 3, top + ch - 8, cx + cw + 3, top + ch, a(0x00120A22), a(0xE0120A22));
+        g.gradient(cx - 3, top + ch - 8, cxR + 3, top + ch, a(PANEL & 0x00FFFFFF), a(PANEL));
 
-        // stopka
+        // ── panel ustawień po prawej ──
+        if (right) renderSettingsPanel(g, mx, my, px + pw - RIGHT_W, py, RIGHT_W, ph);
+
+        // ── podpowiedź pod panelem ──
         String tip = tab == Tab.AUTOTEXT ? "Kliknij pole i wpisz tekst. Klawisz: Sterowanie → Void Client."
                 : tab == Tab.WAYPOINTS ? "Klik w nazwę lub kordy – edycja · kwadrat – kolor"
-                : tab == Tab.SKY ? "Kliknij niebo, żeby je ustawić – gra przeładuje zasoby"
-                : tab == Tab.LOOK ? "Kliknij wartość, żeby ją zmienić – podgląd na górze"
-                : tab == Tab.VIEW ? "Kliknij wartość, żeby ją zmienić – zmiany widać od razu w grze"
+                : tab == Tab.LOOK && lookSub == 1 ? "Kliknij niebo, żeby je ustawić – gra przeładuje zasoby"
+                : tab == Tab.LOOK && lookSub >= 2 ? "Kliknij wartość, żeby ją zmienić – zmiany widać od razu"
                 : tab == Tab.OPTIONS ? "Kliknij klawisz, a potem wciśnij nowy (Esc – anuluj, Backspace – usuń)"
-                : "Kliknij kartę, aby włączyć lub wyłączyć. Pisz, aby szukać.";
+                : "Klik – włącz/wyłącz · prawy klik – ustawienia modułu · pisz, aby szukać";
         if (binding != null) tip = "Wciśnij klawisz albo przycisk myszy… (Esc – anuluj, Backspace – usuń)";
         for (Hit h : hits) if (h.tooltip != null && h.contains(mx, my)) tip = h.tooltip;
-        String close = "Prawy Shift – zamknij";
-        int fy = py + ph - 14;
-        text(g, ellipsis(g, tip, cw - g.width(close) - 10), cx, fy, MUTED, false);
-        text(g, close, cx + cw - g.width(close), fy, DIM, false);
+        tip = ellipsis(g, tip, pw - 20);
+        int tipW = tw(g, tip) + 16, fy = py + ph + 10;
+        if (fy + 14 < height) {
+            round(g, (width - tipW) / 2, fy, (width + tipW) / 2, fy + 15, 5, a(0xB0100B1A));
+            text(g, tip, (width - tipW) / 2 + 8, fy + 4, MUTED, false);
+        }
     }
 
     private String chipText() {
-        if (tab == Tab.ALL || tab == Tab.HUD || tab == Tab.GAME) {
-            List<Module> list = tab == Tab.ALL ? Modules.all() : Modules.byCategory(tab == Tab.HUD ? Module.Category.HUD : Module.Category.GAME);
+        if (tab.modules() || (tab == Tab.LOOK && lookSub == 0)) {
+            List<Module> list = modulesOf(tab);
             int on = 0;
             for (Module m : list) if (m.isEnabled()) on++;
-            return on + "/" + list.size() + " aktywne";
+            return on + " z " + list.size() + " włączonych";
         }
         if (tab == Tab.WAYPOINTS) {
             Game g = VoidCore.game();
@@ -523,9 +580,9 @@ public final class GuiController {
         if (tab == Tab.AUTOTEXT) {
             int used = 0;
             for (String s : AutoText.TEXTS) if (s != null && !s.trim().isEmpty()) used++;
-            return used + "/" + AutoText.SLOTS + " zajęte";
+            return used + " z " + AutoText.SLOTS + " zajętych";
         }
-        return "";
+        return tab == Tab.LOOK ? LOOK_SUBS[lookSub] : "";
     }
 
     private void switchTab(Tab t) {
@@ -533,87 +590,172 @@ public final class GuiController {
         tab = t;
         lastTab = t;
         scroll = 0;
+        filter = 0;
         anims.put("scroll", 0f);
         editing = -1;
         binding = null;
         finishWpEdit();
-        if (t != Tab.ALL && t != Tab.HUD && t != Tab.GAME) search = "";
+        if (!t.modules() && t != Tab.LOOK) search = "";
         tabChangedAt = System.currentTimeMillis();
     }
 
     // ───────────── Zakładki ─────────────
 
     private int renderModules(Gfx g, int mx, int my, int x, int y, int w, int clipTop, int clipBottom, Tab which) {
-        List<Module> source = which == Tab.ALL ? Modules.all()
-                : Modules.byCategory(which == Tab.HUD ? Module.Category.HUD : Module.Category.GAME);
         List<Module> list = new ArrayList<>();
         String q = search.trim().toLowerCase();
-        for (Module m : source) {
-            if (q.isEmpty() || m.name.toLowerCase().contains(q) || m.description.toLowerCase().contains(q)) list.add(m);
+        for (Module m : q.isEmpty() ? modulesOf(which) : Modules.all()) {
+            if (!q.isEmpty() && !(m.name.toLowerCase().contains(q) || m.description.toLowerCase().contains(q))) continue;
+            if (filter == 1 && !m.isEnabled() || filter == 2 && m.isEnabled()) continue;
+            list.add(m);
         }
         if (list.isEmpty()) {
-            text(g, "Brak modułów dla „" + search + "”", x + (w - g.width("Brak modułów dla „" + search + "”")) / 2, y + 40, MUTED, false);
+            String msg = !q.isEmpty() ? "Brak modułów dla „" + search + "”" : filter == 1 ? "Nic tu nie jest włączone" : "Wszystko włączone";
+            text(g, msg, x + (w - tw(g, msg)) / 2, y + 40, MUTED, false);
             return 60;
         }
-        int gap = 7;
-        int cols = w >= 330 ? 3 : 2;
+        if (selected == null || !list.contains(selected) && q.isEmpty() && filter == 0) selected = list.get(0);
+        int gap = 6;
+        int cols = w >= 250 ? 2 : 1;
         int cardW = (w - gap * (cols - 1)) / cols;
-        int cardH = 64;
+        int cardH = 34;
         for (int i = 0; i < list.size(); i++) {
             Module m = list.get(i);
             float st = stagger(i);
             int cx = x + (i % cols) * (cardW + gap);
-            int cy = y + (i / cols) * (cardH + gap) + (int) ((1 - st) * 10);
+            int cy = y + (i / cols) * (cardH + gap) + (int) ((1 - st) * 8);
             boolean ok = m.available();
-            if (!ok) st *= 0.45f; // niedostępne w tej wersji – wyszarzone
+            if (!ok) st *= 0.45f;
             boolean visible = cy + cardH > clipTop && cy < clipBottom;
             boolean hover = visible && mx >= cx && mx < cx + cardW && my >= cy && my < cy + cardH && my >= clipTop && my < clipBottom;
             float hv = anim("h" + m.id, hover ? 1 : 0, 14f);
             float on = anim("t" + m.id, m.isEnabled() ? 1 : 0, 12f);
-            int top = cy - (int) (hv * 2);
+            float sel = anim("s" + m.id, m == selected && showRight() ? 1 : 0, 12f);
 
-            // poświata pod kartą (włączony / najechany)
-            float glow = Math.max(on * 0.6f, hv);
-            if (glow > 0.02f) round(g, cx - 2, top - 2, cx + cardW + 2, top + cardH + 2, 9, a(Theme.accent((int) (38 * glow)), st));
-            // szklana karta z jaśniejszą górą
-            round(g, cx, top, cx + cardW, top + cardH, 7, a(lerpColor(CARD, CARD_HOVER, hv), st));
-            g.gradient(cx + 2, top + 1, cx + cardW - 2, top + cardH / 2, a(lerpColor(0x0CFFFFFF, Theme.accent(26), on), st), a(0x00000000));
-            g.fill(cx + 6, top, cx + cardW - 6, top + 1, a(lerpColor(0x18FFFFFF, Theme.accent(170), on), st));
-            roundOutline(g, cx, top, cx + cardW, top + cardH, 7, a(lerpColor(0x14FFFFFF, Theme.accent(210), Math.max(hv * 0.85f, on * 0.4f)), st));
+            int bg = lerpColor(lerpColor(CARD, CARD_HOVER, hv), lerpColor(CARD, deep(), 0.16f), on);
+            round(g, cx, cy, cx + cardW, cy + cardH, 7, a(bg, st));
+            roundOutline(g, cx, cy, cx + cardW, cy + cardH, 7, a(lerpColor(lerpColor(LINE, Theme.accent(70), on), Theme.accent(230), Math.max(sel, hv * 0.5f)), st));
 
-            // ikona w kafelku z gradientem
-            int tileS = 24, tx = cx + 8, tyy = top + 8;
-            if (on > 0.02f) round(g, tx - 2, tyy - 2, tx + tileS + 2, tyy + tileS + 2, 8, a(Theme.accent((int) (60 * on)), st));
-            round(g, tx, tyy, tx + tileS, tyy + tileS, 6, a(lerpColor(0xFF2A1F45, 0xFF7C3AED, on), st));
-            g.gradient(tx + 2, tyy + 1, tx + tileS - 2, tyy + tileS / 2, a(0x2AFFFFFF, st), a(0x00FFFFFF));
+            // ikona w kafelku
+            int ts = 20, tx = cx + 7, tyy = cy + 7;
+            round(g, tx, tyy, tx + ts, tyy + ts, 6, a(lerpColor(0xFF221B31, lerpColor(deep(), 0xFF000000, 0.35f), on), st));
             int[] ic = ICONS.getOrDefault(m.id, Tab.ALL.icon);
-            icon(g, ic, tx + 4, tyy + 4, 3, a(lerpColor(0xFFB9A6D6, 0xFFFFFFFF, on), st));
-
-            // nazwa i stan
-            int nx = tx + tileS + 7, nw = cx + cardW - 6 - nx;
-            text(g, ellipsis(g, m.name, nw), nx, tyy + 3, TEXT, false, st);
-            text(g, !ok ? "Niedostępny" : m.isEnabled() ? "Włączony" : "Wyłączony", nx, tyy + 14, lerpColor(DIM, Theme.accent(), on), false, st);
-
-            // opis (jedna linia) i przełącznik jak w launcherze
-            int by = top + cardH - 18;
-            String tag = m.category == Module.Category.HUD ? "HUD" : "GRA";
-            int tw = g.width(tag) + 10;
-            round(g, cx + 8, by, cx + 8 + tw, by + 12, 4, a(lerpColor(0xFF231838, Theme.accent(60), on), st));
-            text(g, tag, cx + 13, by + 2, lerpColor(DIM, 0xFFE9D5FF, on), false, st);
-            int swx = cx + cardW - 30;
-            if (on > 0.02f) round(g, swx - 2, by - 2, swx + 24, by + 14, 8, a(Theme.accent((int) (70 * on)), st));
-            toggle(g, swx, by, on, st);
+            icon(g, ic, tx + 5, tyy + 5, 2, a(lerpColor(MUTED, 0xFFFFFFFF, on), st));
+            int nx = tx + ts + 7, nw = cx + cardW - 34 - nx;
+            text(g, ellipsis(g, m.name, nw), nx, cy + 8, TEXT, false, st);
+            text(g, ellipsis(g, ok ? m.description : m.unavailableReason(), nw), nx, cy + 19, DIM, false, st);
+            toggle(g, cx + cardW - 28, cy + 11, on, st);
 
             if (visible) {
-                hits.add(new Hit(cx, Math.max(top, clipTop), cx + cardW, Math.min(top + cardH, clipBottom), () -> {
+                hits.add(new Hit(cx, Math.max(cy, clipTop), cx + cardW, Math.min(cy + cardH, clipBottom), () -> {
+                    selected = m;
                     if (!m.available()) return;
                     m.toggle();
                     Config.save();
-                }, m.name + " – " + (ok ? m.description : m.unavailableReason())));
+                }, m.name + " – " + (ok ? m.description : m.unavailableReason())).right(() -> selected = m));
             }
         }
         int rows = (list.size() + cols - 1) / cols;
-        return rows * (cardH + gap) - gap;
+        return rows * (cardH + gap) - gap + 4;
+    }
+
+    // ───────────── Panel ustawień modułu ─────────────
+
+    private void renderSettingsPanel(Gfx g, int mx, int my, int x, int y, int w, int h) {
+        g.fill(x, y + 10, x + 1, y + h - 10, a(LINE));
+        Module m = selected;
+        int ix = x + 12, iw = w - 24, yy = y + 14;
+        if (m == null) {
+            text(g, "Wybierz moduł", ix, yy, MUTED, false);
+            return;
+        }
+        bold(g, ellipsis(g, m.name, iw), ix, yy, TEXT);
+        yy += 12;
+        for (String line : wrap(g, m.available() ? m.description : m.unavailableReason(), iw, 3)) {
+            text(g, line, ix, yy, DIM, false);
+            yy += 10;
+        }
+        yy += 6;
+        yy = settingToggle(g, mx, my, ix, yy, iw, "Włączony", m.isEnabled(), () -> { if (m.available()) m.toggle(); });
+
+        if (m instanceof HudModule) {
+            HudModule hm = (HudModule) m;
+            yy = settingToggle(g, mx, my, ix, yy, iw, "Tło HUD", Theme.hudBackground, () -> Theme.hudBackground = !Theme.hudBackground);
+            yy = settingToggle(g, mx, my, ix, yy, iw, "Cień tekstu", Theme.textShadow, () -> Theme.textShadow = !Theme.textShadow);
+            text(g, "Kolor akcentu", ix, yy + 2, MUTED, false);
+            yy += 13;
+            for (int i = 0; i < Theme.ACCENTS.length; i++) {
+                final int idx = i;
+                int sx = ix + i * 17;
+                boolean on = i == Math.floorMod(Theme.accentIndex, Theme.ACCENTS.length);
+                if (on) round(g, sx - 2, yy - 2, sx + 14, yy + 14, 6, a(0xFFFFFFFF));
+                round(g, sx, yy, sx + 12, yy + 12, 5, a(Theme.ACCENTS[i]));
+                hits.add(new Hit(sx - 2, yy - 2, sx + 14, yy + 14, () -> { Theme.accentIndex = idx; Config.save(); }, Theme.ACCENT_NAMES[i]));
+            }
+            yy += 20;
+            // podgląd: prawdziwy element HUD na tle świata
+            int ph = 34;
+            if (yy + ph + 44 < y + h) {
+                text(g, "Podgląd", ix, yy, MUTED, false);
+                yy += 11;
+                round(g, ix, yy, ix + iw, yy + ph, 6, a(0xFF0B0814));
+                g.gradient(ix + 1, yy + 1, ix + iw - 1, yy + ph - 1, a(0xFF1E2B4A), a(0xFF2D4B2A));
+                if (alpha > 0.8f && hm.isEnabled()) {
+                    int ox = hm.x, oy = hm.y;
+                    try {
+                        int ew = hm.width(g), eh = hm.height(g);
+                        if (ew <= iw - 8 && eh <= ph - 4) {
+                            hm.x = ix + (iw - ew) / 2;
+                            hm.y = yy + (ph - eh) / 2;
+                            g.scissor(ix, yy, ix + iw, yy + ph);
+                            hm.render(g, VoidCore.game());
+                            g.noScissor();
+                        } else {
+                            text(g, "Za duży na podgląd", ix + 6, yy + 13, DIM, false);
+                        }
+                    } catch (Throwable ignored) {
+                    } finally {
+                        hm.x = ox;
+                        hm.y = oy;
+                    }
+                } else {
+                    text(g, hm.isEnabled() ? "" : "Wyłączony", ix + 6, yy + 13, DIM, false);
+                }
+                yy += ph + 8;
+            }
+            if (hm.draggable()) {
+                yy = settingButton(g, mx, my, ix, yy, iw, "Przesuń na ekranie", () -> { editHud = true; editing = -1; });
+                settingButton(g, mx, my, ix, yy, iw, "Wróć na miejsce", () -> { hm.x = hm.defaultX; hm.y = hm.defaultY; Config.save(); });
+            }
+        } else {
+            Runnable open = null;
+            String label = "Otwórz ustawienia";
+            if (m == Modules.CROSSHAIR || m == Modules.OUTLINE) open = () -> { switchTab(Tab.LOOK); lookSub = 2; };
+            else if (m == Modules.VIEWMODEL) open = () -> { switchTab(Tab.LOOK); lookSub = 3; };
+            else if (m == Modules.WAYPOINTS) open = () -> switchTab(Tab.WAYPOINTS);
+            else if (m == Modules.AUTOTEXT) open = () -> switchTab(Tab.AUTOTEXT);
+            else if (m == Modules.ZOOM || m == Modules.FREELOOK) { open = () -> switchTab(Tab.OPTIONS); label = "Zmień klawisz"; }
+            if (open != null) settingButton(g, mx, my, ix, yy + 4, iw, label, open);
+        }
+    }
+
+    private int settingToggle(Gfx g, int mx, int my, int x, int y, int w, String label, boolean value, Runnable action) {
+        float on = anim("st" + label, value ? 1 : 0, 12f);
+        text(g, label, x, y + 3, TEXT, false);
+        toggle(g, x + w - 20, y + 1, on, 1f);
+        hits.add(new Hit(x - 2, y - 2, x + w + 2, y + 15, () -> { action.run(); Config.save(); }, null));
+        return y + 18;
+    }
+
+    private int settingButton(Gfx g, int mx, int my, int x, int y, int w, String label, Runnable action) {
+        boolean hov = mx >= x && mx < x + w && my >= y && my < y + 17;
+        float hv = anim("sb" + label, hov ? 1 : 0, 14f);
+        round(g, x, y, x + w, y + 17, 5, a(lerpColor(0x12FFFFFF, Theme.accent(60), hv)));
+        roundOutline(g, x, y, x + w, y + 17, 5, a(lerpColor(LINE, Theme.accent(200), hv)));
+        String t = ellipsis(g, label, w - 10);
+        text(g, t, x + (w - tw(g, t)) / 2, y + 5, TEXT, false);
+        hits.add(new Hit(x, y, x + w, y + 17, () -> { action.run(); Config.save(); }, null));
+        return y + 21;
     }
 
     private int renderSky(Gfx g, int mx, int my, int x, int y, int w, int clipTop, int clipBottom) {
@@ -774,10 +916,10 @@ public final class GuiController {
         optionRow(g, mx, my, x, y + (h + gap) * row, w, h, row++, "Pozycje HUD", "Resetuj",
                 () -> { for (HudModule m : Modules.hud()) { m.x = m.defaultX; m.y = m.defaultY; } }, clipTop, clipBottom, null);
         int ty = y + (h + gap) * row + 2;
-        if (!fpsStatus.isEmpty()) { text(g, g.trim(fpsStatus, w), x, ty, Theme.accent(), false); ty += 11; }
+        if (!fpsStatus.isEmpty()) { text(g, cut(g, fpsStatus, w), x, ty, Theme.accent(), false); ty += 11; }
         String st = SkinUploader.status;
-        if (st != null && !st.isEmpty()) { text(g, g.trim(st, w), x, ty, Theme.accent(), false); ty += 11; }
-        text(g, g.trim("Menu i AutoText: Opcje gry → Sterowanie → Void Client", w), x, ty, DIM, false);
+        if (st != null && !st.isEmpty()) { text(g, cut(g, st, w), x, ty, Theme.accent(), false); ty += 11; }
+        text(g, cut(g, "Menu i AutoText: Opcje gry → Sterowanie → Void Client", w), x, ty, DIM, false);
         return ty - y + 12;
     }
 
@@ -876,20 +1018,20 @@ public final class GuiController {
         int gap = 5;
         if (!game.hasPlayer()) {
             String m = "Wejdź do świata albo na serwer, żeby dodawać waypointy";
-            text(g, m, x + (w - g.width(m)) / 2, y + 40, MUTED, false);
+            text(g, m, x + (w - tw(g, m)) / 2, y + 40, MUTED, false);
             return 60;
         }
         // przycisk „Dodaj tutaj”
         String add = "+  Dodaj waypoint tutaj";
         String hint = "klawisz: " + Keybinds.name(Keybinds.waypoint);
         String typed = "#  Wpisz kordy";
-        int bw2 = g.width(typed) + 22;
+        int bw2 = tw(g, typed) + 22;
         int w1 = w - bw2 - 6;
         boolean hov = mx >= x && mx < x + w1 && my >= y && my < y + h && my >= clipTop && my < clipBottom;
         float hv = anim("wpAdd", hov ? 1 : 0, 14f);
         round(g, x, y, x + w1, y + h, 6, a(lerpColor(0xFF6D28D9, 0xFF8B45F5, hv)));
         text(g, add, x + 10, y + 8, 0xFFFFFFFF, false);
-        if (g.width(add) + g.width(hint) + 30 < w1) text(g, hint, x + w1 - 10 - g.width(hint), y + 8, 0xFFE9D5FF, false);
+        if (tw(g, add) + tw(g, hint) + 30 < w1) text(g, hint, x + w1 - 10 - tw(g, hint), y + 8, 0xFFE9D5FF, false);
         int x2 = x + w1 + 6;
         boolean hov2 = mx >= x2 && mx < x + w && my >= y && my < y + h && my >= clipTop && my < clipBottom;
         float hv2 = anim("wpAdd2", hov2 ? 1 : 0, 14f);
@@ -915,7 +1057,7 @@ public final class GuiController {
         int ry = y + h + gap + 2;
         if (list.isEmpty()) {
             String m = "Brak waypointów w tym świecie";
-            text(g, m, x + (w - g.width(m)) / 2, ry + 14, DIM, false);
+            text(g, m, x + (w - tw(g, m)) / 2, ry + 14, DIM, false);
             return ry + 30 - y;
         }
         boolean blink = (System.currentTimeMillis() / 500) % 2 == 0;
@@ -965,7 +1107,7 @@ public final class GuiController {
             int infoX;
             if (ex2) {
                 // trzy osobne pola: X [   ]  Y [   ]  Z [   ]
-                int boxW = g.width("-30000000") + 8, lblW = g.width("X") + 4, gapF = 6;
+                int boxW = tw(g, "-30000000") + 8, lblW = tw(g, "X") + 4, gapF = 6;
                 int total = 3 * (lblW + boxW) + 2 * gapF;
                 infoX = ex - 8 - total;
                 int fx = infoX;
@@ -977,9 +1119,9 @@ public final class GuiController {
                     round(g, bx1, yy + 4, bx2, yy + h - 4, 4, a(0xFF0B0716, st));
                     roundOutline(g, bx1, yy + 4, bx2, yy + h - 4, 4, a(bad ? 0xFFF87171 : act ? Theme.accent(255) : 0x30FFFFFF, st));
                     String val = xyzBuf[k];
-                    if (act && xyzFresh && !val.isEmpty()) g.fill(bx1 + 3, yy + 6, bx1 + 5 + g.width(val), yy + h - 6, a(Theme.accent(90), st));
+                    if (act && xyzFresh && !val.isEmpty()) g.fill(bx1 + 3, yy + 6, bx1 + 5 + tw(g, val), yy + h - 6, a(Theme.accent(90), st));
                     text(g, val, bx1 + 4, yy + 8, bad ? 0xFFFCA5A5 : TEXT, false, st);
-                    if (act && blink) g.fill(bx1 + 4 + g.width(val) + 1, yy + 6, bx1 + 5 + g.width(val) + 1, yy + 17, a(TEXT));
+                    if (act && blink) g.fill(bx1 + 4 + tw(g, val) + 1, yy + 6, bx1 + 5 + tw(g, val) + 1, yy + 17, a(TEXT));
                     if (visible) hits.add(new Hit(fx, Math.max(yy, clipTop), bx2, Math.min(yy + h, clipBottom), () -> {
                         xyzField = field;
                         xyzFresh = true;
@@ -990,15 +1132,15 @@ public final class GuiController {
             } else {
                 String dist = "  ·  " + Waypoints.distance(game, p) + " m";
                 String[] parts = {"X " + p.x, "Y " + p.y, "Z " + p.z};
-                int fieldW = g.width(parts[0] + "  " + parts[1] + "  " + parts[2]);
-                infoX = ex - 8 - fieldW - g.width(dist);
+                int fieldW = tw(g, parts[0] + "  " + parts[1] + "  " + parts[2]);
+                infoX = ex - 8 - fieldW - tw(g, dist);
                 boolean xh = visible && mx >= infoX - 2 && mx < infoX + fieldW + 2 && my >= yy && my < yy + h;
                 int tx = infoX;
                 for (int k = 0; k < 3; k++) {
                     text(g, XYZ_NAMES[k], tx, yy + 8, xh ? Theme.accent(255) : DIM, false, st);
                     String num = String.valueOf(k == 0 ? p.x : k == 1 ? p.y : p.z);
-                    text(g, num, tx + g.width("X "), yy + 8, xh ? TEXT : MUTED, false, st);
-                    tx += g.width(parts[k] + "  ");
+                    text(g, num, tx + tw(g, "X "), yy + 8, xh ? TEXT : MUTED, false, st);
+                    tx += tw(g, parts[k] + "  ");
                 }
                 if (xh) g.fill(infoX, yy + 18, infoX + fieldW, yy + 19, a(Theme.accent(160), st));
                 text(g, dist, infoX + fieldW, yy + 8, MUTED, false, st);
@@ -1013,9 +1155,9 @@ public final class GuiController {
             int nw = infoX - 8 - nx;
             String name = p.name == null ? "" : p.name;
             String fit = name;
-            while (g.width(fit) > nw - 4 && fit.length() > 1) fit = ed ? fit.substring(1) : fit.substring(0, fit.length() - 1);
+            while (tw(g, fit) > nw - 4 && fit.length() > 1) fit = ed ? fit.substring(1) : fit.substring(0, fit.length() - 1);
             text(g, fit, nx, yy + 8, TEXT, false, st);
-            if (ed && blink) g.fill(nx + g.width(fit) + 1, yy + 6, nx + g.width(fit) + 2, yy + 17, a(TEXT));
+            if (ed && blink) g.fill(nx + tw(g, fit) + 1, yy + 6, nx + tw(g, fit) + 2, yy + 17, a(TEXT));
             if (visible) hits.add(new Hit(nx - 2, Math.max(yy, clipTop), infoX - 4, Math.min(yy + h, clipBottom), () -> {
                 finishWpEdit();
                 finishXyz();
@@ -1025,7 +1167,7 @@ public final class GuiController {
         int end = ry + list.size() * (h + gap) + 2;
         String note = Modules.WAYPOINTS.isEnabled() ? "Znaczniki pokazują się na ekranie z nazwą i odległością"
                 : "Moduł Waypointy jest wyłączony (zakładka Gra) – znaczniki są ukryte";
-        text(g, g.trim(note, w), x, end, DIM, false);
+        text(g, cut(g, note, w), x, end, DIM, false);
         return end - y + 12;
     }
 
@@ -1036,17 +1178,21 @@ public final class GuiController {
         boolean visible = y + h > clipTop && y < clipBottom;
         boolean hover = visible && mx >= x && mx < x + w && my >= y && my < y + h && my >= clipTop && my < clipBottom;
         float hv = anim("o" + idx, hover ? 1 : 0, 14f);
-        if (hv > 0.02f) round(g, x - 2, y - 2, x + w + 2, y + h + 2, 8, a(Theme.accent((int) (34 * hv)), st));
-        round(g, x, y, x + w, y + h, 6, a(lerpColor(CARD, CARD_HOVER, hv), st));
-        g.fill(x + 6, y, x + w - 6, y + 1, a(0x16FFFFFF, st));
-        roundOutline(g, x, y, x + w, y + h, 6, a(hv > 0.02f ? Theme.accent((int) (hv * 150)) : 0x14FFFFFF, st));
-        g.fill(x + 1, y + 5, x + 3, y + h - 5, a(Theme.accent((int) (60 + 150 * hv)), st));
+        round(g, x, y, x + w, y + h, 7, a(lerpColor(CARD, CARD_HOVER, hv), st));
+        roundOutline(g, x, y, x + w, y + h, 7, a(lerpColor(LINE, Theme.accent(150), hv), st));
         text(g, label, x + 10, y + (h - 8) / 2, TEXT, false, st);
-        int vw = g.width(value) + 16;
-        int vx = x + w - vw - 5;
-        round(g, vx, y + 4, x + w - 5, y + h - 4, 5, a(lerpColor(0xFF7C3AED, 0xFF9F67FF, hv), st));
-        g.gradient(vx + 2, y + 5, x + w - 7, y + h / 2, a(0x2AFFFFFF, st), a(0x00FFFFFF));
-        text(g, value, vx + 8, y + (h - 8) / 2, TEXT, false, st);
+        boolean onOff = value.equals("Włączony") || value.equals("Włączone") || value.equals("Wyłączony") || value.equals("Wyłączone")
+                || value.equals("Tak") || value.equals("Nie");
+        if (onOff) {
+            boolean on = value.startsWith("Włącz") || value.equals("Tak");
+            toggle(g, x + w - 30, y + (h - 12) / 2, anim("ot" + label, on ? 1 : 0, 12f), st);
+        } else {
+            int vw = tw(g, value) + 16;
+            int vx = x + w - vw - 6;
+            round(g, vx, y + 4, x + w - 6, y + h - 4, 5, a(lerpColor(0x14FFFFFF, Theme.accent(70), hv), st));
+            roundOutline(g, vx, y + 4, x + w - 6, y + h - 4, 5, a(lerpColor(Theme.accent(60), Theme.accent(200), hv), st));
+            text(g, value, vx + 8, y + (h - 8) / 2, lerpColor(Theme.accent(), 0xFFFFFFFF, hv), false, st);
+        }
         if (visible) {
             hits.add(new Hit(x, Math.max(y, clipTop), x + w, Math.min(y + h, clipBottom), () -> {
                 action.run();
@@ -1067,7 +1213,7 @@ public final class GuiController {
             boolean on = editing == i;
             float ed = anim("e" + i, on ? 1 : 0, 16f);
             String key = VoidCore.game().autoTextKey(i);
-            int keyW = Math.max(46, g.width(key) + 12);
+            int keyW = Math.max(46, tw(g, key) + 12);
             int boxX = x + 20;
             int boxW = w - 20 - keyW - 4;
 
@@ -1082,16 +1228,16 @@ public final class GuiController {
             String t = AutoText.TEXTS[i];
             boolean placeholder = t.isEmpty() && !on;
             String fit = placeholder ? "np. /home albo gg wp" : t;
-            while (g.width(fit) > boxW - 14 && fit.length() > 1) fit = fit.substring(1);
+            while (tw(g, fit) > boxW - 14 && fit.length() > 1) fit = fit.substring(1);
             text(g, fit, boxX + 6, ry + 8, placeholder ? DIM : TEXT, false, st);
             if (on && blink) {
-                int cx = boxX + 6 + (placeholder ? 0 : g.width(fit)) + 1;
+                int cx = boxX + 6 + (placeholder ? 0 : tw(g, fit)) + 1;
                 g.fill(cx, ry + 6, cx + 1, ry + 17, a(TEXT));
             }
 
             round(g, x + w - keyW, ry, x + w, ry + h, 6, a(CARD, st));
             boolean bound = !key.equals("-");
-            text(g, g.trim(bound ? key : "brak klawisza", keyW - 10), x + w - keyW + 6, ry + 8, bound ? Theme.accent() : DIM, false, st);
+            text(g, cut(g, bound ? key : "brak klawisza", keyW - 10), x + w - keyW + 6, ry + 8, bound ? Theme.accent() : DIM, false, st);
 
             if (visible) {
                 hits.add(new Hit(boxX, Math.max(ry, clipTop), boxX + boxW, Math.min(ry + h, clipBottom), () -> editing = slot,
@@ -1099,7 +1245,7 @@ public final class GuiController {
             }
         }
         int endY = y + AutoText.SLOTS * (h + gap) + 2;
-        text(g, g.trim(Modules.AUTOTEXT.isEnabled() ? "Enter – zapisz · Ctrl+V – wklej · Ctrl+Backspace – wyczyść"
+        text(g, cut(g, Modules.AUTOTEXT.isEnabled() ? "Enter – zapisz · Ctrl+V – wklej · Ctrl+Backspace – wyczyść"
                 : "Moduł AutoText jest wyłączony (zakładka Gra)", w), x, endY, DIM, false);
         return endY - y + 12;
     }
@@ -1108,7 +1254,7 @@ public final class GuiController {
 
     private void renderEditor(Gfx g, int mx, int my) {
         String info = "Przeciągaj elementy HUD  ·  ESC – powrót do menu";
-        int iw = g.width(info) + 20;
+        int iw = tw(g, info) + 20;
         round(g, (width - iw) / 2, 6, (width + iw) / 2, 24, 6, a(0xE0120A22));
         text(g, info, (width - iw) / 2 + 10, 11, TEXT, false);
 
@@ -1128,7 +1274,7 @@ public final class GuiController {
                 g.fill(h.x, h.y, h.x + w, h.y + hh, a(0x50000000));
                 g.fill(h.x, h.y, h.x + w, h.y + 10, a(0x70000000));
                 String sb = "Scoreboard";
-                text(g, sb, h.x + (w - g.width(sb)) / 2, h.y + 1, 0xFFFFFFFF, true);
+                text(g, sb, h.x + (w - tw(g, sb)) / 2, h.y + 1, 0xFFFFFFFF, true);
                 for (int i = 0; i < 6; i++) g.fill(h.x + 4, h.y + 16 + i * 12, h.x + 4 + 40 + (i * 23) % 50, h.y + 22 + i * 12, a(0x40FFFFFF));
             }
             roundOutline(g, h.x - 2, h.y - 2, h.x + w + 2, h.y + hh + 2, 3, a(Theme.accent((int) (hover ? 255 : 90 + 90 * pulse))));
@@ -1160,6 +1306,10 @@ public final class GuiController {
             if (button >= 2) { setBinding(Keybinds.MOUSE + button); return true; }
             binding = null; // klik gdzie indziej – anuluj
             if (button != 0) return true;
+        }
+        if (button == 1 && !editHud) {
+            for (Hit h : new ArrayList<>(hits)) if (h.right != null && h.contains(mx, my)) { h.right.run(); return true; }
+            return false;
         }
         if (button != 0) return editHud;
         if (editHud) {
@@ -1296,7 +1446,7 @@ public final class GuiController {
             return true;
         }
         if (editing < 0) {
-            if (editHud || closingAt >= 0 || (tab != Tab.ALL && tab != Tab.HUD && tab != Tab.GAME)) return false;
+            if (editHud || closingAt >= 0 || !(tab.modules() || (tab == Tab.LOOK && lookSub == 0))) return false;
             if (codepoint < 32 || codepoint == 127 || search.length() >= 24) return true;
             search += new String(Character.toChars(codepoint));
             scroll = 0;

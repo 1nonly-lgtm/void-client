@@ -31,6 +31,18 @@ public interface Gfx {
     /** Tekstura z zasobów (np. "voidclient:textures/gui/sky/noc.png") rozciągnięta na w×h. */
     default void image(String id, int x, int y, int w, int h, int texW, int texH) {}
 
+    /** Tekst gładką czcionką menu (Inter). Gdy wersja gry jej nie obsłuży – zwykła czcionka. */
+    default void uiText(String text, int x, int y, int argb, boolean bold) { text(text, x, y, argb, false); }
+
+    default int uiWidth(String text, boolean bold) { return width(text); }
+
+    default String uiTrim(String text, int maxWidth, boolean bold) {
+        if (uiWidth(text, bold) <= maxWidth) return text;
+        int lo = 0, hi = text.length();
+        while (lo < hi) { int mid = (lo + hi + 1) / 2; if (uiWidth(text.substring(0, mid), bold) <= maxWidth) lo = mid; else hi = mid - 1; }
+        return text.substring(0, lo);
+    }
+
     /** Przedmiot z liczbą sztuk w rogu (jak w ekwipunku). */
     default void itemWithCount(Object stack, int x, int y) { item(stack, x, y); }
 }

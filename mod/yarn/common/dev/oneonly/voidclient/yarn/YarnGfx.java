@@ -26,6 +26,10 @@ public final class YarnGfx implements Gfx {
 
     @Override public String trim(String text, int maxWidth) { return tr.trimToWidth(text, maxWidth); }
 
+    @Override public void uiText(String text, int x, int y, int argb, boolean bold) { ctx.drawText(tr, UiFont.text(text, bold), x, y, argb, false); }
+
+    @Override public int uiWidth(String text, boolean bold) { return tr.getWidth(UiFont.text(text, bold)); }
+
     @Override public void item(Object stack, int x, int y) { ctx.drawItem((ItemStack) stack, x, y); }
 
     @Override public void scissor(int x1, int y1, int x2, int y2) { ctx.enableScissor(x1, y1, x2, y2); }

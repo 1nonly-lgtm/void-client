@@ -33,6 +33,10 @@ public final class MojangGfx implements Gfx {
 
     @Override public String trim(String text, int maxWidth) { return font.plainSubstrByWidth(text, maxWidth); }
 
+    @Override public void uiText(String text, int x, int y, int argb, boolean bold) { g.text(font, UiFont.text(text, bold), x, y, argb, false); }
+
+    @Override public int uiWidth(String text, boolean bold) { return font.width(UiFont.text(text, bold)); }
+
     /** Rysowanie przedmiotu – nazwa metody zmienia się między wersjami, więc szukamy jej po parametrach. */
     @Override
     public void item(Object stack, int x, int y) {
