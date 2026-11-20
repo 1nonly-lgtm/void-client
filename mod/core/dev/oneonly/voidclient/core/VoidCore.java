@@ -78,6 +78,11 @@ public final class VoidCore {
         try { Modules.ZOOM.frame(game); } catch (Throwable ignored) {}
         if (game.hudHidden()) return;
         Waypoints.render(g, game, screenW, screenH);
+        if (game.hasPlayer()) {
+            if (Modules.TNT.isEnabled()) try { WorldInfo.tnt(g, game, screenW, screenH); } catch (Throwable ignored) {}
+            if (Modules.MINING.isEnabled() && !game.screenOpen()) try { WorldInfo.mining(g, game, screenW, screenH); } catch (Throwable ignored) {}
+            if (Modules.SATURATION.isEnabled() && !game.screenOpen()) try { WorldInfo.saturation(g, game, screenW, screenH); } catch (Throwable ignored) {}
+        }
         for (HudModule h : Modules.hud()) {
             if (!h.isEnabled()) continue;
             if (h.draggable()) {

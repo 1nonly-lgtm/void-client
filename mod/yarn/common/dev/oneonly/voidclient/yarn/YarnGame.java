@@ -305,4 +305,58 @@ public final class YarnGame implements Game {
         ItemStack s = p.getInventory().getStack(index);
         return s.isEmpty() ? null : s;
     }
+
+    // kopanie: pola menedżera interakcji szukamy po typach (pierwszy float = postęp, boolean = czy kopie, BlockPos = blok)
+    private static java.lang.reflect.Field fProgress, fBreaking, fPos;
+    private static boolean miningLookup;
+
+    private static void lookupMining(Class<?> c, Class<?> posType) {
+        miningLookup = true;
+        for (java.lang.reflect.Field f : c.getDeclaredFields()) {
+            if (java.lang.reflect.Modifier.isStatic(f.getModifiers())) continue;
+            if (f.getType() == float.class && fProgress == null) fProgress = f;
+            else if (f.getType() == boolean.class && fBreaking == null) fBreaking = f;
+            else if (f.getType() == posType && fPos == null) fPos = f;
+        }
+        for (java.lang.reflect.Field f : new java.lang.reflect.Field[]{fProgress, fBreaking, fPos}) if (f != null) f.setAccessible(true);
+    }
+
+    @Override
+    public java.util.List<double[]> tntFuses() {
+        java.util.List<double[]> out = new java.util.ArrayList<>();
+        var w = mc().world;
+        if (w == null) return out;
+        for (net.minecraft.entity.Entity e : w.getEntities()) {
+            if (e instanceof net.minecraft.entity.TntEntity t) out.add(new double[]{t.getX(), t.getY(), t.getZ(), t.getFuse()});
+        }
+        return out;
+    }
+
+    @Override
+    public float[] mining() {
+        var im = mc().interactionManager;
+        if (im == null) return null;
+        try {
+            if (!miningLookup) lookupMining(im.getClass(), net.minecraft.util.math.BlockPos.class);
+            if (fProgress == null || fBreaking == null || fPos == null || !fBreaking.getBoolean(im)) return null;
+            net.minecraft.util.math.BlockPos p = (net.minecraft.util.math.BlockPos) fPos.get(im);
+            return p == null ? null : new float[]{fProgress.getFloat(im), p.getX(), p.getY(), p.getZ()};
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    @Override
+    public float saturation() {
+        var p = mc().player;
+        var im = mc().interactionManager;
+        if (p == null || im == null || !im.getCurrentGameMode().isSurvivalLike()) return -1;
+        return p.getHungerManager().getSaturationLevel();
+    }
+
+    @Override
+    public int food() {
+        var p = mc().player;
+        return p == null ? 20 : p.getHungerManager().getFoodLevel();
+    }
 }

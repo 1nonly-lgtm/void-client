@@ -47,6 +47,9 @@ public final class Modules {
     public static final Simple SHULKER = add(new Simple("shulker", "Podgląd shulkera", "Najedź na shulkera w ekwipunku, żeby zobaczyć co ma w środku", true));
     public static final MotionBlur MOTION_BLUR = add(new MotionBlur());
     public static final Simple VIEWMODEL = add(new Simple("viewmodel", "Viewmodel", "Położenie, rozmiar i obrót przedmiotu w ręce (zakładka Widok)", false));
+    public static final TntTimer TNT = add(new TntTimer());
+    public static final Mining MINING = add(new Mining());
+    public static final Simple SATURATION = add(new Simple("saturation", "Nasycenie", "Złota obwódka na pasku głodu – ile jeszcze nie zgłodniejesz", true));
     public static final Simple VOID_ICON = add(new Simple("voidicon", "Ikonka Void przy nicku", "Logo Void przy graczach, którzy też używają Void Client", true));
 
     private Modules() {}
@@ -337,6 +340,16 @@ public final class Modules {
     // ───────────── nowe ─────────────
 
     /** Moduł bez własnej logiki – sprawdzany w innych miejscach (czat, celownik, zrzuty). */
+    public static final class TntTimer extends Module {
+        public boolean radius = false;
+        TntTimer() { super("tntfuse", "Licznik TNT", "Za ile sekund wybuchnie zapalone TNT – kolor od zielonego do czerwonego", Category.GAME, true); }
+    }
+
+    public static final class Mining extends Module {
+        public boolean time = true, bar = true, aboveBlock = false;
+        Mining() { super("mining", "Postęp kopania", "Procent wykopania bloku i czas do końca przy celowniku", Category.GAME, true); }
+    }
+
     public static final class Simple extends Module {
         Simple(String id, String name, String description, boolean on) { super(id, name, description, Category.GAME, on); }
     }

@@ -36,6 +36,7 @@ public final class Config {
         Boolean crossDot, crossOutline;
         Float vmX, vmY, vmZ, vmScale;
         Integer vmRotX, vmRotY, vmRotZ, aspect;
+        Boolean tntRadius, miningTime, miningBar, miningAbove;
         List<Waypoints.Point> waypoints = new ArrayList<>();
         Map<String, Entry> modules = new HashMap<>();
     }
@@ -81,6 +82,10 @@ public final class Config {
             if (d.vmRotY != null) View.rotY = d.vmRotY;
             if (d.vmRotZ != null) View.rotZ = d.vmRotZ;
             if (d.aspect != null) View.aspect = Math.floorMod(d.aspect, View.ASPECTS.length);
+            if (d.tntRadius != null) Modules.TNT.radius = d.tntRadius;
+            if (d.miningTime != null) Modules.MINING.time = d.miningTime;
+            if (d.miningBar != null) Modules.MINING.bar = d.miningBar;
+            if (d.miningAbove != null) Modules.MINING.aboveBlock = d.miningAbove;
             if (d.waypoints != null) {
                 Waypoints.ALL.clear();
                 for (Waypoints.Point p : d.waypoints) if (p != null && p.world != null) Waypoints.ALL.add(p);
@@ -122,6 +127,10 @@ public final class Config {
         d.vmX = View.x; d.vmY = View.y; d.vmZ = View.z; d.vmScale = View.scale;
         d.vmRotX = View.rotX; d.vmRotY = View.rotY; d.vmRotZ = View.rotZ;
         d.aspect = View.aspect;
+        d.tntRadius = Modules.TNT.radius;
+        d.miningTime = Modules.MINING.time;
+        d.miningBar = Modules.MINING.bar;
+        d.miningAbove = Modules.MINING.aboveBlock;
         d.waypoints = new ArrayList<>(Waypoints.ALL);
         for (Module m : Modules.all()) {
             Entry e = new Entry();

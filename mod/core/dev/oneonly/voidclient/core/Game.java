@@ -146,4 +146,16 @@ public interface Game {
 
     /** Przedmiot z ekwipunku gracza (indeksy jak w grze: 9–35 to plecak) albo null, gdy slot pusty. */
     Object invStack(int index);
+
+    /** Zapalone TNT w pobliżu: {x, y, z, ticki do wybuchu}. */
+    default java.util.List<double[]> tntFuses() { return java.util.Collections.emptyList(); }
+
+    /** Kopany blok: {postęp 0–1, x, y, z} albo null, gdy nic nie kopiesz. */
+    default float[] mining() { return null; }
+
+    /** Nasycenie gracza (0–20) albo -1, gdy pasek głodu nie jest widoczny (kreatywny, brak gracza). */
+    default float saturation() { return -1; }
+
+    /** Poziom głodu 0–20. */
+    default int food() { return 20; }
 }

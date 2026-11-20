@@ -347,6 +347,9 @@ public final class GuiController {
         ICONS.put("armorbar", new int[]{0b11011, 0b11111, 0b11111, 0b01110, 0b00100});
         ICONS.put("attack", new int[]{0b00001, 0b00010, 0b10100, 0b01000, 0b10100});
         ICONS.put("scoreboard", new int[]{0b11111, 0b10001, 0b11101, 0b10001, 0b11111});
+        ICONS.put("tntfuse", new int[]{0b00100, 0b01110, 0b11111, 0b11111, 0b01110});
+        ICONS.put("mining", new int[]{0b11110, 0b00110, 0b01010, 0b10000, 0b10000});
+        ICONS.put("saturation", new int[]{0b00110, 0b01111, 0b11111, 0b11110, 0b01100});
         ICONS.put("motionblur", new int[]{0b00111, 0b01110, 0b11100, 0b01110, 0b00111});
     }
 
@@ -732,6 +735,12 @@ public final class GuiController {
                 yy = settingButton(g, mx, my, ix, yy, iw, "Przesuń na ekranie", () -> { editHud = true; editing = -1; });
                 settingButton(g, mx, my, ix, yy, iw, "Wróć na miejsce", () -> { hm.x = hm.defaultX; hm.y = hm.defaultY; Config.save(); });
             }
+        } else if (m == Modules.TNT) {
+            settingToggle(g, mx, my, ix, yy, iw, "Promień wybuchu", Modules.TNT.radius, () -> Modules.TNT.radius = !Modules.TNT.radius);
+        } else if (m == Modules.MINING) {
+            yy = settingToggle(g, mx, my, ix, yy, iw, "Czas do końca", Modules.MINING.time, () -> Modules.MINING.time = !Modules.MINING.time);
+            yy = settingToggle(g, mx, my, ix, yy, iw, "Pasek postępu", Modules.MINING.bar, () -> Modules.MINING.bar = !Modules.MINING.bar);
+            settingToggle(g, mx, my, ix, yy, iw, "Nad blokiem", Modules.MINING.aboveBlock, () -> Modules.MINING.aboveBlock = !Modules.MINING.aboveBlock);
         } else {
             Runnable open = null;
             String label = "Otwórz ustawienia";

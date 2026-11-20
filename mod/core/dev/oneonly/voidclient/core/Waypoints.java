@@ -159,6 +159,33 @@ public final class Waypoints {
         }
     }
 
+    /** Punkt świata → piksel na ekranie ({x, y}) albo null, gdy za kamerą / poza ekranem. Dla TNT, kopania itp. */
+    public static int[] project(Game game, double wx, double wy, double wz, int w, int h) {
+        if (!hasPos) return null;
+        float t = Math.min(1f, (System.nanoTime() - tickAt) / 50_000_000f);
+        double ex = px + (cx - px) * t, ey = py + (cy - py) * t, ez = pz + (cz - pz) * t;
+        float yaw = Freelook.active() ? Freelook.yaw() : game.playerYaw();
+        float pitch = Freelook.active() ? Freelook.pitch() : game.playerPitch();
+        int persp = game.perspective();
+        double[] f = forward(yaw, pitch);
+        if (persp == 1) { ex -= f[0] * 4; ey -= f[1] * 4; ez -= f[2] * 4; }
+        if (persp == 2) { ex += f[0] * 4; ey += f[1] * 4; ez += f[2] * 4; yaw += 180f; pitch = -pitch; f = forward(yaw, pitch); }
+        double yr = Math.toRadians(yaw);
+        double[] r = {-Math.cos(yr), 0, -Math.sin(yr)};
+        double[] u = {r[1] * f[2] - r[2] * f[1], r[2] * f[0] - r[0] * f[2], r[0] * f[1] - r[1] * f[0]};
+        double fov = Math.max(10, Math.min(170, game.fov()));
+        double scale = (h / 2.0) / Math.tan(Math.toRadians(fov) / 2);
+        double dx = wx - ex, dy = wy - ey, dz = wz - ez;
+        double zc = dx * f[0] + dy * f[1] + dz * f[2];
+        if (zc < 0.1) return null;
+        double xc = dx * r[0] + dy * r[1] + dz * r[2];
+        double yc = dx * u[0] + dy * u[1] + dz * u[2];
+        int sx = (int) Math.round(w / 2.0 + xc / zc * scale);
+        int sy = (int) Math.round(h / 2.0 - yc / zc * scale);
+        if (sx < -40 || sx > w + 40 || sy < -40 || sy > h + 40) return null;
+        return new int[]{sx, sy};
+    }
+
     private static double[] forward(float yaw, float pitch) {
         double y = Math.toRadians(yaw), p = Math.toRadians(pitch);
         return new double[]{-Math.sin(y) * Math.cos(p), -Math.sin(p), Math.cos(y) * Math.cos(p)};
