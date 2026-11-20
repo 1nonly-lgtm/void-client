@@ -294,7 +294,8 @@ async function launch(profile, s, emit, onLine) {
     const pack = profile.optimize ? modrinth.FPS_PACK.slice() : withVoid ? ['fabric-api'] : [];
     if (withVoid) pack.push(sky);
     // Mody z przełączników w Opcjach: Replay = ReplayMod, HUD w 60 klatkach = Exordium. Wyłączenie je usuwa.
-    const OPTIONAL = { replaymod: !!s.replay, exordium: !!s.hud60 };
+    // OuyCgP8t = ItemPhysic Lite (przedmioty leżą płasko na ziemi)
+    const OPTIONAL = { replaymod: !!s.replay, exordium: !!s.hud60, OuyCgP8t: s.itemPhysics !== false };
     const idx = modrinth.readIndex(dir);
     for (const [slug, on] of Object.entries(OPTIONAL)) {
       if (on) pack.push(slug);

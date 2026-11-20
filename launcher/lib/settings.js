@@ -29,6 +29,7 @@ const DEFAULTS = {
   hud60: false, // HUD w 60 kl./s – instaluje Exordium z Modrinth
   spotify: true, // moduł Spotify w grze
   replay: false, // ReplayMod z Modrinth
+  itemPhysics: true, // fizyka przedmiotów – ItemPhysic Lite z Modrinth
   cosmetics: { cape: null, wings: null, hat: null, pet: null, fx: null }, // zapis kosmetyków
   emoteSlots: [], // 24 sloty koła emotek (3 strony × 8)
   account: null // { name, uuid, refresh }
@@ -113,7 +114,7 @@ function importStableNow() {
   if (!fs.existsSync(old)) throw new Error('Nie znaleziono ustawień zwykłego launchera Void Client na tym komputerze');
   const o = JSON.parse(fs.readFileSync(old, 'utf8'));
   const d = get();
-  const keep = { cosmetics: d.cosmetics, emoteSlots: d.emoteSlots, perfPreset: d.perfPreset, highPriority: d.highPriority, smoothGC: d.smoothGC, hud60: d.hud60, spotify: d.spotify, replay: d.replay };
+  const keep = { cosmetics: d.cosmetics, emoteSlots: d.emoteSlots, perfPreset: d.perfPreset, highPriority: d.highPriority, smoothGC: d.smoothGC, hud60: d.hud60, spotify: d.spotify, replay: d.replay, itemPhysics: d.itemPhysics };
   for (const [k, v] of Object.entries(o)) if (k in DEFAULTS) d[k] = v;
   Object.assign(d, keep);
   if (!Array.isArray(d.profiles) || !d.profiles.length) d.profiles = structuredClone(DEFAULT_PROFILES);
