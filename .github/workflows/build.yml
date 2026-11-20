@@ -118,6 +118,11 @@ jobs:
             launcher/dist/latest.yml
             launcher/resources/mods/*.jar
 
+      - name: Kanał beta (beta.yml dla aktualizacji bety)
+        if: github.ref == 'refs/heads/v2'
+        shell: bash
+        run: cp launcher/dist/latest.yml launcher/dist/beta.yml && rm -f launcher/dist/builder-debug.yml
+
       # 4b) Wersja testowa 2.0 (gałąź v2) – wydanie „pre-release”: nie trafia do zwykłych graczy
       #     ani na stronę; aktualizuje się tylko launcher Void Client Beta.
       - name: Publikacja wersji testowej
