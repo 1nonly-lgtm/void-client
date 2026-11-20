@@ -88,8 +88,7 @@ jobs:
         working-directory: launcher
         shell: bash
         run: |
-          if [ "${{ github.ref }}" = "refs/heads/v2" ]; then npm version 2.0.0-beta.${{ github.run_number }} --no-git-tag-version
-          else npm version 1.0.${{ github.run_number }} --no-git-tag-version; fi
+          npm version 2.0.${{ github.run_number }} --no-git-tag-version
       - name: Budowanie instalatora
         working-directory: launcher
         shell: bash
@@ -109,8 +108,8 @@ jobs:
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.${{ github.run_number }}
-          name: Void Client 1.0.${{ github.run_number }}
+          tag_name: v2.0.${{ github.run_number }}
+          name: Void Client 2.0.${{ github.run_number }}
           make_latest: true
           files: |
             launcher/dist/VoidClient-Setup.exe
@@ -118,26 +117,8 @@ jobs:
             launcher/dist/latest.yml
             launcher/resources/mods/*.jar
 
-      - name: Kanał beta (beta.yml dla aktualizacji bety)
-        if: github.ref == 'refs/heads/v2'
-        shell: bash
-        run: cp launcher/dist/latest.yml launcher/dist/beta.yml && rm -f launcher/dist/builder-debug.yml
-
-      # 4b) Wersja testowa 2.0 (gałąź v2) – wydanie „pre-release”: nie trafia do zwykłych graczy
-      #     ani na stronę; aktualizuje się tylko launcher Void Client Beta.
-      - name: Publikacja wersji testowej
-        if: github.ref == 'refs/heads/v2'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v2.0.0-beta.${{ github.run_number }}
-          name: Void Client 2.0 Beta ${{ github.run_number }} (tylko do testów)
-          prerelease: true
-          make_latest: false
-          body: Wersja testowa 2.0 – nie dla graczy. Zwykły launcher jej nie pobiera.
-          files: |
-            launcher/dist/VoidClient-Beta-Setup.exe
-            launcher/dist/VoidClient-Beta-Setup.exe.blockmap
-            launcher/dist/*.yml
+      # Gałąź v2 = przygotowanie 2.0: tylko sprawdza, czy wszystko się buduje – nic nie wydaje.
+      # Wydanie 2.0 = scalenie v2 do main.
 
       - name: Podsumowanie
         if: always()

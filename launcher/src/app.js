@@ -556,7 +556,7 @@ $('dropzone').onclick = () => toast('Złap plik .jar lub .zip w Eksploratorze i 
 // ───────── „Co nowego” po aktualizacji ─────────
 
 const WHATS_NEW = [
-  'Void Client 2.0 (wersja testowa): zupełnie nowy wygląd launchera – pasek z ikonami, animowane tło, nowe karty i przyciski',
+  'Void Client 2.0: zupełnie nowy wygląd launchera – pasek z ikonami, animowane tło, nowe karty i przyciski',
   'Kosmetyki: 36 animowanych peleryn, 39 skrzydeł (14 w pełnym 3D), czapki, zwierzaki, efekty i 64 emotki – zapisują się same',
   'Koło emotek: ustawiasz w Kosmetyki → Emotki (kliknij pole, potem emotkę albo przeciągnij)',
   'Twoja postać 3D z prawdziwym skinem i założonymi kosmetykami',
