@@ -57,7 +57,7 @@ public final class VoidNet {
     public static void tick(Game g) {
         if (busy || !g.hasPlayer()) return;
         long now = System.currentTimeMillis();
-        if (now >= nextUsers && Modules.VOID_ICON.isEnabled()) {
+        if (now >= nextUsers) {
             nextUsers = now + 30_000;
             List<UUID> ids;
             try { ids = g.tabUuids(); } catch (Throwable t) { return; }
@@ -94,6 +94,29 @@ public final class VoidNet {
         }
         VOID.retainAll(found);
         VOID.addAll(found);
+        cosmetics(found);
+    }
+
+    /** Kosmetyki graczy Void z listy (peleryny w grze). Bez tabeli na serwerze – po prostu nic. */
+    private static void cosmetics(Set<UUID> ids) {
+        if (ids.isEmpty()) return;
+        JsonArray arr = new JsonArray();
+        for (UUID id : ids) arr.add(id.toString());
+        JsonObject body = new JsonObject();
+        body.add("p_uuids", arr);
+        String res = post("void_cosmetics_get", body.toString());
+        if (res == null) return;
+        Set<UUID> seen = new java.util.HashSet<>();
+        for (var e : JsonParser.parseString(res).getAsJsonArray()) {
+            try {
+                JsonObject o = e.getAsJsonObject();
+                UUID id = UUID.fromString(o.get("uuid").getAsString());
+                Cosmetics.setRemote(id, o.has("data") && o.get("data").isJsonObject() ? o.getAsJsonObject("data") : null);
+                seen.add(id);
+            } catch (Exception ignored) {
+            }
+        }
+        for (UUID id : ids) if (!seen.contains(id)) Cosmetics.setRemote(id, null);
     }
 
     private static String post(String fn, String json) {

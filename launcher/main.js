@@ -115,7 +115,20 @@ function discordApply() {
 // ───────── IPC ─────────
 
 ipcMain.handle('settings:get', () => settings.publicView());
+// Kosmetyki: po zmianie wysyłamy je na konto (z opóźnieniem, żeby klikanie po liście nie spamowało serwera).
+let cosmeticsTimer = null;
+function syncCosmetics() {
+  clearTimeout(cosmeticsTimer);
+  cosmeticsTimer = setTimeout(() => {
+    const s = settings.get();
+    if (!s.account) return;
+    lazy('friends').saveCosmetics({ ...(s.cosmetics || {}), emoteSlots: s.emoteSlots || [] })
+      .catch(e => console.warn('Kosmetyki na koncie:', e.message));
+  }, 1500);
+}
+
 ipcMain.handle('settings:set', (_, patch) => {
+  if (patch && ('cosmetics' in patch || 'emoteSlots' in patch)) syncCosmetics();
   const out = settings.update(patch);
   if (patch && ['discord', 'selectedProfile', 'discordServer', 'discordFps', 'profiles'].some(k => k in patch)) discordUpdate();
   return out;

@@ -359,4 +359,7 @@ public final class YarnGame implements Game {
         var p = mc().player;
         return p == null ? 20 : p.getHungerManager().getFoodLevel();
     }
+
+    @Override
+    public java.util.UUID selfUuid() { return mc().player == null ? null : mc().player.getUuid(); }
 }

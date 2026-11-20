@@ -40,4 +40,7 @@ const add = async name => rpc('void_friend_add', { p_token: await tok(), p_name:
 const remove = async uuid => rpc('void_friend_remove', { p_token: await tok(), p_uuid: uuid });
 const reset = () => { token = null; };
 
-module.exports = { heartbeat, list, add, remove, reset };
+// Kosmetyki na koncie (backend/cosmetics.sql) – widzą je inni gracze Void Client w grze.
+const saveCosmetics = async data => rpc('void_cosmetics_set', { p_token: await tok(), p_data: data });
+
+module.exports = { heartbeat, list, add, remove, reset, saveCosmetics };

@@ -375,4 +375,7 @@ public final class MojangGame implements Game {
         var p = mc().player;
         return p == null ? 20 : p.getFoodData().getFoodLevel();
     }
+
+    @Override
+    public java.util.UUID selfUuid() { return mc().player == null ? null : mc().player.getUUID(); }
 }

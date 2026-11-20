@@ -158,4 +158,7 @@ public interface Game {
 
     /** Poziom głodu 0–20. */
     default int food() { return 20; }
+
+    /** UUID gracza (do własnych kosmetyków). */
+    default java.util.UUID selfUuid() { return null; }
 }

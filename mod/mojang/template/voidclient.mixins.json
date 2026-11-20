@@ -15,7 +15,8 @@
     "PlayerNameMixin",
     "ViewmodelMixin",
     "AspectMixin",
-    "ScrollMixin"
+    "ScrollMixin",
+    "CapeMixin"
   ],
   "injectors": {
     "defaultRequire": 0
