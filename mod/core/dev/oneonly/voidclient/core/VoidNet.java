@@ -119,6 +119,22 @@ public final class VoidNet {
         for (UUID id : ids) if (!seen.contains(id)) Cosmetics.setRemote(id, null);
     }
 
+    /** Kosmetyki zmienione w grze → konto (jak z launchera). */
+    public static void saveCosmetics(Game g, JsonObject cos, String[] slots) {
+        String token;
+        try { token = g.accessToken(); } catch (Throwable t) { return; }
+        JsonObject data = cos.deepCopy();
+        JsonArray sl = new JsonArray();
+        for (String s : slots) sl.add(s);
+        data.add("emoteSlots", sl);
+        JsonObject body = new JsonObject();
+        body.addProperty("p_token", token);
+        body.add("p_data", data);
+        Thread t = new Thread(() -> post("void_cosmetics_set", body.toString()), "VoidNet-cos");
+        t.setDaemon(true);
+        t.start();
+    }
+
     private static String post(String fn, String json) {
         try {
             if (http == null) http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(8)).build();

@@ -19,7 +19,9 @@
     "ViewmodelMixin",
     "AspectMixin",
     "ScrollMixin",
-    "CapeMixin"
+    "CapeMixin",
+    "EmoteModelMixin",
+    "EmoteBodyMixin"
   ],
   "injectors": {
     "defaultRequire": 0

@@ -25,6 +25,7 @@ public class VoidClientMod implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         VoidCore.init(new YarnGame());
+        try { CosRender.register(); } catch (Throwable t) { VoidCore.LOG.warn("Kosmetyki 3D niedostępne", t); }
 
         guiKey = KeyBindingHelper.registerKeyBinding(Keys.create("key.voidclient.gui", GLFW.GLFW_KEY_RIGHT_SHIFT));
         for (int i = 0; i < AutoText.SLOTS; i++) {

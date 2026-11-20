@@ -263,7 +263,19 @@ async function launch(profile, s, emit, onLine) {
   const dir = instanceDir(profile.id);
   importStableInstance(profile.id, dir);
   fs.mkdirSync(dir, { recursive: true });
-  // kosmetyki i koło emotek – mod Void Client czyta je przy starcie (config/void-cosmetics.json)
+  // kosmetyki i koło emotek – mod Void Client czyta je przy starcie (config/void-cosmetics.json).
+  // Zmiany zrobione w grze (menu → Wygląd → Kosmetyki) najpierw wracają do ustawień launchera.
+  try {
+    const gameFile = path.join(dir, 'config', 'void-cosmetics-game.json');
+    if (fs.existsSync(gameFile)) {
+      const g = JSON.parse(fs.readFileSync(gameFile, 'utf8'));
+      const patch = {};
+      if (g.cosmetics && typeof g.cosmetics === 'object') patch.cosmetics = g.cosmetics;
+      if (Array.isArray(g.emoteSlots) && g.emoteSlots.length === 24) patch.emoteSlots = g.emoteSlots;
+      require('./settings').update(patch); // zmienia też obiekt s (to te same ustawienia)
+      fs.rmSync(gameFile, { force: true });
+    }
+  } catch (e) { console.warn('Kosmetyki z gry:', e.message); }
   try {
     fs.mkdirSync(path.join(dir, 'config'), { recursive: true });
     fs.writeFileSync(path.join(dir, 'config', 'void-cosmetics.json'), JSON.stringify({

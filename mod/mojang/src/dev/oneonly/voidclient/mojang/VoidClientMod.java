@@ -32,6 +32,7 @@ public class VoidClientMod implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         VoidCore.init(new MojangGame());
+        try { CosRender.register(); } catch (Throwable t) { VoidCore.LOG.warn("Kosmetyki 3D niedostępne", t); }
 
         KeyMapping.Category category = KeyMapping.Category.register(Identifier.fromNamespaceAndPath("voidclient", "main"));
         guiKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.voidclient.gui", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_RIGHT_SHIFT, category));

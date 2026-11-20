@@ -26,6 +26,9 @@ subprojects {
     def javaVer = (project.property('java_version') as String) as int
     // zawartość shulkera: do 1.20.4 w NBT, od 1.20.5 w komponentach przedmiotów
     def items = (mc in ['1.20.1', '1.20.4']) ? 'nbt' : 'comp'
+    // kosmetyki 3D i emotki: a – 1.20.x, b – 1.21.1, c – 1.21.4–1.21.8 (stan renderu), d – 1.21.9+ (kolejka renderu)
+    def cos = mc.startsWith('1.20') ? 'a' : mc == '1.21.1' ? 'b' : mc == '1.21.10' ? 'd' : mc == '1.21.11' ? 'e' : 'c'
+    def cosDirs = (cos in ['d', 'e']) ? ["${rootDir}/cos-${cos}", "${rootDir}/cos-q"] : ["${rootDir}/cos-${cos}"]
 
     def yarnVersion = fetchJson("https://meta.fabricmc.net/v2/versions/yarn/${mc}")[0].version
     def apiVersions = fetchJson("https://api.modrinth.com/v2/project/fabric-api/version?game_versions=${enc('["' + mc + '"]')}&loaders=${enc('["fabric"]')}")
@@ -39,7 +42,7 @@ subprojects {
 
     sourceSets {
         main {
-            java { srcDirs = ["${rootDir}/../core", "${rootDir}/common", "${rootDir}/fam-${fam}", "${rootDir}/render-${render}", "${rootDir}/items-${items}"] }
+            java { srcDirs = ["${rootDir}/../core", "${rootDir}/common", "${rootDir}/fam-${fam}", "${rootDir}/render-${render}", "${rootDir}/items-${items}"] + cosDirs }
             resources { srcDirs = ["${rootDir}/template", "${rootDir}/../resources"] }
         }
     }

@@ -19,7 +19,13 @@ import java.util.regex.Pattern;
 public final class Cosmetics {
     private static final Pattern ID = Pattern.compile("[a-z]{2,24}");
     private static final Map<UUID, String> CAPES = new ConcurrentHashMap<>();
+    /** Kategorie 3D w kolejności tablic worn(): skrzydła, czapka, zwierzak, efekt. */
+    public static final String[] CATS3D = {"wings", "hat", "pet", "fx"};
+    private static final Map<UUID, String[]> WORN = new ConcurrentHashMap<>();
     private static volatile String ownCape;
+    private static volatile String[] ownWorn = new String[4];
+    /** Twoje pola koła emotek (24 = 3 strony po 8). */
+    public static volatile String[] slots = defaultSlots();
     private static volatile boolean ownLoaded;
     public static final int FRAMES = 12;
 
@@ -33,6 +39,14 @@ public final class Cosmetics {
             JsonObject o = JsonParser.parseString(new String(Files.readAllBytes(f), StandardCharsets.UTF_8)).getAsJsonObject();
             JsonObject c = o.has("cosmetics") && o.get("cosmetics").isJsonObject() ? o.getAsJsonObject("cosmetics") : null;
             ownCape = c == null ? null : valid(c.get("cape"));
+            String[] w = new String[4];
+            for (int i = 0; i < 4; i++) w[i] = c == null ? null : valid(c.get(CATS3D[i]));
+            ownWorn = w;
+            if (o.has("emoteSlots") && o.get("emoteSlots").isJsonArray() && o.getAsJsonArray("emoteSlots").size() == 24) {
+                String[] sl = new String[24];
+                for (int i = 0; i < 24; i++) sl[i] = valid(o.getAsJsonArray("emoteSlots").get(i));
+                slots = sl;
+            }
         } catch (Throwable t) {
             ownCape = null;
         }
@@ -48,6 +62,67 @@ public final class Cosmetics {
     public static void setRemote(UUID id, JsonObject data) {
         String cape = data == null ? null : valid(data.get("cape"));
         if (cape == null) CAPES.remove(id); else CAPES.put(id, cape);
+        String[] w = new String[4];
+        boolean any = false;
+        for (int i = 0; i < 4; i++) { w[i] = data == null ? null : valid(data.get(CATS3D[i])); any |= w[i] != null; }
+        if (any) WORN.put(id, w); else WORN.remove(id);
+    }
+
+    /** Założone kosmetyki 3D gracza (CATS3D) albo null. */
+    public static String[] worn(UUID id) {
+        if (id == null) return null;
+        try {
+            if (id.equals(VoidCore.game().selfUuid())) {
+                if (!ownLoaded) loadOwn(VoidCore.game());
+                return ownWorn;
+            }
+        } catch (Throwable ignored) {
+        }
+        return WORN.get(id);
+    }
+
+    public static String ownCape() { return ownCape; }
+
+    public static String ownWorn(int i) { return ownWorn[i]; }
+
+    /** Zmiana w grze (menu → Wygląd → Kosmetyki): zapis do pliku i na konto. */
+    public static void setOwn(String cat, String id) {
+        if (!ownLoaded) loadOwn(VoidCore.game());
+        if ("cape".equals(cat)) ownCape = id;
+        else for (int i = 0; i < 4; i++) if (CATS3D[i].equals(cat)) { String[] w = ownWorn.clone(); w[i] = id; ownWorn = w; }
+        saveOwn();
+    }
+
+    private static String[] defaultSlots() {
+        String[] d = {"machanie", "taniec", "dab", "salto", "klaskanie", "facepalm", "gitara", "uklon",
+                "robot", "krecio", "pajacyki", "medytacja", "salut", "pompki", "zombie", "hura",
+                "boks", "karate", "moonwalk", "headbang", "serce", "samolot", "zwyciestwo", "hulajnoga"};
+        return d;
+    }
+
+    static JsonObject ownJson() {
+        JsonObject c = new JsonObject();
+        c.addProperty("cape", ownCape);
+        for (int i = 0; i < 4; i++) c.addProperty(CATS3D[i], ownWorn[i]);
+        return c;
+    }
+
+    private static void saveOwn() {
+        Game g = VoidCore.game();
+        try {
+            JsonObject o = new JsonObject();
+            o.add("cosmetics", ownJson());
+            com.google.gson.JsonArray sl = new com.google.gson.JsonArray();
+            for (String s : slots) sl.add(s);
+            o.add("emoteSlots", sl);
+            o.addProperty("changedInGame", System.currentTimeMillis());
+            Path dir = g.gameDir().resolve("config");
+            Files.createDirectories(dir);
+            Files.write(dir.resolve("void-cosmetics.json"), o.toString().getBytes(StandardCharsets.UTF_8));
+            Files.write(dir.resolve("void-cosmetics-game.json"), o.toString().getBytes(StandardCharsets.UTF_8));
+        } catch (Throwable ignored) {
+        }
+        VoidNet.saveCosmetics(g, ownJson(), slots);
     }
 
     public static String cape(UUID id) {
@@ -66,7 +141,7 @@ public final class Cosmetics {
     /** Nazwa klatki animowanej peleryny (np. "zorza_7") albo null, gdy gracz nie ma peleryny Void. */
     public static String capeFrame(UUID id) {
         String c = cape(id);
-        if (c == null) return null;
+        if (c == null || !ID.matcher(c).matches()) return null;
         return c + "_" + (int) ((System.currentTimeMillis() / 250) % FRAMES);
     }
 }
