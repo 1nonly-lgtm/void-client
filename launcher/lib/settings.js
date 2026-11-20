@@ -26,7 +26,7 @@ const DEFAULTS = {
   perfPreset: 'balanced', // quality | balanced | max
   highPriority: true, // wyższy priorytet procesu gry
   smoothGC: true, // ZGC na Javie 21+ (płynność bez przycięć)
-  hud60: true, // HUD rysowany w 60 kl./s (mod Void)
+  hud60: false, // HUD w 60 kl./s – instaluje Exordium z Modrinth
   spotify: true, // moduł Spotify w grze
   replay: false, // ReplayMod z Modrinth
   cosmetics: { cape: null, wings: null, hat: null, pet: null, fx: null }, // zapis kosmetyków

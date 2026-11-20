@@ -281,11 +281,12 @@ async function launch(profile, s, emit, onLine) {
     const sky = mc === '1.21.10' ? 'horizon-port' : 'nuit';
     const pack = profile.optimize ? modrinth.FPS_PACK.slice() : withVoid ? ['fabric-api'] : [];
     if (withVoid) pack.push(sky);
-    // Replay (Opcje → Replay): prawdziwy ReplayMod z Modrinth, wyłączenie go usuwa
-    if (s.replay) pack.push('replaymod');
-    else {
-      const idx = modrinth.readIndex(dir);
-      for (const [id, v] of Object.entries(idx)) if (v.slug === 'replaymod' && !v.skip) await modrinth.remove(id, dir).catch(() => {});
+    // Mody z przełączników w Opcjach: Replay = ReplayMod, HUD w 60 klatkach = Exordium. Wyłączenie je usuwa.
+    const OPTIONAL = { replaymod: !!s.replay, exordium: !!s.hud60 };
+    const idx = modrinth.readIndex(dir);
+    for (const [slug, on] of Object.entries(OPTIONAL)) {
+      if (on) pack.push(slug);
+      else for (const [id, v] of Object.entries(idx)) if (v.slug === slug && !v.skip) await modrinth.remove(id, dir).catch(() => {});
     }
     if (pack.length) await modrinth.ensurePack(pack, { mc, loader: 'fabric', instanceDir: dir, onStep: text => emit({ text }) });
   }
