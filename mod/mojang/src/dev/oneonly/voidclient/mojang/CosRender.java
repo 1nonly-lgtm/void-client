@@ -94,7 +94,7 @@ public final class CosRender {
         @Override public void end() {
             final float[] data = java.util.Arrays.copyOf(buf, n);
             final int lt = mode == 0 ? light : 0xF000F0;
-            q.submitCustom(m, layer(tex, mode), (pose, vc) -> {
+            q.submitCustomGeometry(m, layer(tex, mode), (pose, vc) -> {
                 Matrix4f pos = pose.pose();
                 Matrix3f nrm = pose.normal();
                 Vector4f v4 = new Vector4f();

@@ -104,6 +104,13 @@ jobs:
           path: launcher/resources/mods/*.jar
 
       # 4) Wydanie na GitHubie – z niego pobiera strona (zawsze najnowsza wersja)
+      # Wydanie tylko gdy zbudowały się WSZYSTKIE wersje moda – inaczej część graczy zostałaby bez moda.
+      - name: Czy wszystkie wersje moda są
+        shell: pwsh
+        run: |
+          $bad = "${{ steps.yarn.outputs.bad }}"
+          if ($bad) { Write-Host "::error::Nie zbudowały się: $bad" ; exit 1 }
+          if ("${{ steps.mojang.outcome }}" -ne "success") { Write-Host "::error::Nie zbudował się mod na 26.1+" ; exit 1 }
       - name: Publikacja wydania
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         uses: softprops/action-gh-release@v2

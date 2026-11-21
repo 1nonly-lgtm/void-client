@@ -44,7 +44,7 @@ public final class CosRender {
             try {
                 CosmeticDraw.Pose p = new CosmeticDraw.Pose();
                 p.headPitch = s.pitch * DEG;
-                p.headYaw = s.relativeHeadYaw * DEG;
+                p.headYaw = getContextModel().head.yaw; // 1.21.4: yawDegrees, 1.21.5+: relativeHeadYaw – model ma to samo w obu
                 p.sneaking = s.isInSneakingPose;
                 p.age = s.age / 20f;
                 CosmeticDraw.render(Ids.uuid(s.id), p, new Out(m.peek().getPositionMatrix(), m.peek().getNormalMatrix(), vcp, light));
