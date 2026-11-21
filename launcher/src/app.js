@@ -557,6 +557,9 @@ $('dropzone').onclick = () => toast('Złap plik .jar lub .zip w Eksploratorze i 
 
 const WHATS_NEW = [
   'Void Client 2.0: zupełnie nowy wygląd launchera – pasek z ikonami, animowane tło, nowe karty i przyciski',
+  'Szybsze wejście na serwer: Fast IP Ping usuwa 1–5 s czekania przy łączeniu po IP',
+  'Szybszy start gry: Java zapamiętuje wczytane klasy (Opcje → Szybszy start gry)',
+  'Szybki start launchera: czeka w tle i otwiera się od razu (do włączenia w Opcjach)',
   'Kosmetyki: 36 animowanych peleryn, 55 skrzydeł (16 w pełnym 3D, w tym 16 małych), czapki, zwierzaki, efekty i 64 emotki – zapisują się same',
   'Koło emotek: ustawiasz w Kosmetyki → Emotki (kliknij pole, potem emotkę albo przeciągnij)',
   'Twoja postać 3D z prawdziwym skinem i założonymi kosmetykami',

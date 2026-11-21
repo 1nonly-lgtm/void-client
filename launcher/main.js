@@ -3,6 +3,8 @@ const { app, BrowserWindow, ipcMain, shell, Tray, Menu, nativeImage, dialog, Not
 const path = require('path');
 
 if (!app.requestSingleInstanceLock()) app.exit(0);
+// Szybki start: launcher startuje z Windows ukryty w zasobniku, więc otwiera się od razu.
+const START_HIDDEN = process.argv.includes('--hidden');
 
 app.commandLine.appendSwitch('disable-features', 'HardwareMediaKeyHandling,MediaSessionService,SpareRendererForSitePerProcess');
 const BETA = require('./package.json').voidBeta === true; // wersja testowa 2.0 – osobna instalacja i osobne aktualizacje
@@ -40,7 +42,11 @@ function createWindow() {
       backgroundThrottling: true
     }
   });
-  win.once('ready-to-show', () => win.show());
+  win.once('ready-to-show', () => { if (!START_HIDDEN) win.show(); else ensureTray(); });
+  // Przy szybkim starcie zamknięcie okna tylko je chowa – ponowne otwarcie jest natychmiastowe.
+  win.on('close', e => {
+    if (!quitting && settings.get().quickStart) { e.preventDefault(); win.hide(); ensureTray(); discordUpdate(); }
+  });
   win.loadFile(path.join(__dirname, 'src', 'index.html'));
   win.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https:\/\//.test(url)) shell.openExternal(url);
@@ -52,26 +58,40 @@ function send(channel, data) {
   if (win && !win.isDestroyed()) win.webContents.send(channel, data);
 }
 
+let quitting = false;
+app.on('before-quit', () => { quitting = true; });
+
 function showWindow() {
   if (!win) return;
   if (win.isMinimized()) win.restore();
   win.show();
   win.focus();
-  if (tray) { tray.destroy(); tray = null; }
+  if (tray && !settings.get().quickStart) { tray.destroy(); tray = null; }
+  discordUpdate();
+}
+
+function ensureTray() {
+  if (tray) { tray.setToolTip(running ? 'Void Client – gra uruchomiona' : 'Void Client'); return; }
+  tray = new Tray(nativeImage.createFromPath(path.join(__dirname, 'build', 'icon.png')).resize({ width: 16, height: 16 }));
+  tray.setToolTip(running ? 'Void Client – gra uruchomiona' : 'Void Client');
+  tray.setContextMenu(Menu.buildFromTemplate([
+    { label: 'Pokaż Void Client', click: showWindow },
+    { type: 'separator' },
+    { label: 'Zamknij launcher', click: () => { quitting = true; app.quit(); } }
+  ]));
+  tray.on('click', showWindow);
 }
 
 function hideToTray() {
   if (!win) return;
   win.hide();
-  if (tray) return;
-  tray = new Tray(nativeImage.createFromPath(path.join(__dirname, 'build', 'icon.png')).resize({ width: 16, height: 16 }));
-  tray.setToolTip('Void Client – gra uruchomiona');
-  tray.setContextMenu(Menu.buildFromTemplate([
-    { label: 'Pokaż Void Client', click: showWindow },
-    { type: 'separator' },
-    { label: 'Zamknij launcher', click: () => app.quit() }
-  ]));
-  tray.on('click', showWindow);
+  ensureTray();
+}
+
+/** Szybki start: uruchamianie z Windows (ukryty) – włączane w Opcjach. */
+function applyQuickStart() {
+  if (process.platform !== 'win32' || !app.isPackaged) return;
+  try { app.setLoginItemSettings({ openAtLogin: !!settings.get().quickStart, args: ['--hidden'] }); } catch (e) { console.warn('Autostart:', e.message); }
 }
 
 // ───────── Discord ─────────
@@ -89,6 +109,7 @@ function discordApply() {
   const discord = lazy('discord');
   if (!s.discord) { discord.stop(); return; }
   discord.start(DISCORD_APP_ID);
+  if (!running && win && !win.isVisible()) { discord.stop(); return; } // launcher czeka w tle – bez statusu
   if (!running) {
     const profile = s.profiles.find(p => p.id === s.selectedProfile) || s.profiles[0];
     discord.set({
@@ -130,12 +151,16 @@ function syncCosmetics() {
 ipcMain.handle('settings:set', (_, patch) => {
   if (patch && ('cosmetics' in patch || 'emoteSlots' in patch)) syncCosmetics();
   const out = settings.update(patch);
+  if (patch && 'quickStart' in patch) {
+    applyQuickStart();
+    if (!patch.quickStart && tray && !running && win && win.isVisible()) { tray.destroy(); tray = null; }
+  }
   if (patch && ['discord', 'selectedProfile', 'discordServer', 'discordFps', 'profiles'].some(k => k in patch)) discordUpdate();
   return out;
 });
 
 ipcMain.on('win:min', () => win && win.minimize());
-ipcMain.on('win:close', () => app.quit());
+ipcMain.on('win:close', () => { if (settings.get().quickStart && win) win.close(); else app.quit(); });
 
 ipcMain.handle('versions:list', () => lazy('game').listVersions());
 
@@ -251,6 +276,7 @@ ipcMain.handle('game:launch', async (_, profileId) => {
     discordUpdate();
     setTimeout(friendsTick, 1000);
     if (settings.get().afterLaunch === 'hide') showWindow();
+    else if (tray) ensureTray();
   });
   return { ok: true };
 });
@@ -373,6 +399,7 @@ ipcMain.handle('friends:remove', async (_, uuid) => { await lazy('friends').remo
 
 app.whenReady().then(() => {
   createWindow();
+  applyQuickStart();
   // Discord startuje po pokazaniu okna, żeby nie spowalniać uruchamiania.
   setTimeout(discordUpdate, 1500);
   // Sprawdzanie aktualizacji w tle, gdy okno już działa.
@@ -380,7 +407,7 @@ app.whenReady().then(() => {
   setTimeout(friendsTick, 2500);
 });
 app.on('window-all-closed', () => {
-  if (!running) app.quit();
+  if (!running && !settings.get().quickStart) app.quit();
 });
 app.on('before-quit', () => {
   try { lazy('discord').stop(); } catch { /* ignore */ }

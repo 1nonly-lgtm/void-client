@@ -58,15 +58,23 @@ const JVM_FLAGS = [
 ];
 
 /** Flagi JVM: G1 (domyślnie) albo ZGC generacyjny na Javie 21+ („Płynność bez przycięć”). */
-function jvmArgs(s, vjson) {
-  if (!s.jvmFlags) return [];
+function jvmArgs(s, vjson, mc) {
   const major = Number(vjson && vjson.javaVersion && vjson.javaVersion.majorVersion) || 8;
+  const out = [];
+  // Szybszy start gry: Java zapisuje wczytane klasy do pliku i przy następnym starcie bierze je gotowe
+  // (CDS, Java 19+). Gdy plik nie pasuje – np. po aktualizacji Javy – tworzy go od nowa sama.
+  if (s.fastBoot !== false && major >= 19) {
+    const dir = path.join(ROOT, 'cache', 'cds');
+    try { fs.mkdirSync(dir, { recursive: true }); } catch { /* ignore */ }
+    out.push('-XX:+AutoCreateSharedArchive', '-XX:SharedArchiveFile=' + path.join(dir, `${String(mc).replace(/[^\w.-]/g, '_')}-j${major}.jsa`));
+  }
+  if (!s.jvmFlags) return out;
   if (s.smoothGC !== false && major >= 21) {
     const z = ['-XX:+UseZGC', '-XX:+AlwaysPreTouch', '-XX:+DisableExplicitGC', '-XX:+PerfDisableSharedMem'];
     if (major < 24) z.splice(1, 0, '-XX:+ZGenerational'); // od Javy 24 ZGC jest zawsze generacyjny
-    return z;
+    return out.concat(z);
   }
-  return JVM_FLAGS;
+  return out.concat(JVM_FLAGS);
 }
 
 /** Wersja testowa: przy pierwszym starcie profilu kopiuje folder gry ze zwykłego launchera
@@ -293,6 +301,8 @@ async function launch(profile, s, emit, onLine) {
     const sky = mc === '1.21.10' ? 'horizon-port' : 'nuit';
     const pack = profile.optimize ? modrinth.FPS_PACK.slice() : withVoid ? ['fabric-api'] : [];
     if (withVoid) pack.push(sky);
+    // Fast IP Ping: bez wolnego sprawdzania nazwy serwera po IP – wejście na serwer i lista serwerów szybciej o 1–5 s
+    if ((withVoid || profile.optimize) && !pack.includes('fast-ip-ping')) pack.push('fast-ip-ping');
     // Mody z przełączników w Opcjach: Replay = ReplayMod, HUD w 60 klatkach = Exordium. Wyłączenie je usuwa.
     // OuyCgP8t = ItemPhysic Lite (przedmioty leżą płasko na ziemi)
     const OPTIONAL = { replaymod: !!s.replay, exordium: !!s.hud60, OuyCgP8t: s.itemPhysics !== false };
@@ -312,7 +322,13 @@ async function launch(profile, s, emit, onLine) {
 
   launcher.on('progress', e => emit({ text: STEP_NAMES[e.type] || 'Pobieranie plików…', cur: e.task, total: e.total }));
   launcher.on('data', chunk => {
-    if (onLine) for (const line of String(chunk).split(/\r?\n/)) if (line) onLine(line);
+    const text = String(chunk);
+    // Zabezpieczenie: gdyby pamięć podręczna klas (Szybszy start gry) nie pasowała do tej instalacji
+    // i Java odmówiła startu – wyłączamy ją, a kolejne uruchomienie przejdzie normalnie.
+    if (s.fastBoot !== false && /\[cds\].*error|Cannot have non-empty directory in paths/i.test(text)) {
+      try { require('./settings').update({ fastBoot: false }); } catch { /* ignore */ }
+    }
+    if (onLine) for (const line of text.split(/\r?\n/)) if (line) onLine(line);
   });
   launcher.on('debug', line => { if (/error/i.test(String(line))) console.warn(String(line)); });
 
@@ -323,7 +339,7 @@ async function launch(profile, s, emit, onLine) {
     version: { number: mc, type: 'release', ...(custom ? { custom } : {}) },
     memory: { max: ram + 'G', min: Math.min(2, ram) + 'G' },
     javaPath,
-    customArgs: jvmArgs(s, vjson),
+    customArgs: jvmArgs(s, vjson, mc),
     window: s.windowMode === 'full' ? { fullscreen: true } : { width: 1280, height: 720 },
     overrides: {
       gameDirectory: dir,
