@@ -560,7 +560,7 @@ const WHATS_NEW = [
   'Szybsze wejście na serwer: Fast IP Ping usuwa 1–5 s czekania przy łączeniu po IP',
   'Szybszy start gry: Java zapamiętuje wczytane klasy (Opcje → Szybszy start gry)',
   'Szybki start launchera: czeka w tle i otwiera się od razu (do włączenia w Opcjach)',
-  'Kosmetyki: 36 animowanych peleryn, 55 skrzydeł (16 w pełnym 3D, w tym 16 małych), czapki, zwierzaki, efekty i 64 emotki – zapisują się same',
+  'Kosmetyki: 36 animowanych peleryn, 55 skrzydeł (w tym 16 małych, 16 w pełnym 3D), czapki, zwierzaki, efekty i 64 emotki – zapisują się same',
   'Koło emotek: ustawiasz w Kosmetyki → Emotki (kliknij pole, potem emotkę albo przeciągnij)',
   'Twoja postać 3D z prawdziwym skinem i założonymi kosmetykami',
   'Pomocnik przy crashu: mówi, który mod wysypał grę, i wyłącza go jednym kliknięciem',
