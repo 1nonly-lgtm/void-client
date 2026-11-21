@@ -54,7 +54,7 @@ as $$
 declare me public.void_tokens;
 begin
   me := public.void_whoami(p_token);
-  if p_emote is not null and p_emote !~ '^[a-z]{2,24}$' then
+  if p_emote is not null and p_emote !~ '^[a-z][a-z0-9_]{1,23}$' then
     raise exception 'Zła emotka';
   end if;
   insert into public.void_emotes(uuid, emote, started_at) values (me.uuid, p_emote, now())

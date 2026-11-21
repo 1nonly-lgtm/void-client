@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
  * innych graczy – z serwera Void (VoidNet, void_cosmetics_get). Na razie w grze: animowane peleryny.
  */
 public final class Cosmetics {
-    private static final Pattern ID = Pattern.compile("[a-z]{2,24}");
+    private static final Pattern ID = Pattern.compile("[a-z][a-z0-9_]{1,23}"); // np. m_anielskie, zachod2
     private static final Map<UUID, String> CAPES = new ConcurrentHashMap<>();
     /** Kategorie 3D w kolejności tablic worn(): skrzydła, czapka, zwierzak, efekt. */
     public static final String[] CATS3D = {"wings", "hat", "pet", "fx"};
